@@ -3,10 +3,13 @@ package com.example.roadtripbuddy
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.MenuItem
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.DefaultLocationProviderFactory
 import com.tomtom.sdk.location.GeoPoint
@@ -22,6 +25,7 @@ import com.tomtom.sdk.map.display.route.RouteOptions
 import com.tomtom.sdk.map.display.ui.MapFragment
 import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.ui.NavigationFragment
+import com.tomtom.sdk.navigation.ui.view.NavigationView
 import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.RoutePlanningCallback
 import com.tomtom.sdk.routing.RoutePlanningResponse
@@ -34,7 +38,8 @@ import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.vehicle.Vehicle
 
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity () {
 
     private val apiKey = BuildConfig.TOMTOM_API_KEY
 
@@ -53,7 +58,36 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Log.d("MainActivity", "TomTom API Key: $apiKey")
+        val drawerLayout = findViewById<DrawerLayout>(R.id.drawer_layout)
+        val navButton = findViewById<ImageButton>(R.id.nav_button)
+        val navView: com.google.android.material.navigation.NavigationView = findViewById(R.id.nav_view)
+
+
+        navButton.setOnClickListener {
+            drawerLayout.openDrawer(findViewById(R.id.nav_view))
+        }
+
+        navView.setNavigationItemSelectedListener{ menuItem ->
+            when(menuItem.itemId) {
+                R.id.nav_plan_button -> {
+
+                    true
+                }
+                R.id.nav_settings_button -> {
+
+                    true
+                }
+                R.id.nav_about_button -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.map_container, aboutFragment())
+                        .addToBackStack(null)
+                        .commit()
+                    true
+                }
+                else -> false
+            }
+        }
+
 
         initMap()
 

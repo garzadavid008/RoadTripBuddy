@@ -50,18 +50,19 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation("com.tomtom.sdk.navigation:navigation-online:$version") // Add the TomTom Navigation SDK dependency
+    implementation("com.tomtom.sdk.navigation:navigation-online:$version")
     implementation("com.tomtom.sdk.location:provider-default:$version")
     implementation("com.tomtom.sdk.location:provider-map-matched:$version")
     implementation("com.tomtom.sdk.location:provider-simulation:$version")
     implementation("com.tomtom.sdk.maps:map-display:$version")
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
-    implementation("com.tomtom.sdk.navigation:navigation-online:$version")
     implementation("com.tomtom.sdk.navigation:ui:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
+    implementation(libs.androidx.drawerlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
 }
