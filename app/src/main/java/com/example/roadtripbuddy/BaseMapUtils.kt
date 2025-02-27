@@ -59,7 +59,7 @@ open class BaseMapUtils : AppCompatActivity() {
         }
     }
 
-    fun areLocationPermissionsGranted() = ContextCompat.checkSelfPermission(
+    private fun areLocationPermissionsGranted() = ContextCompat.checkSelfPermission(
         this,
         android.Manifest.permission.ACCESS_FINE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
@@ -67,13 +67,14 @@ open class BaseMapUtils : AppCompatActivity() {
         android.Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
-    val locationPermissionRequest =
+    private val locationPermissionRequest =
         registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { permissions ->
             if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true &&
                 permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true)
             {
+                initLocationProvider()
                 showUserLocation()
             } else {
                 Toast.makeText(
@@ -84,7 +85,7 @@ open class BaseMapUtils : AppCompatActivity() {
             }
         }
 
-    fun requestLocationPermissions() {
+    private fun requestLocationPermissions() {
         locationPermissionRequest.launch(
             arrayOf(
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -93,7 +94,7 @@ open class BaseMapUtils : AppCompatActivity() {
         )
     }
 
-    fun enableUserLocation() {
+    private fun enableUserLocation() {
         if (areLocationPermissionsGranted()){
             showUserLocation()
         }else {
@@ -106,7 +107,7 @@ open class BaseMapUtils : AppCompatActivity() {
         locationProvider.enable() //requests location updates
     }
 
-    fun showUserLocation() {
+    private fun showUserLocation() {
         locationProvider.enable()
 
         onLocationUpdateListener =
@@ -124,7 +125,7 @@ open class BaseMapUtils : AppCompatActivity() {
         routePlanner = OnlineRoutePlanner.create(context = applicationContext, apiKey = apiKey)
     }
 
-    val routePlanningCallback =
+    private val routePlanningCallback =
         object : RoutePlanningCallback {
             override fun onSuccess(result: RoutePlanningResponse) {
                 route = result.routes.first()
@@ -171,7 +172,7 @@ open class BaseMapUtils : AppCompatActivity() {
         private const val ZOOM_TO_ROUTE_PADDING = 100
     }
 
-    fun calculateRouteTo(destination: GeoPoint) {
+    private fun calculateRouteTo(destination: GeoPoint) {
         val userLocation =
             tomTomMap.currentLocation?.position ?: return
         val itinerary = Itinerary(origin = userLocation, destination = destination)
