@@ -30,6 +30,7 @@ android {
     }
     buildFeatures {
         buildConfig = true
+        viewBinding = true
     }
     buildTypes.configureEach {
         buildConfigField("String", "TOMTOM_API_KEY", "\"$tomtomApiKey\"")
@@ -61,6 +62,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
