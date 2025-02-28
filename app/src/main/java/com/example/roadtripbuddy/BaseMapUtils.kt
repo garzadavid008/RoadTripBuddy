@@ -45,12 +45,13 @@ open class BaseMapUtils : AppCompatActivity() {
     private lateinit var routePlanningOptions: RoutePlanningOptions
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var navigationFragment: NavigationFragment
+    private var isMapInitialized = false
 
-    fun initMap() {
+    fun initMap(containerId: Int) {
         val mapOptions = MapOptions(mapKey = apiKey)
         mapFragment = MapFragment.newInstance(mapOptions)
         supportFragmentManager.beginTransaction()
-            .replace(R.id.map_container, mapFragment)
+            .replace(containerId, mapFragment)
             .commit()
         mapFragment.getMapAsync { map ->
             tomTomMap = map
@@ -96,14 +97,15 @@ open class BaseMapUtils : AppCompatActivity() {
 
     private fun enableUserLocation() {
         if (areLocationPermissionsGranted()){
+            initLocationProvider()
             showUserLocation()
         }else {
             requestLocationPermissions()
         }
     }
 
-    fun initLocationProvider() {
-        locationProvider = DefaultLocationProviderFactory.create(context = applicationContext)
+    private fun initLocationProvider() {
+        locationProvider = DefaultLocationProviderFactory.create(context = this@BaseMapUtils)
         locationProvider.enable() //requests location updates
     }
 
@@ -122,7 +124,7 @@ open class BaseMapUtils : AppCompatActivity() {
     }
 
     fun initRouting () {
-        routePlanner = OnlineRoutePlanner.create(context = applicationContext, apiKey = apiKey)
+        routePlanner = OnlineRoutePlanner.create(context = this@BaseMapUtils, apiKey = apiKey)
     }
 
     private val routePlanningCallback =
