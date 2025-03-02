@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,10 +45,27 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.pages.LoginPage
+import com.example.roadtripbuddy.pages.SignupPage
+import com.example.roadtripbuddy.AuthState
 
 class MainActivity : BaseMapUtils() {
+    val authViewModel: AuthViewModel by viewModels()
+    // cannot use this in this main funciton
+    //val authState = authViewModel.authState.observeAsState()
+    val authState = authViewModel.authState
+    // creating a separate list for conditional items to show on the navbar
+    val conditionalMenuItems = mutableListOf<MenuItems>()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // creating the user state/ view model
+        // creatintg the view model to pass into the login and sign up functions
+
+
         setContent {
             val navController = rememberNavController()
 
@@ -63,6 +82,16 @@ class MainActivity : BaseMapUtils() {
                 composable("about") {
                     AboutScreen(navController = navController)
                 }
+
+                composable("login")
+                {
+                    LoginPage( navController,authViewModel) // this links to the login page
+                }
+                composable("signup")
+                {
+                    SignupPage(navController,authViewModel) // this links to the sign up page
+                }
+
             }
             initRouting()
         }
