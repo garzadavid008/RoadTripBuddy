@@ -1,6 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+        //firebase
+    alias(libs.plugins.google.gms.google.services)
+// fire base
+   // id("com.google.gms.google-services")
 }
 
 val tomtomApiKey: String by project
@@ -74,8 +78,27 @@ dependencies {
     implementation(libs.androidx.drawerlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.runtime.android)
+    implementation(libs.androidx.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // fire base depen
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+//    implementation("com.google.firebase:firebase-analytics")
+//    // you would add other dependencies you will use here from fire base
+//    // for auth
+//    implementation("com.google.firebase:firebase-auth")
+// Use an older compatible Firebase version
+    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
+
+    // If you're using other Firebase services, ensure they match the BOM
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Downgrade Google Play Services dependencies if necessary
+    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
+    debugImplementation(libs.androidx.ui.tooling)
+
 
 }

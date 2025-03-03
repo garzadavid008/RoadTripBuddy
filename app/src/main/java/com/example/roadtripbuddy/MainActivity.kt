@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,10 +45,26 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.pages.LoginPage
+import com.example.roadtripbuddy.pages.SignupPage
+import com.example.roadtripbuddy.AuthState
 
 class MainActivity : BaseMapUtils() {
+    // creating the user state/ view model
+    // creatintg the view model to pass into the login and sign up functions
+ private val authViewModel: AuthViewModel by viewModels()
+    // cannot use this in this main funciton
+    //val authState = authViewModel.authState.observeAsState()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
+
+        // creating a separate list for conditional items to show on the navbar
+        val conditionalMenuItems = mutableListOf<MenuItems>()
+
         setContent {
             val navController = rememberNavController()
 
@@ -63,6 +81,16 @@ class MainActivity : BaseMapUtils() {
                 composable("about") {
                     AboutScreen(navController = navController)
                 }
+
+                composable("login")
+                {
+                    LoginPage( navController,authViewModel) // this links to the login page
+                }
+                composable("signup")
+                {
+                    SignupPage(navController,authViewModel) // this links to the sign up page
+                }
+
             }
             initRouting()
         }
@@ -70,6 +98,9 @@ class MainActivity : BaseMapUtils() {
 
     @Composable
     fun MapScreen(baseMapUtils: BaseMapUtils, navController: NavController) {
+        // user state for auth
+        val authState = authViewModel.authState.observeAsState()
+
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
 
@@ -115,7 +146,19 @@ class MainActivity : BaseMapUtils() {
                                 id = "about",
                                 title = "About",
                                 contentDescription = "Go to About page"
-                            ),
+                            ), * if (authState.value == AuthState.Unauthenicated)( // login
+                                   arrayOf( MenuItems(
+                                        id = "login",
+                                        title = "Login",
+                                        contentDescription = "Login page"
+                                    )
+                            )) else if (authState.value == AuthState.Authenticated)( // singout
+                                    arrayOf( MenuItems(
+                                        id = "logout",
+                                        title = "Logout",
+                                        contentDescription = "Logout"
+                                    )
+                            )) else emptyArray()
                         ),
                         onItemClick = { item ->
                             scope.launch {
@@ -129,6 +172,15 @@ class MainActivity : BaseMapUtils() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
+                                "login" -> navController.navigate("login"){
+                                    popUpTo("map") {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                                "logout" -> authViewModel.signout() // sign out
+
                             }
                         }
                     )
