@@ -28,19 +28,19 @@ fun NavigationDrawer(
     Box(
         modifier = Modifier
             .fillMaxHeight()
-            .fillMaxWidth(0.8f) // ✅ Keeps it at 80% width
-            .background(Color.White) // ✅ No rounded edges
+            .fillMaxWidth(0.8f)
+            .background(Color.White)
             .padding(16.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // **Drawer Header** (User Info + Vehicle Dropdown)
+            // *User Info + Vehicle Dropdown
             DrawerHeader()
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // **Drawer Body** (Menu Items)
+            // Menu Items
             DrawerBody(items = items, onItemClick = onItemClick)
         }
     }
@@ -64,7 +64,7 @@ fun DrawerHeader() {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // **First Row: Profile Image + User Info**
+            //Profile Image + User Info
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -98,7 +98,7 @@ fun DrawerHeader() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // **Vehicles Dropdown**
+            // Vehicles Dropdown
             Text(
                 text = "Primary Vehicle",
                 fontSize = 18.sp,
