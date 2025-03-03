@@ -85,6 +85,13 @@ class AuthViewModel: ViewModel()  {
             }
     }
 
+    // function to signout
+    fun signout()
+    {
+        // change the auth to Unauth
+        _authState.value = AuthState.Unauthenicated;
+    }
+
 }
 
 // a class to handle the authenticated state of the user. if they are login or not

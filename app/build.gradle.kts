@@ -98,6 +98,7 @@ dependencies {
 
     // Downgrade Google Play Services dependencies if necessary
     implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
+    debugImplementation(libs.androidx.ui.tooling)
 
 
 }

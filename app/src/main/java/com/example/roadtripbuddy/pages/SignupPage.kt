@@ -78,6 +78,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
     var password by remember { mutableStateOf("") }
     var repass by remember { mutableStateOf("") }
     var isPasswordValid by remember { mutableStateOf(true) }
+    var name by remember { mutableStateOf("") }
 // holds the auth state
     val authState = authViewModel.authState.observeAsState()
 
@@ -107,8 +108,12 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(text = "Sign Up", modifier = Modifier.padding(20.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("name") }
+                )
             Row (
-
             ){
                 Image(
                     painter = painterResource(id = R.drawable.person),
@@ -195,9 +200,9 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
             // if they already have an account
             TextButton(onClick = {
                 //this will take them to the log in page
-
+                navController.navigate("login")
             }) {
-                Text(text = "Already have an account,Login")
+                Text(text = "Already have an account,Login!")
             }
 
         }

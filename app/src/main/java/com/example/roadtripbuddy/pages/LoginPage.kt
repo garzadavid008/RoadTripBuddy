@@ -63,8 +63,8 @@ fun LoginPage( navController: NavController,authViewModel:AuthViewModel) {
     LaunchedEffect(authState.value) {
         when(authState.value)
         {
-            // this takes the user to the
-            //is AuthState.Authenticated -> navController.navigate
+            // this takes the user to the map/ homepage
+            is AuthState.Authenticated -> navController.navigate("map")
             // any errors
             is AuthState.Error -> Toast.makeText(context,
                 (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT).show()
@@ -149,7 +149,7 @@ fun LoginPage( navController: NavController,authViewModel:AuthViewModel) {
                     fontFamily = FontFamily.Serif
                 )
             }
-            // if they already have an account
+            // if they dont have an account
             TextButton(onClick = {
                 //this will take them to sign up page
                     navController.navigate("signup")

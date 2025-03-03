@@ -51,20 +51,19 @@ import com.example.roadtripbuddy.pages.SignupPage
 import com.example.roadtripbuddy.AuthState
 
 class MainActivity : BaseMapUtils() {
-    val authViewModel: AuthViewModel by viewModels()
+    // creating the user state/ view model
+    // creatintg the view model to pass into the login and sign up functions
+ private val authViewModel: AuthViewModel by viewModels()
     // cannot use this in this main funciton
     //val authState = authViewModel.authState.observeAsState()
-    val authState = authViewModel.authState
-    // creating a separate list for conditional items to show on the navbar
-    val conditionalMenuItems = mutableListOf<MenuItems>()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // creating the user state/ view model
-        // creatintg the view model to pass into the login and sign up functions
 
+
+        // creating a separate list for conditional items to show on the navbar
+        val conditionalMenuItems = mutableListOf<MenuItems>()
 
         setContent {
             val navController = rememberNavController()
@@ -99,6 +98,9 @@ class MainActivity : BaseMapUtils() {
 
     @Composable
     fun MapScreen(baseMapUtils: BaseMapUtils, navController: NavController) {
+        // user state for auth
+        val authState = authViewModel.authState.observeAsState()
+
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
 
@@ -144,7 +146,19 @@ class MainActivity : BaseMapUtils() {
                                 id = "about",
                                 title = "About",
                                 contentDescription = "Go to About page"
-                            ),
+                            ), * if (authState.value == AuthState.Unauthenicated)( // login
+                                   arrayOf( MenuItems(
+                                        id = "login",
+                                        title = "Login",
+                                        contentDescription = "Login page"
+                                    )
+                            )) else if (authState.value == AuthState.Authenticated)( // singout
+                                    arrayOf( MenuItems(
+                                        id = "logout",
+                                        title = "Logout",
+                                        contentDescription = "Logout"
+                                    )
+                            )) else emptyArray()
                         ),
                         onItemClick = { item ->
                             scope.launch {
@@ -158,6 +172,15 @@ class MainActivity : BaseMapUtils() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
+                                "login" -> navController.navigate("login"){
+                                    popUpTo("map") {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                                "logout" -> authViewModel.signout() // sign out
+
                             }
                         }
                     )
