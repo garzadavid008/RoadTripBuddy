@@ -1,10 +1,26 @@
 package com.example.roadtripbuddy
 
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.DefaultLocationProviderFactory
 import com.tomtom.sdk.location.GeoPoint
@@ -18,6 +34,7 @@ import com.tomtom.sdk.map.display.location.LocationMarkerOptions
 import com.tomtom.sdk.map.display.route.Instruction
 import com.tomtom.sdk.map.display.route.RouteOptions
 import com.tomtom.sdk.map.display.ui.MapFragment
+import com.tomtom.sdk.map.display.ui.MapView
 import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.ui.NavigationFragment
 import com.tomtom.sdk.routing.RoutePlanner
@@ -30,13 +47,14 @@ import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.vehicle.Vehicle
+import kotlin.math.log
 
 open class BaseMapUtils : AppCompatActivity() {
 
-    private val apiKey = BuildConfig.TOMTOM_API_KEY
+    val apiKey = BuildConfig.TOMTOM_API_KEY
 
     private lateinit var mapFragment: MapFragment
-    private lateinit var tomTomMap: TomTomMap
+    private var tomTomMap: TomTomMap? = null
     private lateinit var navigationTileStore: NavigationTileStore
     private lateinit var locationProvider: LocationProvider
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
@@ -45,19 +63,101 @@ open class BaseMapUtils : AppCompatActivity() {
     private lateinit var routePlanningOptions: RoutePlanningOptions
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var navigationFragment: NavigationFragment
-    private var isMapInitialized = false
 
-    fun initMap(containerId: Int) {
-        val mapOptions = MapOptions(mapKey = apiKey)
-        mapFragment = MapFragment.newInstance(mapOptions)
-        supportFragmentManager.beginTransaction()
-            .replace(containerId, mapFragment)
-            .commit()
-        mapFragment.getMapAsync { map ->
-            tomTomMap = map
-            enableUserLocation()
-            setUpMapListeners()
+    var isMapInitialized: Boolean = false
+
+
+    // Add this in your MainActivity file (under the imports but before class MainActivity)
+
+    // Custom Saver for MapView state
+    private fun mapViewStateSaver(context: Context) = Saver<MapView, Bundle>(
+        save = { mapView ->
+            val bundle = Bundle()
+            mapView.onSaveInstanceState(bundle)
+            bundle
+        },
+        restore = { savedState ->
+            MapView(
+                context = context,
+                mapOptions = MapOptions(mapKey = apiKey)
+            ).apply {
+                onCreate(savedState)
+            }
         }
+    )
+
+    // Composable function for TomTom Map
+    @Composable
+    fun TomTomMap(modifier: Modifier = Modifier) {
+        val context = LocalContext.current
+        val lifecycleOwner = LocalLifecycleOwner.current
+
+        val mapView = rememberSaveable(saver = mapViewStateSaver(context)) {
+            MapView(
+                context = context,
+                mapOptions = MapOptions(mapKey = apiKey)
+            ).apply {
+                onCreate(Bundle())
+                isMapInitialized = false
+            }
+        }
+
+        DisposableEffect(lifecycleOwner) {
+            val lifecycle = lifecycleOwner.lifecycle
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> {
+                        mapView.onStart()
+                        Log.d("MapView", "ON START")
+                    }
+                    Lifecycle.Event.ON_RESUME -> {
+                        mapView.onResume()
+                        Log.d("MapView", "ON RESUME")
+                    }
+                    Lifecycle.Event.ON_PAUSE -> {
+                        Log.d("MapView", "ON PAUSE")
+                        mapView.onPause()
+                    }
+                    Lifecycle.Event.ON_STOP -> {
+                        Log.d("MapView", "ON STOP")
+                        mapView.onStop()
+                    }
+                    Lifecycle.Event.ON_DESTROY -> {
+                        Log.d("MapView", "ON DESTROY")
+                        mapView.onDestroy()
+                    }
+                    else -> {}
+                }
+            }
+
+            lifecycle.addObserver(observer)
+
+            onDispose {
+                lifecycle.removeObserver(observer)
+                tomTomMap = null
+                if (lifecycle.currentState.isAtLeast(Lifecycle.State.DESTROYED)) {
+                    mapView.onDestroy()
+                }
+            }
+        }
+
+        AndroidView(
+            factory = { mapView },
+            modifier = modifier.fillMaxSize(),
+            update = { view ->
+                view.getMapAsync { map ->
+                    // Configure map when ready
+                    if (!isMapInitialized){
+                        tomTomMap = map
+                        enableUserLocation()
+                        setUpMapListeners()
+                        initRouting()
+                    }
+
+                    isMapInitialized = true
+                }
+            }
+        )
     }
 
     private fun areLocationPermissionsGranted() = ContextCompat.checkSelfPermission(
@@ -95,7 +195,7 @@ open class BaseMapUtils : AppCompatActivity() {
         )
     }
 
-    private fun enableUserLocation() {
+    fun enableUserLocation() {
         if (areLocationPermissionsGranted()){
             initLocationProvider()
             showUserLocation()
@@ -114,13 +214,13 @@ open class BaseMapUtils : AppCompatActivity() {
 
         onLocationUpdateListener =
             OnLocationUpdateListener { location ->
-                tomTomMap.moveCamera(CameraOptions(location.position, zoom = 8.0))
+                tomTomMap?.moveCamera(CameraOptions(location.position, zoom = 8.0))
                 locationProvider.removeOnLocationUpdateListener(onLocationUpdateListener)
             }
         locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
-        tomTomMap.setLocationProvider(locationProvider)
+        tomTomMap?.setLocationProvider(locationProvider)
         val locationMarker = LocationMarkerOptions(type = LocationMarkerOptions.Type.Pointer)
-        tomTomMap.enableLocationMarker(locationMarker)
+        tomTomMap?.enableLocationMarker(locationMarker)
     }
 
     fun initRouting () {
@@ -165,9 +265,9 @@ open class BaseMapUtils : AppCompatActivity() {
                 color = color,
                 tag = route.id.toString(),
             )
-        tomTomMap.addRoute(routeOptions)
+        tomTomMap?.addRoute(routeOptions)
         if (withZoom) {
-            tomTomMap.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
+            tomTomMap?.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
         }
     }
     companion object {
@@ -176,7 +276,7 @@ open class BaseMapUtils : AppCompatActivity() {
 
     private fun calculateRouteTo(destination: GeoPoint) {
         val userLocation =
-            tomTomMap.currentLocation?.position ?: return
+            tomTomMap?.currentLocation?.position ?: return
         val itinerary = Itinerary(origin = userLocation, destination = destination)
         routePlanningOptions =
             RoutePlanningOptions(
@@ -189,7 +289,7 @@ open class BaseMapUtils : AppCompatActivity() {
     }
 
     fun clearMap(){
-        tomTomMap.clear()
+        tomTomMap!!?.clear()
     }
 
     val mapLongClickListener =
@@ -200,6 +300,6 @@ open class BaseMapUtils : AppCompatActivity() {
         }
 
     fun setUpMapListeners() {
-        tomTomMap.addMapLongClickListener(mapLongClickListener)
+        tomTomMap?.addMapLongClickListener(mapLongClickListener)
     }
 }
