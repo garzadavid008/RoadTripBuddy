@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -26,11 +25,13 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,78 +41,60 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentContainerView
 import kotlinx.coroutines.launch
-// Add these imports
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tomtom.sdk.map.display.MapOptions
+import com.tomtom.sdk.map.display.ui.MapView
+import android.content.Context
+import androidx.activity.viewModels
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
-import com.example.roadtripbuddy.AuthState
+
 
 class MainActivity : BaseMapUtils() {
-    // creating the user state/ view model
-    // creatintg the view model to pass into the login and sign up functions
- private val authViewModel: AuthViewModel by viewModels()
-    // cannot use this in this main funciton
-    //val authState = authViewModel.authState.observeAsState()
+    private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-
-        // creating a separate list for conditional items to show on the navbar
-        val conditionalMenuItems = mutableListOf<MenuItems>()
-
         setContent {
-            val navController = rememberNavController()
-
-            NavHost(
-                navController = navController,
-                startDestination = "map"
-            ) {
-                composable("map") {
-                    MapScreen(
-                        baseMapUtils = this@MainActivity,
-                        navController = navController
-                    )
-                }
-                composable("about") {
-                    AboutScreen(navController = navController)
-                }
-
-                composable("login")
-                {
-                    LoginPage( navController,authViewModel) // this links to the login page
-                }
-                composable("signup")
-                {
-                    SignupPage(navController,authViewModel) // this links to the sign up page
-                }
-
-            }
-            initRouting()
+            RoadTripBuddyApp()
         }
+
     }
 
     @Composable
-    fun MapScreen(baseMapUtils: BaseMapUtils, navController: NavController) {
-        // user state for auth
+    private fun RoadTripBuddyApp() {
+        val navController = rememberNavController()
+        NavHost(
+            navController = navController,
+            startDestination = "map"
+        ) {
+            composable("map") { MapScreen(navController) }
+            composable("about") { AboutScreen(navController) }
+            composable("login"){ LoginPage( navController,authViewModel) }
+            composable("signup") {SignupPage(navController,authViewModel) }
+        }
+    }
+
+
+
+
+
+    @Composable
+    fun MapScreen(navController: NavController) {
         val authState = authViewModel.authState.observeAsState()
 
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
-
-        val context = LocalContext.current
-        val fragmentManager = (context as FragmentActivity).supportFragmentManager
-
-        // Use remember to preserve the containerId across recompositions
-        val containerId = remember { View.generateViewId() }
-        var isMapInitialized by rememberSaveable { mutableStateOf(false) }
-
-
         val gesturesStatus by remember {
             derivedStateOf { drawerState.isOpen }
         }
@@ -146,19 +129,19 @@ class MainActivity : BaseMapUtils() {
                                 id = "about",
                                 title = "About",
                                 contentDescription = "Go to About page"
-                            ), * if (authState.value == AuthState.Unauthenicated)( // login
-                                   arrayOf( MenuItems(
+                            ),* if (authState.value == AuthState.Unauthenicated)( // login
+                                    arrayOf( MenuItems(
                                         id = "login",
                                         title = "Login",
                                         contentDescription = "Login page"
                                     )
-                            )) else if (authState.value == AuthState.Authenticated)( // singout
+                                    )) else if (authState.value == AuthState.Authenticated)( // singout
                                     arrayOf( MenuItems(
                                         id = "logout",
                                         title = "Logout",
                                         contentDescription = "Logout"
                                     )
-                            )) else emptyArray()
+                                    )) else emptyArray()
                         ),
                         onItemClick = { item ->
                             scope.launch {
@@ -187,23 +170,8 @@ class MainActivity : BaseMapUtils() {
                 }
             }
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Use AndroidView with the preserved containerId
-                AndroidView(
-                    factory = { ctx ->
-                        FragmentContainerView(ctx).apply {
-                            id = containerId
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            baseMapUtils.initMap(containerId)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-
+            Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)){
+                TomTomMap(modifier = Modifier.fillMaxSize())
                 IconButton(
                     onClick = {
                         scope.launch {
