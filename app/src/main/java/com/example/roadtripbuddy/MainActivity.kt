@@ -58,6 +58,9 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
+import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 class MainActivity : BaseMapUtils() {
@@ -65,6 +68,16 @@ class MainActivity : BaseMapUtils() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // calling firebase/firestore
+        FirebaseApp.initializeApp(this)
+       val firestore = FirebaseFirestore.getInstance()
+//        val companion = Unit
+//        companion object {
+//
+//            lateinit var firestore: FirebaseFirestore // This will hold our Firestore instance
+//
+//        }
+
         setContent {
             RoadTripBuddyApp()
         }

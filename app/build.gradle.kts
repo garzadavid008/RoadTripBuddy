@@ -84,21 +84,37 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // fire base depen
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+//    // fire base depen
+//    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+////    implementation("com.google.firebase:firebase-analytics")
+////    // you would add other dependencies you will use here from fire base
+////    // for auth
+////    implementation("com.google.firebase:firebase-auth")
+//// Use an older compatible Firebase version
+//    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
+//
+//    // If you're using other Firebase services, ensure they match the BOM
 //    implementation("com.google.firebase:firebase-analytics")
-//    // you would add other dependencies you will use here from fire base
-//    // for auth
-//    implementation("com.google.firebase:firebase-auth")
-// Use an older compatible Firebase version
-    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
-
-    // If you're using other Firebase services, ensure they match the BOM
-    implementation("com.google.firebase:firebase-analytics")
-
-    // Downgrade Google Play Services dependencies if necessary
-    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
+//
+//    // Downgrade Google Play Services dependencies if necessary
+//    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
     debugImplementation(libs.androidx.ui.tooling)
+//
+//    // firestore depend
+//    implementation("com.google.firebase:firebase-firestore-ktx")
 
 
+    //implementation(platform("com.google.firebase:firebase-bom:33.10.0")) //Get the latest version from Firebase release notes
+    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
+
+    //implementation('com.google.firebase:firebase-firestore-ktx') // Or firebase-firestore if using Java
+
+
+    implementation("com.google.firebase:firebase-auth") //Let the BOM manage the version
+
+    implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
+ //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
 }
+// Apply resolution strategy outside dependencies
+
+
