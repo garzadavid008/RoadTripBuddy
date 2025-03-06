@@ -1,61 +1,31 @@
 package com.example.roadtripbuddy
 
 
-import android.content.pm.PackageManager
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.drawerlayout.widget.DrawerLayout
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentContainerView
 import kotlinx.coroutines.launch
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavController
-import com.tomtom.sdk.map.display.MapOptions
-import com.tomtom.sdk.map.display.ui.MapView
-import android.content.Context
 import androidx.activity.viewModels
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalContext
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 
@@ -85,88 +55,46 @@ class MainActivity : BaseMapUtils() {
         }
     }
 
-
-
-
-
+    @SuppressLint("ContextCastToActivity")
     @Composable
     fun MapScreen(navController: NavController) {
         val authState = authViewModel.authState.observeAsState()
-
+        val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
         val gesturesStatus by remember {
             derivedStateOf { drawerState.isOpen }
         }
 
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            gesturesEnabled = gesturesStatus,
-            scrimColor = Color.Black.copy(alpha = 0.5f),
-            drawerContent = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(280.dp)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(16.dp)
-                ) {
-                    DrawerHeader()
-                    Spacer(modifier = Modifier.height(24.dp))
-                    DrawerBody(
-                        items = listOf(
-                            MenuItems(
-                                id = "plan_a_trip",
-                                title = "Plan A Trip",
-                                contentDescription = "Go to Plan A Trip"
-                            ),
-                            MenuItems(
-                                id = "settings",
-                                title = "Settings",
-                                contentDescription = "Go to Settings"
-                            ),
-                            MenuItems(
-                                id = "about",
-                                title = "About",
-                                contentDescription = "Go to About page"
-                            ),* if (authState.value == AuthState.Unauthenicated)( // login
-                                    arrayOf( MenuItems(
-                                        id = "login",
-                                        title = "Login",
-                                        contentDescription = "Login page"
-                                    )
-                                    )) else if (authState.value == AuthState.Authenticated)( // singout
-                                    arrayOf( MenuItems(
-                                        id = "logout",
-                                        title = "Logout",
-                                        contentDescription = "Logout"
-                                    )
-                                    )) else emptyArray()
-                        ),
-                        onItemClick = { item ->
-                            scope.launch {
-                                drawerState.close()
-                            }
-                            when (item.id) {
-                                "about" -> navController.navigate("about") {
-                                    popUpTo("map") {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                                "login" -> navController.navigate("login"){
-                                    popUpTo("map") {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                                "logout" -> authViewModel.signout() // sign out
+        var showBottomDrawer by remember { mutableStateOf(false) }
 
-                            }
+        NavigationDrawer(
+            drawerState = drawerState,
+            gesturesStatus = gesturesStatus,
+            authState = authState.value ?: AuthState.Unauthenticated,
+            navController = navController,
+            authViewModel = authViewModel,
+            onItemClick = { item ->
+                scope.launch {
+                    drawerState.close()
+                }
+                when (item.id) {
+                    "about" -> navController.navigate("about") {
+                        popUpTo("map") {
+                            saveState = true
                         }
-                    )
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "login" -> navController.navigate("login"){
+                        popUpTo("map") {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "logout" -> authViewModel.signout() // sign out
+
                 }
             }
         ) {
@@ -192,6 +120,26 @@ class MainActivity : BaseMapUtils() {
                         tint = Color(0xFF2ebcff),
                         modifier = Modifier.size(48.dp)
                     )
+                }
+
+                FloatingActionButton(
+                    onClick = {showBottomDrawer = true},
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(34.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search Navigation",
+                        tint = Color(0xFF2ebcff),
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
+
+                if (showBottomDrawer) {
+                    SearchDrawer(
+                        onDismiss = {showBottomDrawer = false},
+                        performSearch = {query -> activity.performSearch(query)})
                 }
             }
         }
