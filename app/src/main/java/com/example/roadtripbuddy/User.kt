@@ -12,11 +12,15 @@ fun toMap(): Map<String,Any>
         return mapOf(
             "name" to name,
             "email" to email, // can add more here
-            "vehicle" to vehicle,
+            "vehicle" to vehicle
         )
     }
 fun getData(): List<String> {
     return listOf(name,email,vehicle)
+}
+
+fun fetchName():String{
+    return name
 }
     //
 

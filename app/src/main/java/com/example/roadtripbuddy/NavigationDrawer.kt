@@ -1,6 +1,7 @@
 package com.example.roadtripbuddy
 
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,9 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun NavigationDrawer(
     drawerState: DrawerState,
@@ -33,6 +36,8 @@ fun NavigationDrawer(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit // Add this parameter
 ) {
+
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = gesturesStatus,
@@ -94,11 +99,24 @@ fun NavigationDrawer(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DrawerHeader() {
+fun DrawerHeader(userViewModel: UserViewModel = viewModel()) {
     val vehicles = listOf("Toyota Corolla", "Honda Civic", "Ford Mustang")
     var primaryVehicle by remember { mutableStateOf(vehicles[0]) }
     var expanded by remember { mutableStateOf(false) }
 
+     // grabbing the user
+    var userName by remember { mutableStateOf("") }
+    var userEmail by remember { mutableStateOf("") }
+    val user = userViewModel.user
+
+    // boiler plate
+    userName = "User name"
+    userEmail = "test@gmail.com"
+    if (user != null)
+    {
+        userName = user.name
+        userEmail = user.email
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -129,13 +147,13 @@ fun DrawerHeader() {
                 // User Info
                 Column {
                     Text(
-                        text = "User Name",
+                        text = userName,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = "user@example.com",
+                        text = userEmail,
                         fontSize = 14.sp,
                         color = Color.Gray
                     )

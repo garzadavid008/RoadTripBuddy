@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -88,7 +89,12 @@ class AuthViewModel: ViewModel()  {
                     val fireBaseUser = auth.currentUser
                     val userId = fireBaseUser?.uid!!
                     // adding to the db with their specific auth iD
-                    userCollection.document(userId).set(user.toMap())
+                    userCollection.document(userId).set(user.toMap()).addOnSuccessListener {
+                        Log.d("Firestore", "User document added successfully!")
+                    }
+                        .addOnFailureListener { e ->
+                            Log.w("Firestore", "Error adding user document", e)
+                        }
 
                 }else
                 {

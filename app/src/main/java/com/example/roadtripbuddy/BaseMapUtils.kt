@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+import android.Manifest
 import android.app.DownloadManager.Query
 import android.content.Context
 import android.content.pm.PackageManager
@@ -242,18 +243,18 @@ open class BaseMapUtils : AppCompatActivity() {
 
     private fun areLocationPermissionsGranted() = ContextCompat.checkSelfPermission(
         this,
-        android.Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
         this,
-        android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
     private val locationPermissionRequest =
         registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { permissions ->
-            if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true &&
-                permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true)
+            if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true &&
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
             {
                 initLocationProvider()
                 showUserLocation()
@@ -269,8 +270,8 @@ open class BaseMapUtils : AppCompatActivity() {
     private fun requestLocationPermissions() {
         locationPermissionRequest.launch(
             arrayOf(
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
             ),
         )
     }

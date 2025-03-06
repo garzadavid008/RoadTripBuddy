@@ -88,7 +88,6 @@ fun Quiz() {
             Spacer(modifier = Modifier.height(20.dp))
             Question("5","Popularity", listOf("Little", "Moderate","High"))
             Spacer(modifier = Modifier.height(20.dp))
-
         }
     }
 

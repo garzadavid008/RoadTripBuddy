@@ -166,7 +166,13 @@ fun LoginPage( navController: NavController,authViewModel:AuthViewModel) {
             }) {
                 Text(text = "Dont have an account? Sign up here")
             }
-
+            // take them back to home
+            TextButton(onClick = {
+                //this will take them back to the map page
+                navController.navigate("map")
+            }) {
+                Text(text = "Back to Map")
+            }
         }
     }
 

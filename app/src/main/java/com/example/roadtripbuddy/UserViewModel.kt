@@ -11,12 +11,13 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+//import com.example.roadtripbuddy.User
 
 
 // user view model to view user data
 class UserViewModel : ViewModel(){
     var user by mutableStateOf<User?>(null)
-        private set // setting the user var above private so only methods in the class can modify it
+       // private set // setting the user var above private so only methods in the class can modify it
 
 
     init // this runs when the class is created
@@ -27,7 +28,7 @@ class UserViewModel : ViewModel(){
     private fun fetchUser()
     {
         viewModelScope.launch {
-
+            user = getUserFromFirestore()
         }
     }
 
@@ -51,6 +52,7 @@ suspend fun getUserFromFirestore(): User? {
     }
 
 }
+
 
 
 }

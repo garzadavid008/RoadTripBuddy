@@ -26,6 +26,7 @@ import androidx.activity.viewModels
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 //import com.google.firebase.Firebase
@@ -35,7 +36,7 @@ import com.google.firebase.firestore.ktx.firestore
 
 class MainActivity : BaseMapUtils() {
     private val authViewModel: AuthViewModel by viewModels()
-
+    val userViewModel: UserViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
@@ -82,6 +83,7 @@ class MainActivity : BaseMapUtils() {
         var showBottomDrawer by remember { mutableStateOf(false) }
 
         NavigationDrawer(
+
             drawerState = drawerState,
             gesturesStatus = gesturesStatus,
             authState = authState.value ?: AuthState.Unauthenticated,
@@ -99,13 +101,15 @@ class MainActivity : BaseMapUtils() {
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "login" -> navController.navigate("login"){
+
+                    "login" -> navController.navigate("login") {
                         popUpTo("map") {
                             saveState = true
                         }
                         launchSingleTop = true
                         restoreState = true
                     }
+
                     "logout" -> authViewModel.signout() // sign out
 
                 }
