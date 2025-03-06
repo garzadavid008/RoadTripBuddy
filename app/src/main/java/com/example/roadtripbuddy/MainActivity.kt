@@ -58,10 +58,10 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
-import com.google.firebase.Firebase
+//import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
-
+import com.google.firebase.firestore.ktx.firestore
 
 class MainActivity : BaseMapUtils() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -70,7 +70,7 @@ class MainActivity : BaseMapUtils() {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
         FirebaseApp.initializeApp(this)
-       val firestore = FirebaseFirestore.getInstance()
+         val firestore = FirebaseFirestore.getInstance()
 //        val companion = Unit
 //        companion object {
 //

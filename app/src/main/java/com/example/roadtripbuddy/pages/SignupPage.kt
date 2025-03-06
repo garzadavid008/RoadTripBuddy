@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy.pages
 
+import android.provider.ContactsContract.CommonDataKinds.Email
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -46,9 +47,12 @@ import androidx.navigation.NavController
 import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
+//import com.google.firebase.Firebase
+//import com.google.firebase.firestore.firestore
+
 import com.example.roadtripbuddy.User
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.tomtom.sdk.vehicle.Vehicle
 
 //import com.example.playground.isPasswordString
@@ -72,21 +76,10 @@ fun isPasswordString(password:String) : Boolean
     // validtae
     return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecialChar
 }
+
 //@Preview
 @Composable
 fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
-    // creating the instance of db
-    val db = Firebase.firestore
-// function to add the user to db when they auth
-    fun addUser(name:String,password: String,vehicle: String)
-    {
-        // create User obj
-
-        // add to db
-    }
-
-
-
 
     // for the toast
     val context = LocalContext.current
@@ -146,7 +139,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
                 )
                 OutlinedTextField(
                     value = vehicle,
-                    onValueChange = { name = it },
+                    onValueChange = { vehicle = it },
                     label = { Text("Enter Vehicle Type (eg SUV, Sedan)") }
                 )
             }
@@ -206,7 +199,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
                     }
                     else{
                         // singing up the user
-                        authViewModel.signup(email,password)
+                        authViewModel.signup(email,password,name,vehicle)
                     }
                 },
                 modifier = Modifier.padding(16.dp),

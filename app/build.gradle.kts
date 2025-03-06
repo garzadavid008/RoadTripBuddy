@@ -7,11 +7,33 @@ plugins {
    // id("com.google.gms.google-services")
 }
 
+
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.google.protobuf") {
+            useTarget("com.google.protobuf:protobuf-javalite:3.21.7")
+        }
+    }
+}
+
+
+
 val tomtomApiKey: String by project
 
 android {
     namespace = "com.example.roadtripbuddy"
     compileSdk = 35
+
+    packagingOptions {
+        resources.excludes.addAll(listOf(
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE",
+            "META-INF/LICENSE.txt",
+            "META-INF/NOTICE",
+            "META-INF/NOTICE.txt"
+        ))
+    }
 
     defaultConfig {
         applicationId = "com.example.roadtripbuddy"
@@ -73,6 +95,7 @@ dependencies {
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
     implementation("com.tomtom.sdk.navigation:ui:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
+    implementation("com.tomtom.sdk.search:search-online:$version")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)
@@ -107,12 +130,17 @@ dependencies {
     //implementation(platform("com.google.firebase:firebase-bom:33.10.0")) //Get the latest version from Firebase release notes
     implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
 
-    //implementation('com.google.firebase:firebase-firestore-ktx') // Or firebase-firestore if using Java
+    implementation("com.google.firebase:firebase-firestore-ktx") // Or firebase-firestore if using Java
 
 
     implementation("com.google.firebase:firebase-auth") //Let the BOM manage the version
 
-    implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
+//    implementation("com.google.firebase:firebase-firestore-ktx") {
+//        exclude(group = "com.google.protobuf", module = "protobuf-java")
+//    }
+   // implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+
+    //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
  //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
 }
 // Apply resolution strategy outside dependencies
