@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+import android.app.DownloadManager.Query
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -26,6 +27,7 @@ import com.tomtom.sdk.location.DefaultLocationProviderFactory
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.LocationProvider
 import com.tomtom.sdk.location.OnLocationUpdateListener
+import com.tomtom.sdk.location.poi.StandardCategoryId.Companion.Locale
 import com.tomtom.sdk.map.display.MapOptions
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
@@ -46,12 +48,23 @@ import com.tomtom.sdk.routing.options.Itinerary
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
 import com.tomtom.sdk.routing.route.Route
+import com.tomtom.sdk.search.Search
+import com.tomtom.sdk.search.SearchCallback
+import com.tomtom.sdk.search.SearchOptions
+import com.tomtom.sdk.search.SearchResponse
+import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
+import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
+import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
+import com.tomtom.sdk.search.common.error.SearchFailure
+import com.tomtom.sdk.search.model.result.SearchResult
+import com.tomtom.sdk.search.online.OnlineSearch
 import com.tomtom.sdk.vehicle.Vehicle
+import java.util.Locale
 import kotlin.math.log
 
 open class BaseMapUtils : AppCompatActivity() {
 
-    val apiKey = BuildConfig.TOMTOM_API_KEY
+    private val apiKey = BuildConfig.TOMTOM_API_KEY
 
     private lateinit var mapFragment: MapFragment
     private var tomTomMap: TomTomMap? = null
@@ -63,11 +76,15 @@ open class BaseMapUtils : AppCompatActivity() {
     private lateinit var routePlanningOptions: RoutePlanningOptions
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var navigationFragment: NavigationFragment
+    private lateinit var autocompleteOptions: AutocompleteOptions
+    private lateinit var searchApi: Search
 
-    var isMapInitialized: Boolean = false
 
 
-    // Add this in your MainActivity file (under the imports but before class MainActivity)
+
+    private var isMapInitialized: Boolean = false
+
+
 
     // Custom Saver for MapView state
     private fun mapViewStateSaver(context: Context) = Saver<MapView, Bundle>(
@@ -151,6 +168,7 @@ open class BaseMapUtils : AppCompatActivity() {
                         tomTomMap = map
                         enableUserLocation()
                         setUpMapListeners()
+                        initSearch()
                         initRouting()
                     }
 
@@ -159,6 +177,68 @@ open class BaseMapUtils : AppCompatActivity() {
             }
         )
     }
+
+    private fun initSearch(){
+        searchApi = OnlineSearch.create(context = this@BaseMapUtils, apiKey = apiKey)
+        Log.d("BaseMap","SearchApi initialized")
+    }
+
+    fun performSearch(query: String){
+        Log.d("BaseMap", query)
+        val userLocation = tomTomMap?.currentLocation?.position ?: return
+        val searchOptions =
+            SearchOptions(query = query, geoBias = userLocation)
+
+        searchApi.search(
+            searchOptions,
+            object : SearchCallback {
+                override fun onSuccess(result: SearchResponse) {
+                    handleSearchResults(result.results)
+                    Log.d("BaseMapUtils", "search succeeded")
+                }
+
+                override fun onFailure(failure: SearchFailure) {
+                    Toast.makeText(this@BaseMapUtils, failure.message, Toast.LENGTH_SHORT).show()
+                    Log.d("BaseMapUtils", "search failed")
+                }
+            },
+        )
+    }
+
+    private fun handleSearchResults(results: List<SearchResult>){
+        if (results.isEmpty()) {
+            Toast.makeText(this@BaseMapUtils, "No results found", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val firstResult = results.first()
+        clearMap()
+        calculateRouteTo(firstResult.place.coordinate)
+    }
+
+    /*
+
+    fun autocomplete(query: String){
+        autocompleteOptions =
+            AutocompleteOptions(
+                query = query,
+                locale = Locale("en", "US"),
+                position = tomTomMap?.currentLocation?.position
+            )
+
+        searchApi.autocompleteSearch(
+            autocompleteOptions,
+            object : AutocompleteCallback {
+                override fun onSuccess(result: AutocompleteResponse){
+
+                }
+
+                override fun onFailure(failure: SearchFailure) {
+                    Toast.makeText(this@BaseMapUtils, failure.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+     */
 
     private fun areLocationPermissionsGranted() = ContextCompat.checkSelfPermission(
         this,
@@ -223,7 +303,7 @@ open class BaseMapUtils : AppCompatActivity() {
         tomTomMap?.enableLocationMarker(locationMarker)
     }
 
-    fun initRouting () {
+    private fun initRouting () {
         routePlanner = OnlineRoutePlanner.create(context = this@BaseMapUtils, apiKey = apiKey)
     }
 
@@ -289,7 +369,7 @@ open class BaseMapUtils : AppCompatActivity() {
     }
 
     fun clearMap(){
-        tomTomMap!!?.clear()
+        tomTomMap!!.clear()
     }
 
     val mapLongClickListener =

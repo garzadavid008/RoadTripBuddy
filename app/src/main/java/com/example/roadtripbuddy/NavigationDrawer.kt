@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+import android.view.MenuItem
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,32 +19,77 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationDrawer(
-    items: List<MenuItems>,
-    onItemClick: (MenuItems) -> Unit
+    drawerState: DrawerState,
+    gesturesStatus: Boolean,
+    authState: AuthState,
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    onItemClick: (MenuItems) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit // Add this parameter
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxHeight()
-            .fillMaxWidth(0.8f)
-            .background(Color.White)
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // *User Info + Vehicle Dropdown
-            DrawerHeader()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Menu Items
-            DrawerBody(items = items, onItemClick = onItemClick)
-        }
-    }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = gesturesStatus,
+        scrimColor = Color.Black.copy(alpha = 0.5f),
+        modifier = modifier,
+        drawerContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(280.dp)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(16.dp)
+            ) {
+                DrawerHeader()
+                Spacer(modifier = Modifier.height(24.dp))
+                DrawerBody(
+                    items = listOf(
+                        MenuItems(
+                            id = "plan_a_trip",
+                            title = "Plan A Trip",
+                            contentDescription = "Go to Plan A Trip"
+                        ),
+                        MenuItems(
+                            id = "settings",
+                            title = "Settings",
+                            contentDescription = "Go to Settings"
+                        ),
+                        MenuItems(
+                            id = "about",
+                            title = "About",
+                            contentDescription = "Go to About page"
+                        ), *if (authState == AuthState.Unauthenticated) { // login
+                            arrayOf(
+                                MenuItems(
+                                    id = "login",
+                                    title = "Login",
+                                    contentDescription = "Login page"
+                                )
+                            )
+                        } else if (authState == AuthState.Authenticated) { // signout
+                            arrayOf(
+                                MenuItems(
+                                    id = "logout",
+                                    title = "Logout",
+                                    contentDescription = "Logout"
+                                )
+                            )
+                        } else {
+                            emptyArray()
+                        }
+                    ),
+                    onItemClick = onItemClick
+                )
+            }
+        },
+        content = content // Pass the main content here
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
