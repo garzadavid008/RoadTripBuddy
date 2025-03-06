@@ -73,6 +73,7 @@ dependencies {
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
     implementation("com.tomtom.sdk.navigation:ui:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
+    implementation("com.tomtom.sdk.search:search-online:$version")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)

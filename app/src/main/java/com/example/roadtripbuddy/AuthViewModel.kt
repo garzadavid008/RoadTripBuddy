@@ -29,7 +29,7 @@ class AuthViewModel: ViewModel()  {
         // USER IS NOT LOGGED IN
         if(auth.currentUser == null)
         {
-            _authState.value = AuthState.Unauthenicated
+            _authState.value = AuthState.Unauthenticated
         }
         else
         {
@@ -89,7 +89,7 @@ class AuthViewModel: ViewModel()  {
     fun signout()
     {
         // change the auth to Unauth
-        _authState.value = AuthState.Unauthenicated;
+        _authState.value = AuthState.Unauthenticated;
     }
 
 }
@@ -98,7 +98,7 @@ class AuthViewModel: ViewModel()  {
 sealed class AuthState
 {
     object  Authenticated : AuthState()
-    object Unauthenicated: AuthState()
+    object Unauthenticated: AuthState()
     object  Loading : AuthState() // when the user is loading .
     data class Error(val message:String) : AuthState()
 }
