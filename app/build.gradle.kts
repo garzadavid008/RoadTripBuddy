@@ -102,4 +102,24 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
 
 
+    // Testing dependencies
+    //Unit testing
+    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.arch.core:core-testing:2.1.0")
+
+
+    // Jetpack ui testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+
+
+
+    // Espresso ui testing
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+
 }
