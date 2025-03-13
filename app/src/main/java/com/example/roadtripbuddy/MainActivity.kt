@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image // Renders images in JetpackCompose
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -13,8 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush // Need to be able to use gradiant backgrounds
+import androidx.compose.ui.layout.ContentScale // For the images to scale properly
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle // Specifies if text is either normal or italic
+import androidx.compose.ui.text.TextStyle // defines styles for text, font size, colour, height,ect
+import androidx.compose.ui.res.painterResource // For loading drawable images
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.navigation.compose.rememberNavController
@@ -51,8 +57,8 @@ class MainActivity : BaseMapUtils() {
         ) {
             composable("map") { MapScreen(navController) }
             composable("about") { AboutScreen(navController) }
-            composable("login"){ LoginPage( navController,authViewModel) }
-            composable("signup") {SignupPage(navController,authViewModel) }
+            composable("login") { LoginPage(navController, authViewModel) }
+            composable("signup") { SignupPage(navController, authViewModel) }
         }
     }
 
@@ -68,7 +74,6 @@ class MainActivity : BaseMapUtils() {
         val gesturesStatus by remember {
             derivedStateOf { drawerState.isOpen }
         }
-
         var showBottomDrawer by remember { mutableStateOf(false) }
 
         var destinationList by mutableStateOf(mutableListOf<String>())
@@ -91,19 +96,21 @@ class MainActivity : BaseMapUtils() {
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "login" -> navController.navigate("login"){
+
+                    "login" -> navController.navigate("login") {
                         popUpTo("map") {
                             saveState = true
                         }
                         launchSingleTop = true
                         restoreState = true
                     }
+
                     "logout" -> authViewModel.signout() // sign out
 
                 }
             }
         ) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)){
+            Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
                 TomTomMap(modifier = Modifier.fillMaxSize())
                 IconButton(
                     onClick = {
@@ -128,7 +135,7 @@ class MainActivity : BaseMapUtils() {
                 }
 
                 FloatingActionButton(
-                    onClick = {showBottomDrawer = true},
+                    onClick = { showBottomDrawer = true },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(34.dp)
@@ -155,6 +162,7 @@ class MainActivity : BaseMapUtils() {
                         clearMap = {activity.clearMap()}
                     )
 
+
             }
         }
     }
@@ -162,14 +170,20 @@ class MainActivity : BaseMapUtils() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun AboutScreen(navController: NavController) {
+        val bgImage1 = painterResource(id = R.drawable.car_on_road_1740419)
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     colors = topAppBarColors(
-                        containerColor = Color(0xFF6acfff),
-                        titleContentColor = Color(0xFF2ebcff),
+                        containerColor = Color.Transparent, // Makes the top bar invisible
+                        titleContentColor = Color.Transparent, // Hides the title text
                     ),
-                    title = { Text("About") },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Main Menu", color = Color.Black)
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
@@ -177,48 +191,69 @@ class MainActivity : BaseMapUtils() {
                                 contentDescription = "Back"
                             )
                         }
-                    }
+                    },
+                    modifier = Modifier.background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.White, Color.Gray.copy(alpha = 0.3f))
+                        )
+                    )
                 )
             }
         ) { innerPadding ->
-            Column(
+            Box(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize()
             ) {
+                // Background Image
+                Image(
+                    painter = bgImage1,
+                    contentDescription = "Background Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Main Content
                 Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 80.dp, start = 16.dp, end = 16.dp), // Moves text up
+                    verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "RoadTripBuddy",
                         style = MaterialTheme.typography.headlineMedium,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        color = Color.White
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Planning for the Road",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = TextStyle(fontStyle = FontStyle.Italic),
                         textAlign = TextAlign.Center,
-                        //fontStyle = FontStyle.Italic
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "RoadTripBuddy is an application that helps users by providing information in regard to selected travel destinations, recommendations of places to visit from information provided, while providing in data regarding estimated travel time, fuel usage, possible locations for rest, and alternative routes should traffic be predicted to be heavy in certain time periods.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Developer information:",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Christopher Lopez\nDavid Garza\nJesus Aguilar\nLuis Vicencio",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "RoadTripBuddy is an application that helps users by providing information in regard to selected travel destinations, recommendations of places to visit from information provided, while providing in data regarding estimated travel time, fuel usage, possible locations for rest, and alternative routes should traffic be predicted to be heavy in certain time periods.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Developer information:",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = "Christopher Lopez\nDavid Garza\nJesus Aguilar\nLuis Vicencio",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }
