@@ -3,7 +3,6 @@ package com.example.roadtripbuddy
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image // Renders images in JetpackCompose
@@ -31,6 +30,7 @@ import androidx.navigation.NavController
 import androidx.activity.viewModels
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
@@ -62,7 +62,9 @@ class MainActivity : BaseMapUtils() {
         }
     }
 
-    @SuppressLint("ContextCastToActivity")
+    @SuppressLint("ContextCastToActivity", "UnrememberedMutableState",
+        "MutableCollectionMutableState"
+    )
     @Composable
     fun MapScreen(navController: NavController) {
         val authState = authViewModel.authState.observeAsState()
@@ -73,6 +75,8 @@ class MainActivity : BaseMapUtils() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
+
+        var destinationList by mutableStateOf(mutableListOf<String>())
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -143,12 +147,22 @@ class MainActivity : BaseMapUtils() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-
-                if (showBottomDrawer) {
                     SearchDrawer(
-                        onDismiss = { showBottomDrawer = false },
-                        performSearch = { query -> activity.performSearch(query) })
-                }
+                        visible = showBottomDrawer,
+                        onDismiss = {showBottomDrawer = false},
+                        destinationList = destinationList,
+                        performSearch = {query, eta -> activity.performSearch(query, eta)},
+                        performAutocomplete = {query, onResult ->
+                            activity.performAutocomplete(query, onResult)
+                        },
+                        onRouteRequest = {waypoints ->
+                            destinationList = waypoints.toMutableList()
+                            activity.onRouteRequest(waypoints)
+                                         },
+                        clearMap = {activity.clearMap()}
+                    )
+
+
             }
         }
     }
