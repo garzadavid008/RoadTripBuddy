@@ -155,9 +155,9 @@ class MainActivity : BaseMapUtils() {
                         performAutocomplete = {query, onResult ->
                             activity.performAutocomplete(query, onResult)
                         },
-                        onRouteRequest = {waypoints ->
+                        onRouteRequest = {waypoints, eta ->
                             destinationList = waypoints.toMutableList()
-                            activity.onRouteRequest(waypoints)
+                            activity.onRouteRequest(waypoints, eta)
                                          },
                         clearMap = {activity.clearMap()}
                     )

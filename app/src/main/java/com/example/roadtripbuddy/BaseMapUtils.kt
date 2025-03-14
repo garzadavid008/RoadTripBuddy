@@ -510,17 +510,16 @@ open class BaseMapUtils : AppCompatActivity() {
             tomTomMap?.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
         }
     }
+
     companion object {
         private const val ZOOM_TO_ROUTE_PADDING = 100
     }
 
-    fun onRouteRequest(list: MutableList<String>){
-        Log.d("onRouteRequest", list.toString()) //Debug Code
-        calculateRouteTo(list)
-    }
-
     //Calculates a route based on a list of addresses
-    private fun calculateRouteTo(list: MutableList<String>) {
+    fun onRouteRequest(
+        list: MutableList<String>,
+        etaState: MutableState<String> // Add this parameter
+    ) {
         routeLocationsConstructor(list) {
             if (lastDestination == null) {
                 Log.e("BaseMapUtils", "Destination not found.")
@@ -543,7 +542,26 @@ open class BaseMapUtils : AppCompatActivity() {
                     guidanceOptions = GuidanceOptions(),
                     vehicle = Vehicle.Car(),
                 )
-            routePlanner.planRoute(routePlanningOptions, routePlanningCallback)
+
+            // Define the callback inline to capture `etaState`
+            val callback = object : RoutePlanningCallback {
+                override fun onSuccess(result: RoutePlanningResponse) {
+                    route = result.routes.first()
+                    route?.let {
+                        drawRoute(it) // Draw the route
+                        // Update ETA state with travelTime
+                        etaState.value = it.summary.travelTime.toString()
+                    }
+                }
+
+                override fun onFailure(failure: RoutingFailure) {
+                    Toast.makeText(this@BaseMapUtils, failure.message, Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onRoutePlanned(route: Route) = Unit
+            }
+
+            routePlanner.planRoute(routePlanningOptions, callback) // Use the new callback
         }
     }
 
