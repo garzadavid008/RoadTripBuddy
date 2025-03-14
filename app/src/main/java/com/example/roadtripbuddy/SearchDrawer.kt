@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusChanged
@@ -67,6 +68,7 @@ import com.google.firebase.components.Lazy
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.routing.options.ItineraryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 //Compose for the Search/Route page
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,7 +80,7 @@ fun SearchDrawer(
     modifier: Modifier = Modifier,
     performSearch: (String, MutableState<String>) -> Unit,//Function Parameter
     performAutocomplete: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (MutableList<String>) -> Unit,//Function Parameter
+    onRouteRequest: (MutableList<String>, MutableState<String>) -> Unit,//Function Parameter
     clearMap: () -> Unit //Function Parameter
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -89,6 +91,8 @@ fun SearchDrawer(
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
     var selectedLocation by rememberSaveable { mutableStateOf("") }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
     val etaState = remember { mutableStateOf("") }
+    var initialRouteSet  = rememberSaveable { mutableStateOf(false) }
+    var isPageReady = rememberSaveable { mutableStateOf(false) }
 
     //AnimatedVisibility keeps state when the SearchDrawer is dismissed/not displayed
     AnimatedVisibility(visible = visible) {
@@ -101,6 +105,7 @@ fun SearchDrawer(
             if (showDetails) {
                 LocationDetailsPage(
                     locationName = selectedLocation,
+                    isRouteReady = isPageReady,
                     initialETA = etaState,
                     onBack = {
                         showDetails = false
@@ -115,14 +120,15 @@ fun SearchDrawer(
             } else if (showRoutePage){
                 RouteEditPage(
                     initialDestination = selectedLocation,
+                    initialRouteSet = initialRouteSet,
                     destinationList = destinationList,
                     onBack = {
                         showRoutePage = false
                         clearMap()
                     },
-                    onRoute = {list ->
+                    onRoute = {list, eta ->
                         clearMap()
-                        onRouteRequest(list)},
+                        onRouteRequest(list, eta)},
                     performAutocomplete = performAutocomplete
                 )
             }
@@ -196,88 +202,104 @@ fun SearchDrawer(
 @Composable
 fun LocationDetailsPage(
     locationName: String,
+    isRouteReady: MutableState<Boolean>,
     initialETA: MutableState<String>,
     onBack: () -> Unit,
     onRouteClick: () -> Unit
 ) {
-
     val ETA = initialETA.value
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-    ) {
-        // Back button
-        Box(
-            modifier = Modifier
-                .clickable { onBack() }
-                .padding(bottom = 16.dp)
-        ) {
-            Text("← Back", color = Color.Blue)
+    LaunchedEffect(ETA) { // This ensures it updates when ETA changes
+        if (ETA.isNotEmpty()) {
+            isRouteReady.value = true
         }
+    }
 
-        // Location details
-        Text(locationName, style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Address: 123 Example Street", style = MaterialTheme.typography.bodyMedium)
-        Text("City: Sample City", style = MaterialTheme.typography.bodyMedium)
-        Text("Category: Landmark", style = MaterialTheme.typography.bodyMedium)
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Route button
-        Button(
-            onClick = {onRouteClick()},
+    if (isRouteReady.value) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF6ACFFF),
-                contentColor = Color.White
-            )
-        ){
-            Text(ETA)
+                .padding(24.dp)
+        ) {
+            // Back button
+            Box(
+                modifier = Modifier
+                    .clickable { onBack() }
+                    .padding(bottom = 16.dp)
+            ) {
+                Text("← Back", color = Color.Blue)
+            }
+
+            // Location details
+            Text(locationName, style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Address: 123 Example Street", style = MaterialTheme.typography.bodyMedium)
+            Text("City: Sample City", style = MaterialTheme.typography.bodyMedium)
+            Text("Category: Landmark", style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Route button
+            Button(
+                onClick = {
+                    onRouteClick()
+                    isRouteReady.value = false
+                          },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6ACFFF),
+                    contentColor = Color.White
+                )
+            ){
+                Text(ETA)
+            }
         }
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RouteEditPage(
     initialDestination: String,
+    initialRouteSet: MutableState<Boolean>,
     destinationList: MutableList<String>,
     onBack: () -> Unit,
-    onRoute: (MutableList<String>) -> Unit,
+    onRoute: (MutableList<String>, MutableState<String>) -> Unit,
     performAutocomplete: (String, (List<String>) -> Unit) -> Unit
 ) {
 
-    Log.d("INITIAL DESTINATION", initialDestination)
-    val waypoints = remember {
-        mutableStateListOf<String>().apply {
-            addAll(
-                if (destinationList.isNotEmpty()) destinationList
-                else listOf(initialDestination)
+    val waypoints = remember { mutableStateListOf<String>()}
+    val ETA = remember { mutableStateOf("") }
+
+    // Initialize waypoints only once
+    LaunchedEffect(Unit) {
+        if (waypoints.isEmpty()) {
+            waypoints.addAll(
+                destinationList.ifEmpty { listOf(initialDestination) }
             )
         }
     }
+
     val focusManager = LocalFocusManager.current
 
+    // Function to update the route and trigger onRoute
     fun updateRoute() {
         val fullRoute = mutableListOf<String>().apply {
             addAll(waypoints.filter { it.isNotBlank() })
         }
-        onRoute(fullRoute)
+        onRoute(fullRoute, ETA) // Call onRoute to process the route
     }
 
-    var initialRouteSet by rememberSaveable { mutableStateOf(false) }
+
+    //This makes sure the route isn't redrawn when the user closes and reopens the searchDrawer
     LaunchedEffect(Unit) {
-        if (!initialRouteSet) {
+        if (!initialRouteSet.value) {
             updateRoute()
-            initialRouteSet = true
         }
     }
+
+
 
     Box(
         modifier = Modifier
@@ -288,6 +310,15 @@ fun RouteEditPage(
                 })
             }
     ) {
+
+        Text(
+            text = ETA.value, // ETA is your MutableState<String>
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -334,7 +365,7 @@ fun RouteEditPage(
                             },
                             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(
-                                onDone = {
+                                onDone = { //When user presses done ->
                                     waypoints[index] = query
                                     updateRoute()
                                     focusManager.clearFocus()
@@ -349,7 +380,7 @@ fun RouteEditPage(
                                         suggestions = emptyList()
                                     }
                                 }
-                                .onKeyEvent { keyEvent ->
+                                .onKeyEvent { keyEvent -> // For testing basically, makes the Enter button on our keyboards commit a waypoint[index] change
                                     if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
                                         waypoints[index] = query
                                         updateRoute()
@@ -360,20 +391,23 @@ fun RouteEditPage(
                                     }
                                 }
                         )
-
-                        IconButton( //REMOVE WAYPOINT BUTTON
-                            onClick = {
-                                waypoints.removeAt(index)
-                                updateRoute()
-                            },
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Remove Waypoint",
-                                tint = Color.Red
-                            )
+                        //REMOVE WAYPOINT BUTTON
+                        if (waypoints.size > 1) { // Waypoint size should always be > 1
+                            IconButton(
+                                onClick = {
+                                    waypoints.removeAt(index)
+                                    updateRoute()
+                                },
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Remove Waypoint",
+                                    tint = Color.Red
+                                )
+                            }
                         }
+
                     }
 
                     LaunchedEffect(query) { //Pulsing the API call for autocomplete
@@ -387,6 +421,7 @@ fun RouteEditPage(
                         }
                     }
 
+                    // Only display autocomplete results/suggestions when the user is actively using the textField and suggestions are not empty
                     if (isFieldFocused && suggestions.isNotEmpty()) {
                         Column(
                             modifier = Modifier
