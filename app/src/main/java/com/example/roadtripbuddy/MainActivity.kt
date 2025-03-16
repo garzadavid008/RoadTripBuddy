@@ -33,6 +33,10 @@ import com.example.roadtripbuddy.pages.SignupPage
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
+import android.app.Application
+import com.example.roadtripbuddy.pages.Suggestions
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
 
 class MainActivity : BaseMapUtils() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -42,6 +46,10 @@ class MainActivity : BaseMapUtils() {
         // calling firebase/firestore
         FirebaseApp.initializeApp(this)
          val firestore = FirebaseFirestore.getInstance()
+        //creating the places api instance
+        Places.initialize(applicationContext, getString(R.string.google_maps_key))
+        val placesClient: PlacesClient = Places.createClient(this)
+
 //        val companion = Unit
 //        companion object {
 //
@@ -66,6 +74,7 @@ class MainActivity : BaseMapUtils() {
             composable("about") { AboutScreen(navController) }
             composable("login"){ LoginPage( navController,authViewModel) }
             composable("signup") {SignupPage(navController,authViewModel) }
+            composable("suggestion") { Suggestions(navController) }
         }
     }
 
@@ -111,7 +120,7 @@ class MainActivity : BaseMapUtils() {
                     }
 
                     "logout" -> authViewModel.signout() // sign out
-
+                    "suggest" -> navController.navigate("suggestion")
                 }
             }
         ) {

@@ -61,6 +61,11 @@ fun NavigationDrawer(
                             contentDescription = "Go to Plan A Trip"
                         ),
                         MenuItems(
+                            id = "suggest",
+                            title = "Suggest",
+                            contentDescription = "Go to Settings"
+                        ),
+                        MenuItems(
                             id = "settings",
                             title = "Settings",
                             contentDescription = "Go to Settings"

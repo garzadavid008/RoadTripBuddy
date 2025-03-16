@@ -1,5 +1,7 @@
 package com.example.roadtripbuddy.pages
 
+import PlacesViewModel
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,11 +17,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
@@ -27,58 +31,96 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.roadtripbuddy.PlacesViewModelFactory
 import com.example.roadtripbuddy.R
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
 
-// data class to hold the locations data
-data class Places (var name:String, var descrip:String)
 
+// this will carry the list of LatLng objects
+val listofLATandLong : MutableList<LatLng> = mutableListOf()
 
+// this function will have a button that when clicked it will push geo codes into a list so we can use that for the map
 
 
 @Preview
 @Composable
-fun  placeCard(name:String="",description:String ="")
+fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0) )
 {
+    var isVisible by remember { mutableStateOf(true) }
     // card for suggested place
+
+AnimatedVisibility(visible = isVisible) {
     OutlinedCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         border = BorderStroke(1.dp, Color.Black),
         modifier = Modifier
-            .size(width = 270.dp, height = 100.dp).padding(10.dp)
-             ,
+            .wrapContentSize()
+            .size(width = 400.dp, height = 240.dp).padding(10.dp).fillMaxWidth()
+        ,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image")
             Column {
                 Text("Place $name", modifier = Modifier.padding(10.dp))
-                Text("Place $description",modifier = Modifier.padding(10.dp))
-
+                Text("Rating $rating",modifier = Modifier.padding(10.dp))
+                Text("Address $address",modifier = Modifier.padding(10.dp))
+                    FilledTonalButton(onClick = {
+                        listofLATandLong.add(latlng)
+                        // make the button invis
+                        isVisible = false
+                    }
+                    ) {
+                        Text("+")
+                    }
+                }
             }
         }
     }
+
+
+
 }
+
 
 
 // since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
-fun Suggestions(placesList:List<Places> = emptyList())
+fun Suggestions(navController: NavController)
 {
+    // call the places view model
+    // placeList will contain all suggested places
+    val placesClient: PlacesClient = Places.createClient(LocalContext.current) // client resonsible for sending the request
+    val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
+    val placeList by viewModel.restaurants.collectAsState() // contains the list of nearby places and we display it on the screen
+
+    // this function will run when page is loaded
+    LaunchedEffect(Unit) {
+        //viewModel.getNearbyRestaurants(26.243629, -98.245079) // Example location
+        viewModel.getTextSearch("whataburger",26.243629, -98.245079)
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -109,17 +151,18 @@ fun Suggestions(placesList:List<Places> = emptyList())
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Discover More",
+                        "Places Near By",
                        // style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
             // this will generate the list of places
-            items(placesList)
+            items(placeList)
             { place ->
-                placeCard(place.name,place.descrip)
+                placeCard(place.name,place.rating,place.address,place.latAndLng)
             }
         }
 
     }
 }
+

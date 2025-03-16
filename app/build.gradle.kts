@@ -135,6 +135,14 @@ dependencies {
 
     implementation("com.google.firebase:firebase-auth") //Let the BOM manage the version
 
+    // for http request
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
+
+    // google places api sdk
+    implementation("com.google.android.libraries.places:places:3.5.0")
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+
 //    implementation("com.google.firebase:firebase-firestore-ktx") {
 //        exclude(group = "com.google.protobuf", module = "protobuf-java")
 //    }
