@@ -30,7 +30,6 @@ import androidx.navigation.NavController
 import androidx.activity.viewModels
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
@@ -152,8 +151,8 @@ class MainActivity : BaseMapUtils() {
                         onDismiss = {showBottomDrawer = false},
                         destinationList = destinationList,
                         performSearch = {query, eta -> activity.performSearch(query, eta)},
-                        performAutocomplete = {query, onResult ->
-                            activity.performAutocomplete(query, onResult)
+                        resolveAndSuggest = {query, onResult ->
+                            activity.resolveAndSuggest(query, onResult)
                         },
                         onRouteRequest = {waypoints, eta ->
                             destinationList = waypoints.toMutableList()

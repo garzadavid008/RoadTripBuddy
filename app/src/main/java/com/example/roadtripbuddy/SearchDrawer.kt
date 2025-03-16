@@ -79,7 +79,7 @@ fun SearchDrawer(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     performSearch: (String, MutableState<String>) -> Unit,//Function Parameter
-    performAutocomplete: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
+    resolveAndSuggest: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
     onRouteRequest: (MutableList<String>, MutableState<String>) -> Unit,//Function Parameter
     clearMap: () -> Unit //Function Parameter
 ) {
@@ -90,7 +90,7 @@ fun SearchDrawer(
     var showDetails by rememberSaveable { mutableStateOf(false) } // Boolean for the LocationDetailsPage, if true it displays said compose
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
     var selectedLocation by rememberSaveable { mutableStateOf("") }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
-    val etaState = remember { mutableStateOf("") }
+    var etaState = remember { mutableStateOf("") }
     var initialRouteSet  = rememberSaveable { mutableStateOf(false) }
     var isPageReady = rememberSaveable { mutableStateOf(false) }
 
@@ -110,6 +110,8 @@ fun SearchDrawer(
                     onBack = {
                         showDetails = false
                         clearMap()
+                        etaState = mutableStateOf("")
+                        isPageReady = mutableStateOf(false)
                     },
                     onRouteClick = { // User clicks route button, takes them to RoutEditPage
                         showDetails = false
@@ -129,7 +131,7 @@ fun SearchDrawer(
                     onRoute = {list, eta ->
                         clearMap()
                         onRouteRequest(list, eta)},
-                    performAutocomplete = performAutocomplete
+                    performAutocomplete = resolveAndSuggest
                 )
             }
             else
@@ -160,7 +162,7 @@ fun SearchDrawer(
                     LaunchedEffect(query) { //Pulsing the API call for autocomplete
                         if (query.isNotEmpty()) {
                             delay(300)
-                            performAutocomplete(query) { initSuggestions ->
+                            resolveAndSuggest(query) { initSuggestions ->
                                 suggestions = initSuggestions.distinct()
                             }
                         } else {
