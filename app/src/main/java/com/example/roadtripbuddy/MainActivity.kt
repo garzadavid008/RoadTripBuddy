@@ -3,9 +3,9 @@ package com.example.roadtripbuddy
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image // Renders images in JetpackCompose
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,8 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush // Need to be able to use gradiant backgrounds
+import androidx.compose.ui.layout.ContentScale // For the images to scale properly
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle // Specifies if text is either normal or italic
+import androidx.compose.ui.text.TextStyle // defines styles for text, font size, colour, height,ect
+import androidx.compose.ui.res.painterResource // For loading drawable images
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.navigation.compose.rememberNavController
@@ -26,37 +31,28 @@ import androidx.activity.viewModels
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
-//import com.google.firebase.Firebase
-import com.google.firebase.FirebaseApp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import android.app.Application
+import androidx.compose.ui.text.style.TextAlign
 import com.example.roadtripbuddy.pages.Suggestions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+
 
 class MainActivity : BaseMapUtils() {
     private val authViewModel: AuthViewModel by viewModels()
     val userViewModel: UserViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
         FirebaseApp.initializeApp(this)
-         val firestore = FirebaseFirestore.getInstance()
+        val firestore = FirebaseFirestore.getInstance()
         //creating the places api instance
         Places.initialize(applicationContext, getString(R.string.google_maps_key))
         val placesClient: PlacesClient = Places.createClient(this)
-
-//        val companion = Unit
-//        companion object {
-//
-//            lateinit var firestore: FirebaseFirestore // This will hold our Firestore instance
-//
-//        }
-
         setContent {
             RoadTripBuddyApp()
         }
@@ -72,13 +68,15 @@ class MainActivity : BaseMapUtils() {
         ) {
             composable("map") { MapScreen(navController) }
             composable("about") { AboutScreen(navController) }
-            composable("login"){ LoginPage( navController,authViewModel) }
-            composable("signup") {SignupPage(navController,authViewModel) }
+            composable("login") { LoginPage(navController, authViewModel) }
+            composable("signup") { SignupPage(navController, authViewModel) }
             composable("suggestion") { Suggestions(navController) }
         }
     }
 
-    @SuppressLint("ContextCastToActivity")
+    @SuppressLint("ContextCastToActivity", "UnrememberedMutableState",
+        "MutableCollectionMutableState"
+    )
     @Composable
     fun MapScreen(navController: NavController) {
         val authState = authViewModel.authState.observeAsState()
@@ -88,11 +86,11 @@ class MainActivity : BaseMapUtils() {
         val gesturesStatus by remember {
             derivedStateOf { drawerState.isOpen }
         }
-
         var showBottomDrawer by remember { mutableStateOf(false) }
 
-        NavigationDrawer(
+        var destinationList by mutableStateOf(mutableListOf<String>())
 
+        NavigationDrawer(
             drawerState = drawerState,
             gesturesStatus = gesturesStatus,
             authState = authState.value ?: AuthState.Unauthenticated,
@@ -124,7 +122,7 @@ class MainActivity : BaseMapUtils() {
                 }
             }
         ) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)){
+            Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
                 TomTomMap(modifier = Modifier.fillMaxSize())
                 IconButton(
                     onClick = {
@@ -149,7 +147,7 @@ class MainActivity : BaseMapUtils() {
                 }
 
                 FloatingActionButton(
-                    onClick = {showBottomDrawer = true},
+                    onClick = { showBottomDrawer = true },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(34.dp)
@@ -161,12 +159,22 @@ class MainActivity : BaseMapUtils() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-
-                if (showBottomDrawer) {
                     SearchDrawer(
+                        visible = showBottomDrawer,
                         onDismiss = {showBottomDrawer = false},
-                        performSearch = {query -> activity.performSearch(query)})
-                }
+                        destinationList = destinationList,
+                        performSearch = {query, eta -> activity.performSearch(query, eta)},
+                        resolveAndSuggest = {query, onResult ->
+                            activity.resolveAndSuggest(query, onResult)
+                        },
+                        onRouteRequest = {waypoints, eta ->
+                            destinationList = waypoints.toMutableList()
+                            activity.onRouteRequest(waypoints, eta)
+                                         },
+                        clearMap = {activity.clearMap()}
+                    )
+
+
             }
         }
     }
@@ -174,14 +182,20 @@ class MainActivity : BaseMapUtils() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun AboutScreen(navController: NavController) {
+        val bgImage1 = painterResource(id = R.drawable.car_on_road_1740419)
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     colors = topAppBarColors(
-                        containerColor = Color(0xFF6acfff),
-                        titleContentColor = Color(0xFF2ebcff),
+                        containerColor = Color.Transparent, // Makes the top bar invisible
+                        titleContentColor = Color.Transparent, // Hides the title text
                     ),
-                    title = { Text("About") },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Main Menu", color = Color.Black)
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
@@ -189,21 +203,69 @@ class MainActivity : BaseMapUtils() {
                                 contentDescription = "Back"
                             )
                         }
-                    }
+                    },
+                    modifier = Modifier.background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.White, Color.Gray.copy(alpha = 0.3f))
+                        )
+                    )
                 )
             }
         ) { innerPadding ->
-            Column(
+            Box(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize()
             ) {
-                Text(
-                    text = "HELLO",
-                    style = MaterialTheme.typography.headlineMedium
+                // Background Image
+                Image(
+                    painter = bgImage1,
+                    contentDescription = "Background Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
+
+                // Main Content
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 80.dp, start = 16.dp, end = 16.dp), // Moves text up
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "RoadTripBuddy",
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Planning for the Road",
+                        style = TextStyle(fontStyle = FontStyle.Italic),
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "RoadTripBuddy is an application that helps users by providing information in regard to selected travel destinations, recommendations of places to visit from information provided, while providing in data regarding estimated travel time, fuel usage, possible locations for rest, and alternative routes should traffic be predicted to be heavy in certain time periods.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Developer information:",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Christopher Lopez\nDavid Garza\nJesus Aguilar\nLuis Vicencio",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                }
             }
         }
     }
