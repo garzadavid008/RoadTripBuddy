@@ -25,6 +25,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
@@ -72,6 +73,7 @@ import com.tomtom.sdk.search.online.OnlineSearch
 import com.tomtom.sdk.vehicle.Vehicle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -249,37 +251,42 @@ open class BaseMapUtils : AppCompatActivity() {
             }
 
             if (result is AutocompleteResult){ //If the object returned is a brand/poi category
-                //POI's NEAR FUNCTION CALL GOES HERE
-                // preparing the call
-             //   val placesClient: PlacesClient = Places.createClient(LocalContext.current) // client resonsible for sending the request
-               // val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
-                //val placeList by viewModel.restaurants.collectAsState() // contains the list of nearby places and we display it on the screen
-
+              // val isBrand = result.segments.any{it is AutocompleteSegmentBrand}
+                val brandName = result.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name.toString()
+                Log.i("Chris"," Brand NAme : $brandName ")
                 val context = this@BaseMapUtils
                 val viewModel = createPlacesClientAndViewmodel(context)
                 // grabbing the users current position
                 val location = tomTomMap?.currentLocation?.position
                 if(location != null)
                 {
+
                     // geo points of the users location
                     val lat = location.latitude.toDouble()
                     val long = location.longitude.toDouble()
+                   // Log.i("Chris","lat and long :  $lat $long")
                     // since its an api call, we need to do in a asyn structure
                     CoroutineScope(Dispatchers.IO).launch {
-                        viewModel.getTextSearch(query,lat,long) // call the function
-                        withContext(Dispatchers.Main)
-                        {
-                            val placeList = viewModel.restaurants.value
-                            // loop through the list of places that were captured
-                            placeList.forEach{ places ->
-                                // add markers to the map
-                                val geoPoint = GeoPoint(places.latAndLng.latitude,places.latAndLng.longitude)
-                                // creating the mark
-                                val mark = MarkerOptions(
-                                    coordinate = geoPoint,
-                                    pinImage = ImageFactory.fromResource(R.drawable.map_marker)
-                                )
-                                tomTomMap?.addMarker(mark)
+                        viewModel.getTextSearch("starbucks",lat,long) // call the function
+                        Log.i("Chris","lat and long :  $lat $long")
+                        lifecycleScope.launch {
+                            viewModel.restaurants.collectLatest {
+                                val placeList = viewModel.restaurants.value
+                                Log.i("Chris", "list created : ${placeList.size}")
+                                // loop through the list of places that were captured
+                                placeList.forEach { places ->
+                                    Log.i("Chris", "Name : ${places.name} ")
+                                    // add markers to the map
+                                    val geoPoint =
+                                        GeoPoint(places.latAndLng.latitude, places.latAndLng.longitude)
+                                    // creating the mark
+                                    val mark = MarkerOptions(
+                                        coordinate = geoPoint,
+                                        pinImage = ImageFactory.fromResource(R.drawable.map_marker)
+                                    )
+                                    tomTomMap?.addMarker(mark)
+                                    //Log.i("Chris","marker for : ${places.name} ")
+                                }
                             }
                         }
                     }

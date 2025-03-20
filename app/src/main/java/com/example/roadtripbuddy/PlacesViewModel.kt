@@ -1,4 +1,5 @@
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,7 +27,8 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
     fun getTextSearch(location:String,latitude: Double, longitude: Double) {
         viewModelScope.launch {
             val result = repository.textSearch(location,latitude, longitude)
-            _restaurants.value = result
+            Log.i("Chris", "Updating StateFlow with ${result.size} places")
+            _restaurants.value = result.toList()
         }
     }
 

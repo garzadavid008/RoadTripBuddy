@@ -65,7 +65,7 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
 
                 // defining the cirlce and its cords
                 val center = LatLng(latitude, longitude)
-                val circle = CircularBounds.newInstance(center, /* radius = */ 600.0)
+                val circle = CircularBounds.newInstance(center, /* radius = */ 50000.0)
 
                 // Fields to retrieve from the API
                 val placeFields = listOf(Place.Field.NAME, Place.Field.RATING,Place.Field.ADDRESS,Place.Field.LAT_LNG)
