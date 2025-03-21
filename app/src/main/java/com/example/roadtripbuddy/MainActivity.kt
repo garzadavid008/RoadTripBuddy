@@ -1,64 +1,106 @@
 package com.example.roadtripbuddy
 
 
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings.System
+import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Image // Renders images in JetpackCompose
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
-import androidx.compose.runtime.*
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Brush // Need to be able to use gradiant backgrounds
-import androidx.compose.ui.layout.ContentScale // For the images to scale properly
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle // Specifies if text is either normal or italic
-import androidx.compose.ui.text.TextStyle // defines styles for text, font size, colour, height,ect
-import androidx.compose.ui.res.painterResource // For loading drawable images
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.NavController
-import androidx.activity.viewModels
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.rememberNavController
+import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
+import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
-import androidx.compose.ui.text.style.TextAlign
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
+import kotlinx.coroutines.launch
 
-
-class MainActivity : BaseMapUtils() {
+class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModels()
+
+    private val locationService = LocationService(
+        activity = this@MainActivity
+    )
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        locationService.requestLocationPermissions()
+
         setContent {
             RoadTripBuddyApp()
         }
-
     }
 
     @Composable
     private fun RoadTripBuddyApp() {
+        val context = LocalContext.current
+
+        val navigationMap = remember { NavigationMap(
+            context = context,
+            activity = this@MainActivity,
+            locationService = locationService)
+        }
+
+
         val navController = rememberNavController()
+
         NavHost(
             navController = navController,
             startDestination = "map"
         ) {
-            composable("map") { MapScreen(navController) }
+            composable("map") { MapScreen(navController, navigationMap) }
             composable("about") { AboutScreen(navController) }
             composable("login") { LoginPage(navController, authViewModel) }
             composable("signup") { SignupPage(navController, authViewModel) }
@@ -69,7 +111,7 @@ class MainActivity : BaseMapUtils() {
         "MutableCollectionMutableState"
     )
     @Composable
-    fun MapScreen(navController: NavController) {
+    fun MapScreen(navController: NavController, navigationMap: NavigationMap) {
         val authState = authViewModel.authState.observeAsState()
         val searchDrawerVM: SearchDrawerViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
@@ -79,12 +121,6 @@ class MainActivity : BaseMapUtils() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
-
-        var destinationList by rememberSaveable(stateSaver = listSaver(
-            save = { ArrayList(it) },  // Convert to ArrayList for saving
-            restore = { it.toMutableList() }  // Restore as MutableList
-        )) { mutableStateOf(mutableListOf<String>()) }
-
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -97,6 +133,8 @@ class MainActivity : BaseMapUtils() {
                     drawerState.close()
                 }
                 when (item.id) {
+                    "plan_a_trip" -> activity.startActivity(Intent(activity, PlanActivity::class.java))
+
                     "about" -> navController.navigate("about") {
                         popUpTo("map") {
                             saveState = true
@@ -114,12 +152,11 @@ class MainActivity : BaseMapUtils() {
                     }
 
                     "logout" -> authViewModel.signout() // sign out
-
                 }
             }
         ) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
-                BaseMapContent()
+                navigationMap.BaseMapContent()
                 IconButton(
                     onClick = {
                         scope.launch {
@@ -159,14 +196,14 @@ class MainActivity : BaseMapUtils() {
                         visible = showBottomDrawer,
                         viewModel = searchDrawerVM,
                         onDismiss = {showBottomDrawer = false},
-                        performSearch = {query, eta -> activity.performSearch(query, eta)},
+                        performSearch = {query, eta -> navigationMap.performSearch(query, eta)},
                         resolveAndSuggest = {query, onResult ->
-                            activity.resolveAndSuggest(query, onResult)
+                            navigationMap.resolveAndSuggest(query, onResult)
                         },
                         onRouteRequest = {viewModel ->
-                            activity.onRouteRequest(viewModel)
+                            navigationMap.onRouteRequest(viewModel)
                                          },
-                        clearMap = {activity.clearMap()}
+                        clearMap = {navigationMap.clearMap()}
                     )
 
 

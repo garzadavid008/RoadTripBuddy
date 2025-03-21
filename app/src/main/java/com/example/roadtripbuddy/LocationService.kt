@@ -2,6 +2,7 @@ package com.example.roadtripbuddy
 
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.provider.Settings.Secure.getString
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,22 +22,43 @@ import com.tomtom.sdk.map.display.location.LocationMarkerOptions
 
 class LocationService( // Parameters to initialize the class ->
     private val activity: AppCompatActivity,
-    private val searchManager: SearchManager,
-    private val tomTomMap: TomTomMap?,
-    private var isInitialCameraPositionSet: MutableState<Boolean>,
-    private val onRequestLocationPermissions: () -> Unit // Lambda to request permissions
 ) {
 
     private lateinit var locationProvider: LocationProvider
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
-    private lateinit var locationPermissionRequest: ActivityResultLauncher<Array<String>>
+    private var userLocationOn: Boolean = false
+    private lateinit var searchManager: SearchManager
+    private lateinit var tomTomMap: TomTomMap
+    private lateinit var isInitialCameraPositionSet: MutableState<Boolean>
+
+    private val locationPermissionRequest = activity.registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true &&
+            permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            userLocationOn = true
+        } else {
+            //Toast.makeText(this, System.getString(R.string.location_permission_denied), Toast.LENGTH_SHORT).show()
+            userLocationOn = false
+        }
+    }
+
+    fun mapLocationInitializer(
+        searchManagerInit: SearchManager,
+        tomMapInit: TomTomMap?,
+        isInitialCameraPositionSetInit: MutableState<Boolean>
+    ){
+        searchManager = searchManagerInit
+        tomTomMap = tomMapInit!!
+        isInitialCameraPositionSet = isInitialCameraPositionSetInit
+    }
 
     fun enableUserLocation() {
         if (areLocationPermissionsGranted()) {
             initLocationProvider()
             showUserLocation()
         } else {
-            onRequestLocationPermissions()
+            requestLocationPermissions()
         }
     }
 
@@ -51,7 +73,7 @@ class LocationService( // Parameters to initialize the class ->
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun requestLocationPermissions() {
+    fun requestLocationPermissions() {
         locationPermissionRequest.launch(
             arrayOf(
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -71,7 +93,7 @@ class LocationService( // Parameters to initialize the class ->
         onLocationUpdateListener =
             OnLocationUpdateListener { location ->
                 if (!isInitialCameraPositionSet.value){ //On first composition of a session
-                    tomTomMap?.moveCamera(CameraOptions(location.position, zoom = 8.0))// set the camera to the users location
+                    tomTomMap.moveCamera(CameraOptions(location.position, zoom = 8.0))// set the camera to the users location
                     isInitialCameraPositionSet.value = true // After the first time it never does it again on that session
                 }
                 searchManager.updateStartLocation(location.position)
@@ -79,9 +101,9 @@ class LocationService( // Parameters to initialize the class ->
             }
 
         locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
-        tomTomMap?.setLocationProvider(locationProvider)
+        tomTomMap.setLocationProvider(locationProvider)
 
         val locationMarker = LocationMarkerOptions(type = LocationMarkerOptions.Type.Pointer)
-        tomTomMap?.enableLocationMarker(locationMarker)
+        tomTomMap.enableLocationMarker(locationMarker)
     }
 }
