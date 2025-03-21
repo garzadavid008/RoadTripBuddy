@@ -51,7 +51,7 @@ fun SearchDrawer(
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
     var selectedLocation by rememberSaveable { mutableStateOf("") }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
     var isPageReady = rememberSaveable { mutableStateOf(false) }
-    var initialRouteSet  = rememberSaveable { mutableStateOf(false) }
+    val initialRouteSet  = rememberSaveable { mutableStateOf(false) }
 
     //AnimatedVisibility keeps state when the SearchDrawer is dismissed/not displayed
     AnimatedVisibility(visible = visible) {

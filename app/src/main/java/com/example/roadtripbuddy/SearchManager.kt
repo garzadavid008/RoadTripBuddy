@@ -36,7 +36,6 @@ class SearchManager(context: Context, apiKey: String) {
     var fuzzySuggestionsPairs by mutableStateOf(emptyList<Pair<String, SearchResult?>>()) //For the resolveAndSuggest function
 
     fun updateStartLocation(location: GeoPoint?) {
-        // Add any extra logic here if needed.
         startLocation = location
     }
 
@@ -97,7 +96,7 @@ class SearchManager(context: Context, apiKey: String) {
                 )
 
                 if (startLocation == null) {
-                    Log.d("Debug", "startLocation is null")
+                    Log.d("FAILURE", "startLocation is null")
                     return@resolveAndSuggest
                 }
 

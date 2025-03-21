@@ -3,6 +3,7 @@ package com.example.roadtripbuddy
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.Settings.System.getString
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,73 +47,17 @@ import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.ui.NavigationFragment
 
 //All the methods in this class are directly used in MainActivity
-open class BaseMapUtils : AppCompatActivity() {
+open class BaseMapUtils{
 
-    private val apiKey = BuildConfig.TOMTOM_API_KEY
-    private lateinit var searchManager: SearchManager
-    private lateinit var routeManager: RouteManager
-    private lateinit var locationService: LocationService
-    private var tomTomMap: TomTomMap? = null
+    val apiKey = BuildConfig.TOMTOM_API_KEY
+    lateinit var searchManager: SearchManager
+    lateinit var routeManager: RouteManager
+    var tomTomMap: TomTomMap? = null
     private lateinit var navigationTileStore: NavigationTileStore
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var navigationFragment: NavigationFragment
     private var usersMarkerLocation: GeoPoint? = null
     private var pendingClearMap: Boolean = false
-
-
-    //INITIALIZING MAP COMPOSABLE///////////////////////////////////////////////////////////////////
-    @Composable
-    protected fun BaseMapContent(){
-        // This is to make sure the functionality that initially zooms into the users doesn't happen again
-        // after first composition
-        val isInitialCameraPositionSet = rememberSaveable { mutableStateOf(false) }
-
-        TomTomMapComponent(
-            modifier = Modifier.fillMaxSize(),
-            apiKey = apiKey,
-            onMapReady = { map ->
-                tomTomMap = map //Initializes the tomTomMap object
-                searchManager = SearchManager(context = this@BaseMapUtils, apiKey = apiKey)// Initializing an instance of the searchManager class
-                locationService = LocationService(
-                    //Initializing locationService class
-                    activity = this@BaseMapUtils,
-                    searchManager = searchManager,
-                    tomTomMap = tomTomMap,
-                    isInitialCameraPositionSet = isInitialCameraPositionSet,
-                    onRequestLocationPermissions = {
-                        // Triggers the permission launcher to request fine and coarse location permissions
-                        locationPermissionLauncher.launch(
-                            arrayOf(
-                                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                android.Manifest.permission.ACCESS_COARSE_LOCATION
-                            )
-                        )
-                    }
-                )
-                locationService.enableUserLocation()//After locationService is initialized we call the enableUserLocation method
-                setUpMapListeners()
-                routeManager = RouteManager(context = this@BaseMapUtils, apiKey = apiKey)// Initializing an instance of the routeManager class
-            },
-            onMapDispose = {
-                tomTomMap = null
-            }
-        )
-    }
-
-    //USER LOCATION PERMISSION LAUNCHER/////////////////////////////////////////////////////////////
-
-    //The function registerForActivityResult can only be done inside a CompatActivity BEFORE onCreate so we do it here
-    private val locationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true &&
-            permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            // Permission granted: enable location using the location service
-            locationService.enableUserLocation()
-        } else {
-            Toast.makeText(this, getString(R.string.location_permission_denied), Toast.LENGTH_SHORT).show()
-        }
-    }
 
     //SEARCH FUNCTIONALITY(SearchManager methods)///////////////////////////////////////////////////
 
@@ -173,7 +118,7 @@ open class BaseMapUtils : AppCompatActivity() {
             true
         }
 
-    private fun setUpMapListeners() {
+    fun setUpMapListeners() {
         tomTomMap?.addMapLongClickListener(mapLongClickListener)
     }
 }
