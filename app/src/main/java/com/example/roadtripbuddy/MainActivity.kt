@@ -1,6 +1,7 @@
 package com.example.roadtripbuddy
 
 
+import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -30,10 +31,13 @@ import androidx.navigation.NavController
 import androidx.activity.viewModels
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 import androidx.compose.ui.text.style.TextAlign
+import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import com.example.roadtripbuddy.pages.Suggestions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
@@ -42,9 +46,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 
 class MainActivity : BaseMapUtils() {
-    private val authViewModel: AuthViewModel by viewModels()
-    val userViewModel: UserViewModel by viewModels()
 
+    val userViewModel: UserViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
@@ -80,6 +84,7 @@ class MainActivity : BaseMapUtils() {
     @Composable
     fun MapScreen(navController: NavController) {
         val authState = authViewModel.authState.observeAsState()
+        val searchDrawerVM: SearchDrawerViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
@@ -88,7 +93,11 @@ class MainActivity : BaseMapUtils() {
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
 
-        var destinationList by mutableStateOf(mutableListOf<String>())
+        var destinationList by rememberSaveable(stateSaver = listSaver(
+            save = { ArrayList(it) },  // Convert to ArrayList for saving
+            restore = { it.toMutableList() }  // Restore as MutableList
+        )) { mutableStateOf(mutableListOf<String>()) }
+
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -123,7 +132,7 @@ class MainActivity : BaseMapUtils() {
             }
         ) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
-                TomTomMap(modifier = Modifier.fillMaxSize())
+                BaseMapContent()
                 IconButton(
                     onClick = {
                         scope.launch {
@@ -159,20 +168,22 @@ class MainActivity : BaseMapUtils() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-                    SearchDrawer(
-                        visible = showBottomDrawer,
-                        onDismiss = {showBottomDrawer = false},
-                        destinationList = destinationList,
-                        performSearch = {query, eta -> activity.performSearch(query, eta)},
-                        resolveAndSuggest = {query, onResult ->
-                            activity.resolveAndSuggest(query, onResult)
-                        },
-                        onRouteRequest = {waypoints, eta ->
-                            destinationList = waypoints.toMutableList()
-                            activity.onRouteRequest(waypoints, eta)
-                                         },
-                        clearMap = {activity.clearMap()}
-                    )
+                SearchDrawer(
+                    visible = showBottomDrawer,
+                    viewModel = searchDrawerVM,
+                    onDismiss = {showBottomDrawer = false},
+                    performSearch = {query, eta -> activity.performSearch(
+                        query, eta,
+                        context = this@MainActivity
+                    )},
+                    resolveAndSuggest = {query, onResult ->
+                        activity.resolveAndSuggest(query, onResult)
+                    },
+                    onRouteRequest = {viewModel ->
+                        activity.onRouteRequest(viewModel)
+                    },
+                    clearMap = {activity.clearMap()}
+                )
 
 
             }
