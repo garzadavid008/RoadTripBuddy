@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
+import com.example.roadtripbuddy.pages.RightSidePanelDemo
+import com.example.roadtripbuddy.pages.Suggestions
 import com.google.android.libraries.places.api.Places
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
@@ -113,7 +115,7 @@ class SearchManager(context: Context, apiKey: String) {
                     val long = location.longitude.toDouble()
 
                     CoroutineScope(Dispatchers.IO).launch {
-                        viewModel.getTextSearch("starbucks", lat, long) // Call the function
+                        viewModel.getTextSearch(brandName, lat, long) // Call the function
                         Log.i("Chris", "lat and long :  $lat $long")
 
                         // Switch to Main dispatcher for UI updates
@@ -132,6 +134,7 @@ class SearchManager(context: Context, apiKey: String) {
                                     tomTomMap.addMarker(mark)
                                 }
                             }
+
                         }
                     }
                 }

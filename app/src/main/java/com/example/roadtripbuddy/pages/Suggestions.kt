@@ -2,6 +2,7 @@ package com.example.roadtripbuddy.pages
 
 import PlacesViewModel
 import SuggPlace
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -69,9 +70,11 @@ val listofLATandLong : MutableList<LatLng> = mutableListOf()
 // this function will have a button that when clicked it will push geo codes into a list so we can use that for the map
 
 
-@Preview
+data class Address ( var address: String)
+data class PanelToggle (var isVis: Boolean)
+//@Preview
 @Composable
-fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0) )
+fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address("") )
 {
     var isVisible by remember { mutableStateOf(true) }
     // card for suggested place
@@ -88,19 +91,23 @@ AnimatedVisibility(visible = isVisible) {
         ,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
+            FilledTonalButton(onClick = {
+                //toggle.isVis= false
+                //push the address into the list for the Searchmanager performSearch can use it
+                userAddress.address = address
+                listofLATandLong.add(latlng)
+                // make the button invis
+                isVisible = false
+            }
+            ) {
+                Text("+")
+            }
+           // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
             Column {
                 Text("Place $name", modifier = Modifier.padding(10.dp))
                 Text("Rating $rating",modifier = Modifier.padding(10.dp))
                 Text("Address $address",modifier = Modifier.padding(10.dp))
-                    FilledTonalButton(onClick = {
-                        listofLATandLong.add(latlng)
-                        // make the button invis
-                        isVisible = false
-                    }
-                    ) {
-                        Text("+")
-                    }
+
                 }
             }
         }
@@ -123,7 +130,9 @@ fun Suggestions(navController: NavController)
     val placesClient: PlacesClient = Places.createClient(LocalContext.current) // client resonsible for sending the request
     val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
     val placeList by viewModel.restaurants.collectAsState() // contains the list of nearby places and we display it on the screen
-
+    val userList12 :MutableList<String> = mutableListOf()
+    val wantedAddress : Address = Address("")
+    wantedAddress.address= "test test"
     // this function will run when page is loaded
     LaunchedEffect(Unit) {
         //viewModel.getNearbyRestaurants(26.243629, -98.245079) // Example location
@@ -162,7 +171,7 @@ fun Suggestions(navController: NavController)
                         "Places Near By",
                        // style = MaterialTheme.typography.bodySmall
                     )
-                    RightSidePanelDemo(placeList)
+                    RightSidePanelDemo(placeList,wantedAddress)
                 }
             }
 //            // this will generate the list of places
@@ -173,12 +182,16 @@ fun Suggestions(navController: NavController)
         }
 
     }
+
 }
 
 @Preview
 @Composable
-fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList()) {
+fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList(), userAddress: Address= Address("")) {
     var isVisible by remember { mutableStateOf(false) }
+    //var toggle2: PanelToggle by remember { mutableStateOf(false) }
+//    var toggle : PanelToggle = PanelToggle(false)
+//    toggle.isVis= isVisible
 
     Box(modifier = Modifier.fillMaxSize()) {
         Button(onClick = { isVisible = !isVisible }, modifier = Modifier.align(Alignment.Center)) {
@@ -199,15 +212,16 @@ fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList()) {
                     .padding(16.dp)
             ) {
                 Column {
-                    Text("Right-Side Panel", fontWeight = FontWeight.Bold)
+                    Text("Near By Locations", fontWeight = FontWeight.Bold)
 
                     Column {
                         // this will generate the list of places
                         placeList.forEach { place ->
-                            placeCard(place.name, place.rating, place.address, place.latAndLng)
+                            placeCard(place.name, place.rating, place.address, place.latAndLng,userAddress)
+                            //isVisible= toggle.isVis
                         }
 
-                        repeat(10) { Text("Item $it", modifier = Modifier.padding(8.dp)) }
+                      //  repeat(10) { Text("Item $it", modifier = Modifier.padding(8.dp)) }
                         Button(onClick = { isVisible = false }) {
                             Text("Close")
                         }
@@ -215,6 +229,9 @@ fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList()) {
                 }
             }
         }
+
     }
+
+    Log.i("Chris"," The current String is ${userAddress.address}")
 }
 
