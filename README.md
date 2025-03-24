@@ -107,7 +107,7 @@ limitations under the License.
 - Email: example@mail.com
 - Social Media: [Twitter](https://example.com/), [Facebook](https://example.com/), [Youtube](https://example.com/)
  
-- **Jesus Aguilar**
+**Jesus Aguilar**
 - Work Number: (###) ###-#####
 - Email: example@mail.com
 - Social Media: [Twitter](https://example.com/), [Facebook](https://example.com/), [Youtube](https://example.com/)
