@@ -5,7 +5,7 @@
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [System Requirements](#system-requirements)
-- [Installation Instructions](#installation-instructions)
+- [List of packages and dependencies](#list-of-packages-and-dependencies)
 - [Operating Instructions](#operating-instructions)
 - [Project Structure](#project-structure)
 - [Copyright and Licensing](#copyright-and-licensing)
@@ -35,7 +35,7 @@ Instructions to use the app:
 2. Copy Repository
 3. Sync Gradle files
 4. Build
-5. RUn Application
+5. Run Application
 
 
 ## Project Structure
