@@ -8,7 +8,7 @@
 - [Installation Instructions](#installation-instructions)
 - [Operating Instructions](#operating-instructions)
 - [Project Structure](#project-structure)
-- [Copyright and Licensing](#copyrigh-and-licensing)
+- [Copyright and Licensing](#copyright-and-licensing)
 - [Contact Information](#contact-information)
 
 ## Project Overview
@@ -77,7 +77,7 @@ RoadTripBuddy/
 
 ## Copyright and Licensing
 
-## Contact Information for the Distributor or Programmer
+## Contact Information
 **Christopher Lopez**
 - Email: example@mail.com
 
