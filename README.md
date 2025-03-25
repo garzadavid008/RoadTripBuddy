@@ -8,7 +8,7 @@
 - [Installation Instructions](#installation-instructions)
 - [Operating Instructions](#operating-instructions)
 - [Project Structure](#project-structure)
-- [License](#license)
+- [Copyright and Licensing](#copyrigh-and-licensing)
 - [Contact Information](#contact-information)
 
 ## Project Overview
