@@ -31,9 +31,11 @@ This application was created for people who needed information regarding travel 
 
 ## Operating Instructions
 Instructions to use the app:
-1. Step 1
-2. Step 2
-3. Step 3
+1. Install Android Studio
+2. Copy Repository
+3. Sync Gradle files
+4. Build
+5. RUn Application
 
 
 ## Project Structure
