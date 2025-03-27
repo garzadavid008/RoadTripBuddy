@@ -2,8 +2,6 @@ package com.example.roadtripbuddy
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
@@ -11,7 +9,6 @@ import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.map.display.route.Instruction
 import com.tomtom.sdk.map.display.route.RouteOptions
-import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.RoutePlanningCallback
 import com.tomtom.sdk.routing.RoutePlanningResponse
 import com.tomtom.sdk.routing.RoutingFailure
@@ -38,7 +35,7 @@ class RouteManager(context: Context, apiKey: String) {
     private fun drawRoute(
         tomTomMap: TomTomMap?, // Needs a tomTomMap to draw on
         route: Route, // Needs a route
-        viewModel: SearchDrawerViewModel, // Intakes an instance of the SearchDrawerViewModel in order to update the estimated time of arrival
+        viewModel: TripViewModel, // Intakes an instance of the TripViewModel in order to update the estimated time of arrival
         color: Int = RouteOptions.DEFAULT_COLOR, // Optional parameter
         withDepartureMarker: Boolean = true, // Optional parameter
         withZoom: Boolean = true, // Optional parameter
@@ -85,9 +82,9 @@ class RouteManager(context: Context, apiKey: String) {
         private const val ZOOM_TO_ROUTE_PADDING = 100
     }
 
-    //Calculates a route based on a list of waypoints from the SearchDrawerViewModel
+    //Calculates a route based on a list of waypoints from the TripViewModel
     fun onRouteRequest(
-        viewModel: SearchDrawerViewModel,
+        viewModel: TripViewModel,
         tomTomMap: TomTomMap?,
         searchManager: SearchManager
     ) {

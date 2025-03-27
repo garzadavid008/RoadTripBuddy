@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
@@ -17,27 +16,39 @@ import com.tomtom.sdk.routing.options.Itinerary
 import com.tomtom.sdk.routing.options.ItineraryPoint
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
-import com.tomtom.sdk.search.*
-import com.tomtom.sdk.search.autocomplete.*
+import com.tomtom.sdk.search.Search
+import com.tomtom.sdk.search.SearchCallback
+import com.tomtom.sdk.search.SearchOptions
+import com.tomtom.sdk.search.SearchResponse
+import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
+import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
+import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
 import com.tomtom.sdk.search.common.error.SearchFailure
-import com.tomtom.sdk.search.model.result.*
+import com.tomtom.sdk.search.model.result.AutocompleteResult
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
+import com.tomtom.sdk.search.model.result.SearchResult
 import com.tomtom.sdk.search.online.OnlineSearch
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoder
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderCallback
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderOptions
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderResponse
+import com.tomtom.sdk.search.reversegeocoder.online.OnlineReverseGeocoder
 import com.tomtom.sdk.vehicle.Vehicle
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Locale
 import kotlin.time.Duration
 
 
-class SearchManager(context: Context, apiKey: String) {
-    private val searchApi: Search = OnlineSearch.create(context, apiKey)
-    var startLocation: GeoPoint? = null
+class SearchManager(
+    context: Context,
+    apiKey: String,
+) {
+    private val searchApi: Search = OnlineSearch.create(context, apiKey)// Initializing Search using the TomTom api key
+    val reverseGeocoder: ReverseGeocoder = OnlineReverseGeocoder.create(context, apiKey) // Initializing ReverseGeocoding
     var fuzzySuggestionsPairs by mutableStateOf(emptyList<Pair<String, SearchResult?>>()) //For the resolveAndSuggest function
-
-    fun updateStartLocation(location: GeoPoint?) {
-        startLocation = location
-    }
+    var startLocation: GeoPoint? = null
+    var startLocationAddress: String = ""
 
     //Uses fuzzy search to simply convert a string address into a SearchResult object
     fun searchResultGetter(query: String, callback: (SearchResult?) -> Unit){
@@ -59,11 +70,43 @@ class SearchManager(context: Context, apiKey: String) {
         )
     }
 
+    // Updates the start location , and the start location address
+    fun updateStartLocation(location: GeoPoint?){
+        startLocation = location
+        Log.d("reverseGeocoder", location.toString())
+
+        val reverseGeocoderOptions =
+            ReverseGeocoderOptions(
+                position = startLocation!!
+            )
+
+        // We use reverse geocode in order to turn a geopoint (location parameter) into a human readable
+        // address
+        reverseGeocoder.reverseGeocode(
+            reverseGeocoderOptions,
+            object : ReverseGeocoderCallback {
+                override fun onSuccess(result: ReverseGeocoderResponse) {
+                    val firstResult = result.places.first()
+                    startLocationAddress = firstResult.place.address?.freeformAddress
+                        ?.replace("\\s+".toRegex(), " ")  // Replace multiple spaces with one
+                        ?.trim()                        // Remove leading/trailing whitespace
+                        .toString()
+                    Log.d("reverseGeocoder", startLocationAddress)
+                }
+
+                override fun onFailure(failure: SearchFailure){
+                    Log.d("FAILURE", "Reverse Geocode failure: ${failure.message}")
+                }
+            }
+
+        )
+    }
+
     // Method to either find, add marker, and zoom into an initial SearchResult, or if the query is
     // a brand/POI(Point of Interest) category, direct it to the locations nearby method
     fun performSearch(
         query: String,
-        viewModel: SearchDrawerViewModel,
+        viewModel: TripViewModel?,
         clearMap: () -> Unit,
         tomTomMap: TomTomMap?,
         planRouteAndGetETA: suspend (RoutePlanningOptions) -> Duration
@@ -114,10 +157,10 @@ class SearchManager(context: Context, apiKey: String) {
                     vehicle = Vehicle.Car()
                 )
 
-                // Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
+                // IF the viewModel parameter is NOT null, Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
                 // We do this because in order to get the ETA of a route, we need to plan a route so
                 // we use RouteManagers method planRouteAndGetETA
-                viewModel.viewModelScope.launch  {
+                viewModel?.viewModelScope?.launch  {
                     try {
                         val etaDuration = planRouteAndGetETA(options)
                         viewModel.updateETA(etaDuration.toString())// Updates the searchDrawerViewModel ETA
@@ -191,7 +234,7 @@ class SearchManager(context: Context, apiKey: String) {
 
         val autocompleteOptions = AutocompleteOptions(
             query = query,
-            position = tomTomMap?.currentLocation?.position,
+            position = startLocation,
             locale = Locale("en", "US"),
             limit = 5
         )
@@ -244,5 +287,4 @@ class SearchManager(context: Context, apiKey: String) {
             }
         )
     }
-
 }
