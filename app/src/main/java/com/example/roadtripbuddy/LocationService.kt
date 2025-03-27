@@ -1,24 +1,22 @@
 package com.example.roadtripbuddy
 
-import android.app.Activity
 import android.content.pm.PackageManager
-import android.provider.Settings.Secure.getString
-import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.tomtom.sdk.location.DefaultLocationProviderFactory
+import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.LocationProvider
 import com.tomtom.sdk.location.OnLocationUpdateListener
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.location.LocationMarkerOptions
+import com.tomtom.sdk.search.model.result.SearchResult
 
 class LocationService( // Parameters to initialize the class ->
     private val activity: AppCompatActivity,
@@ -27,9 +25,9 @@ class LocationService( // Parameters to initialize the class ->
     private lateinit var locationProvider: LocationProvider
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
     private var userLocationOn: Boolean = false
-    private lateinit var searchManager: SearchManager
-    private lateinit var tomTomMap: TomTomMap
+    private lateinit var map: BaseMapUtils
     private lateinit var isInitialCameraPositionSet: MutableState<Boolean>
+
 
     private val locationPermissionRequest = activity.registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -43,14 +41,16 @@ class LocationService( // Parameters to initialize the class ->
         }
     }
 
+    // Intakes a SearchResult, accesses its GeoPoint and moves the camera to said GeoPoint and adds a location marker
+
+    // Initializes an instance of a map from the BaseMapUtils, and an optional parameter of boolean, the why is
+    // further explained in the NavigationMap
     fun mapLocationInitializer(
-        searchManagerInit: SearchManager,
-        tomMapInit: TomTomMap?,
-        isInitialCameraPositionSetInit: MutableState<Boolean>
+        mapInit: NavigationMap,
+        isInitialCameraPositionSetInit: MutableState<Boolean>? = null,
     ){
-        searchManager = searchManagerInit
-        tomTomMap = tomMapInit!!
-        isInitialCameraPositionSet = isInitialCameraPositionSetInit
+        map = mapInit
+        isInitialCameraPositionSet = isInitialCameraPositionSetInit!!
     }
 
     fun enableUserLocation() {
@@ -93,17 +93,18 @@ class LocationService( // Parameters to initialize the class ->
         onLocationUpdateListener =
             OnLocationUpdateListener { location ->
                 if (!isInitialCameraPositionSet.value){ //On first composition of a session
-                    tomTomMap.moveCamera(CameraOptions(location.position, zoom = 8.0))// set the camera to the users location
+                    map.tomTomMap?.moveCamera(CameraOptions(location.position, zoom = 15.0))// set the camera to the users location
                     isInitialCameraPositionSet.value = true // After the first time it never does it again on that session
+                    map.updateStartLocation(location.position)// Call searchManagers updateStartLocation method
+                    Log.d("Debug: Location", location.position.toString())
                 }
-                searchManager.updateStartLocation(location.position)
                 //locationProvider.removeOnLocationUpdateListener(onLocationUpdateListener)
             }
 
         locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
-        tomTomMap.setLocationProvider(locationProvider)
+        map.tomTomMap?.setLocationProvider(locationProvider)
 
         val locationMarker = LocationMarkerOptions(type = LocationMarkerOptions.Type.Pointer)
-        tomTomMap.enableLocationMarker(locationMarker)
+        map.tomTomMap?.enableLocationMarker(locationMarker)
     }
 }
