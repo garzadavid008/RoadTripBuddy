@@ -28,6 +28,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.TripViewModel
 import kotlinx.coroutines.delay
 
 //Compose for the Search/Route page
@@ -35,13 +37,14 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: SearchDrawerViewModel = viewModel(),
+    viewModel: TripViewModel = viewModel(),
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
-    performSearch: (String, SearchDrawerViewModel) -> Unit,//Function Parameter
+    performSearch: (String, TripViewModel) -> Unit,//Function Parameter
     resolveAndSuggest: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (SearchDrawerViewModel) -> Unit,//Function Parameter
-    clearMap: () -> Unit //Function Parameter
+    onRouteRequest: (TripViewModel) -> Unit,//Function Parameter
+    clearMap: () -> Unit ,//Function Parameter
+    searchManager: SearchManager
 ) {
     val sheetState = rememberModalBottomSheetState()
     var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
@@ -92,7 +95,8 @@ fun SearchDrawer(
                         clearMap()
                         onRouteRequest(viewModel)
                               },
-                    performAutocomplete = resolveAndSuggest
+                    performAutocomplete = resolveAndSuggest,
+                    searchManager = searchManager
                 )
             }
             else

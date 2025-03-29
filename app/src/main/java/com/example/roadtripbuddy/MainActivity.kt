@@ -60,7 +60,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
+import com.example.roadtripbuddy.TripViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 import kotlinx.coroutines.launch
@@ -71,7 +71,6 @@ class MainActivity : AppCompatActivity() {
     private val locationService = LocationService(
         activity = this@MainActivity
     )
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,13 +85,15 @@ class MainActivity : AppCompatActivity() {
     @Composable
     private fun RoadTripBuddyApp() {
         val context = LocalContext.current
+        val mapReadyState = remember { mutableStateOf(false) }
 
         val navigationMap = remember { NavigationMap(
             context = context,
             activity = this@MainActivity,
-            locationService = locationService)
+            locationService = locationService,
+            mapReadyState = mapReadyState
+        )
         }
-
 
         val navController = rememberNavController()
 
@@ -113,7 +114,7 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MapScreen(navController: NavController, navigationMap: NavigationMap) {
         val authState = authViewModel.authState.observeAsState()
-        val searchDrawerVM: SearchDrawerViewModel by viewModels()
+        val searchDrawerVM: TripViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
@@ -133,7 +134,8 @@ class MainActivity : AppCompatActivity() {
                     drawerState.close()
                 }
                 when (item.id) {
-                    "plan_a_trip" -> activity.startActivity(Intent(activity, PlanActivity::class.java))
+                    "plan_a_trip" -> activity.startActivity(Intent(this@MainActivity, PlanActivity::class.java)
+                        .putExtra("start_location", navigationMap.searchManager.startLocationAddress))
 
                     "about" -> navController.navigate("about") {
                         popUpTo("map") {
@@ -156,7 +158,12 @@ class MainActivity : AppCompatActivity() {
             }
         ) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
-                navigationMap.BaseMapContent()
+                navigationMap.NavMapContent()
+
+                // Once BaseMapContent is initialized, we can initialize the Intent
+                // We do this to pass the startLocation (AKA the users location) from the navigationMap.searchManager class instance
+                // and in order to not have to ask for the users location again.
+
                 IconButton(
                     onClick = {
                         scope.launch {
@@ -192,21 +199,23 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-                    SearchDrawer(
-                        visible = showBottomDrawer,
-                        viewModel = searchDrawerVM,
-                        onDismiss = {showBottomDrawer = false},
-                        performSearch = {query, eta -> navigationMap.performSearch(query, eta)},
-                        resolveAndSuggest = {query, onResult ->
-                            navigationMap.resolveAndSuggest(query, onResult)
-                        },
-                        onRouteRequest = {viewModel ->
-                            navigationMap.onRouteRequest(viewModel)
-                                         },
-                        clearMap = {navigationMap.clearMap()}
-                    )
-
-
+                    if (navigationMap.mapReadyState.value) {
+                        SearchDrawer(
+                            visible = showBottomDrawer,
+                            viewModel = searchDrawerVM,
+                            onDismiss = {showBottomDrawer = false},
+                            performSearch = {query, eta -> navigationMap.performSearch(query, eta)},
+                            resolveAndSuggest = {query, onResult ->
+                                navigationMap.resolveAndSuggest(query, onResult)
+                            },
+                            onRouteRequest = {viewModel ->
+                                navigationMap.onRouteRequest(
+                                    viewModel = viewModel,
+                                )},
+                            clearMap = {navigationMap.clearMap()},
+                            searchManager = navigationMap.searchManager
+                        )
+                    }
             }
         }
     }
@@ -301,4 +310,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 }

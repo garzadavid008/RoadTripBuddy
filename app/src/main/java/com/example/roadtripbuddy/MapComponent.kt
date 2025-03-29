@@ -90,11 +90,9 @@ fun TomTomMapComponent(
 
         onDispose {
             lifecycle.removeObserver(observer)
+            Log.d("MAP", "MAP HAS BEEN DESTROYED")
             onMapDispose()
             isMapInitialized = false// Notify parent about disposal
-            if (lifecycle.currentState.isAtLeast(Lifecycle.State.DESTROYED)) {
-                mapView.onDestroy()
-            }
         }
     }
 
@@ -104,7 +102,6 @@ fun TomTomMapComponent(
         update = { view ->
             view.getMapAsync { map ->
                 if (!isMapInitialized) {
-                    Log.d("MAP INITIALIZATION", "MAP HAS BEEN INITIALIZED")
                     onMapReady(map)
                 }
                 isMapInitialized = true
