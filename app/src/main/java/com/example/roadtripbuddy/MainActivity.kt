@@ -1,3 +1,4 @@
+
 package com.example.roadtripbuddy
 
 
@@ -122,6 +123,8 @@ class MainActivity : AppCompatActivity() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
+        var destinationSelected by remember { mutableStateOf(false) }
+
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -199,23 +202,35 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-                    if (navigationMap.mapReadyState.value) {
-                        SearchDrawer(
-                            visible = showBottomDrawer,
-                            viewModel = searchDrawerVM,
-                            onDismiss = {showBottomDrawer = false},
-                            performSearch = {query, eta -> navigationMap.performSearch(query, eta)},
-                            resolveAndSuggest = {query, onResult ->
-                                navigationMap.resolveAndSuggest(query, onResult)
-                            },
-                            onRouteRequest = {viewModel ->
-                                navigationMap.onRouteRequest(
-                                    viewModel = viewModel,
-                                )},
-                            clearMap = {navigationMap.clearMap()},
-                            searchManager = navigationMap.searchManager
-                        )
+                if (navigationMap.mapReadyState.value) {
+                    SearchDrawer(
+                        visible = showBottomDrawer,
+                        viewModel = searchDrawerVM,
+                        onDismiss = { showBottomDrawer = false },
+                        performSearch = { query, eta -> navigationMap.performSearch(query, eta) },
+                        resolveAndSuggest = { query, onResult ->
+                            navigationMap.resolveAndSuggest(query, onResult)
+                        },
+                        onRouteRequest = { viewModel ->
+                            navigationMap.onRouteRequest(viewModel)
+                            destinationSelected = true // This might be where the second "Start Directions" button might be.
+                        },
+                        clearMap = { navigationMap.clearMap() },
+                        searchManager = navigationMap.searchManager,
+                        onStartTrip = { navigationMap.startTrip() }
+                    )
+                }
+
+                if (destinationSelected) {
+                    FloatingActionButton(
+                        onClick = { navigationMap.startTrip() },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    ) {
+                        Text("Start Directions")
                     }
+                }
             }
         }
     }

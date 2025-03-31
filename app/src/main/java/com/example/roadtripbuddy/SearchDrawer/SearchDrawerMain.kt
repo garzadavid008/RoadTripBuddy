@@ -44,7 +44,8 @@ fun SearchDrawer(
     resolveAndSuggest: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
     onRouteRequest: (TripViewModel) -> Unit,//Function Parameter
     clearMap: () -> Unit ,//Function Parameter
-    searchManager: SearchManager
+    searchManager: SearchManager,
+    onStartTrip: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
@@ -81,7 +82,7 @@ fun SearchDrawer(
                     },
                 )
 
-            } else if (showRoutePage){
+            } else if (showRoutePage) {
                 RouteEditPage(
                     viewModel = viewModel,
                     initialDestination = selectedLocation,
@@ -91,10 +92,15 @@ fun SearchDrawer(
                         clearMap()
                         viewModel.clearWaypoints()
                     },
-                    onRoute = {viewModel->
+                    onRoute = { vm ->
                         clearMap()
-                        onRouteRequest(viewModel)
-                              },
+                        onRouteRequest(vm)
+                    },
+                    onStartTrip = {
+                        onDismiss()            //  hides the drawer
+                        showRoutePage = false  // hides RouteEditPage's view
+                        onStartTrip() // calls navigationMap.startTrip() from the parent
+                    },
                     performAutocomplete = resolveAndSuggest,
                     searchManager = searchManager
                 )
