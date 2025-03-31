@@ -70,8 +70,9 @@ class SearchManager(
         )
     }
 
-    // Updates the start location , and the start location address
-    fun updateStartLocation(location: GeoPoint?){
+    // Updates the start location , and the start location address. Optional callback for the Plan A
+    // Trip drawer
+    fun updateStartLocation(location: GeoPoint?, onCallback: () -> Unit = {}){
         startLocation = location
         Log.d("reverseGeocoder", location.toString())
 
@@ -92,10 +93,12 @@ class SearchManager(
                         ?.trim()                        // Remove leading/trailing whitespace
                         .toString()
                     Log.d("reverseGeocoder", startLocationAddress)
+                    onCallback()
                 }
 
                 override fun onFailure(failure: SearchFailure){
                     Log.d("FAILURE", "Reverse Geocode failure: ${failure.message}")
+                    onCallback()
                 }
             }
 
@@ -106,7 +109,7 @@ class SearchManager(
     // a brand/POI(Point of Interest) category, direct it to the locations nearby method
     fun performSearch(
         query: String,
-        viewModel: TripViewModel?,
+        viewModel: SearchDrawerViewModel?,
         clearMap: () -> Unit,
         tomTomMap: TomTomMap?,
         planRouteAndGetETA: suspend (RoutePlanningOptions) -> Duration
@@ -221,7 +224,6 @@ class SearchManager(
     // under search bars, ObjectResult is for the performSearch method.
     fun resolveAndSuggest(
         query: String,
-        tomTomMap: TomTomMap? = null,
         onResult: (List<String>) -> Unit = {},//An optional function parameter that returns a suggestion list of strings (this is for the search bar suggestions)
         objectResult: (Any?) -> Unit = {} //An optional function parameter that returns an object, either and AutocompleteResult or SearchResult
     ) {
@@ -234,10 +236,12 @@ class SearchManager(
 
         val autocompleteOptions = AutocompleteOptions(
             query = query,
-            position = startLocation,
+            position = startLocation ?: GeoPoint(39.8333, 98.5833),
             locale = Locale("en", "US"),
             limit = 5
         )
+
+
 
         searchApi.autocompleteSearch(// first we use autocomplete search for brands and poi categories
             autocompleteOptions,

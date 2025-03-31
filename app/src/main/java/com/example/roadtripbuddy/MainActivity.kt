@@ -61,7 +61,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
-import com.example.roadtripbuddy.TripViewModel
+import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 import kotlinx.coroutines.launch
@@ -115,7 +115,7 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MapScreen(navController: NavController, navigationMap: NavigationMap) {
         val authState = authViewModel.authState.observeAsState()
-        val searchDrawerVM: TripViewModel by viewModels()
+        val searchDrawerVM: SearchDrawerViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()

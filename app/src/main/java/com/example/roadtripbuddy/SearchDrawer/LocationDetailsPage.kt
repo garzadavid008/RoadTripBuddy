@@ -1,6 +1,6 @@
 package com.example.roadtripbuddy.SearchDrawer
 
-import com.example.roadtripbuddy.TripViewModel
+import com.example.roadtripbuddy.SearchDrawerViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun LocationDetailsPage(
-    viewModel: TripViewModel,
+    viewModel: SearchDrawerViewModel,
     locationName: String,
     isRouteReady: MutableState<Boolean>,
     onBack: () -> Unit,

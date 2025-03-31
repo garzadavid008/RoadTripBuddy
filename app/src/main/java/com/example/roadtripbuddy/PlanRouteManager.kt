@@ -19,12 +19,13 @@ import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.vehicle.Vehicle
+import java.util.Date
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 
-class RouteManager(context: Context, apiKey: String) {
+class PlanRouteManager(context: Context, apiKey: String) {
 
     private val routePlanner = OnlineRoutePlanner.create(context, apiKey)
     private var waypointList = mutableListOf<ItineraryPoint>() //For the route constructor, sets up waypoints for route itinerary
@@ -35,7 +36,7 @@ class RouteManager(context: Context, apiKey: String) {
     private fun drawRoute(
         tomTomMap: TomTomMap?, // Needs a tomTomMap to draw on
         route: Route, // Needs a route
-        viewModel: SearchDrawerViewModel, // Intakes an instance of the TripViewModel in order to update the estimated time of arrival
+        viewModel: PlanATripViewModel, // Intakes an instance of the TripViewModel in order to update the estimated time of arrival
         color: Int = RouteOptions.DEFAULT_COLOR, // Optional parameter
         withDepartureMarker: Boolean = true, // Optional parameter
         withZoom: Boolean = true, // Optional parameter
@@ -73,7 +74,6 @@ class RouteManager(context: Context, apiKey: String) {
         }
 
         tomTomMap?.addRoute(routeOptions)
-        tomTomMap?.showTrafficFlow() // enables real time traffic flow
         if (withZoom) {
             tomTomMap?.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
         }
@@ -83,13 +83,16 @@ class RouteManager(context: Context, apiKey: String) {
         private const val ZOOM_TO_ROUTE_PADDING = 100
     }
 
-    //Calculates a route based on a list of waypoints from the TripViewModel
-    fun onRouteRequest(
-        viewModel: SearchDrawerViewModel,
+    //Calculates a route based on a list of waypoints from the PlanATripViewModel
+    fun planOnRouteRequest(
+        viewModel: PlanATripViewModel,
+        departAt: Date,
         tomTomMap: TomTomMap?,
         searchManager: SearchManager
     ) {
-        val list = viewModel.waypoints.value //Grab the waypoint list from the viewModel
+        val waypointItemList = viewModel.planWaypoints.value //Grab the waypoint list from the viewModel
+
+        val list = waypointItemList.map { it.address } // Grab the string addresses only from the list
 
         // Since routeLocationsConstructor is A constructor, we need to wait for it to finish, so we
         // use routeLocationsConstructors onComplete callback function to put our remaining code inside
@@ -98,59 +101,60 @@ class RouteManager(context: Context, apiKey: String) {
             list = list,
             searchManager = searchManager,
             onComplete = { // when the constructor is done ->
-            if (lastDestination == null) {
-                Log.e("FAILURE", "Destination not found in routeLocationsConstructor.")
-                return@routeLocationsConstructor
-            }
+                if (lastDestination == null) {
+                    Log.e("FAILURE", "Destination not found in routeLocationsConstructor.")
+                    return@routeLocationsConstructor
+                }
 
-            val startLocation =
-                searchManager.startLocation!! //grab the startLocation from the searchManager class
+                val startLocation =
+                    searchManager.startLocation!! //grab the startLocation from the searchManager class
 
-            // Making an itinerary using TomTom's routing api is weird in that it NEEDS you to specify
-            // the final destination and specify the waypoints, that's why we call the
-            // routeLocationConstructor method
-            val itinerary = Itinerary(
-                origin = ItineraryPoint(Place(startLocation)),
-                destination = ItineraryPoint(Place(lastDestination!!)), //last destination initialized in routeLocationsConstructor
-                waypoints = waypointList //waypoint list initialized in routeLocationConstructor
-            )
-
-            // Using the itinerary we just made, we initialize a routePlanningOptions
-            val routePlanningOptions =
-                RoutePlanningOptions(
-                    itinerary = itinerary,
-                    guidanceOptions = GuidanceOptions(),
-                    vehicle = Vehicle.Car(),//This is set to change
+                // Making an itinerary using TomTom's routing api is weird in that it NEEDS you to specify
+                // the final destination and specify the waypoints, that's why we call the
+                // routeLocationConstructor method
+                val itinerary = Itinerary(
+                    origin = ItineraryPoint(Place(startLocation)),
+                    destination = ItineraryPoint(Place(lastDestination!!)), //last destination initialized in routeLocationsConstructor
+                    waypoints = waypointList //waypoint list initialized in routeLocationConstructor
                 )
 
-            // callback is a set up for the future, AKA when planRoute is called
-            val callback = object : RoutePlanningCallback {
-                //On planRoute success, map is drawn, and the viewModels ETA is updated
-                override fun onSuccess(result: RoutePlanningResponse) {
-                    route = result.routes.first()
-                    route?.let {
-                        // We call our drawRoute method
-                        drawRoute(
-                            tomTomMap = tomTomMap,
-                            route = it,
-                            viewModel = viewModel
-                        )
-                        // We update the viewModels ETA
-                        viewModel.updateETA(it.summary.travelTime.toString())
+                // Using the itinerary we just made, we initialize a routePlanningOptions
+                val routePlanningOptions =
+                    RoutePlanningOptions(
+                        itinerary = itinerary,
+                        departAt = departAt,
+                        guidanceOptions = GuidanceOptions(),
+                        vehicle = Vehicle.Car(),//This is set to change
+                    )
+
+                // callback is a set up for the future, AKA when planRoute is called
+                val callback = object : RoutePlanningCallback {
+                    //On planRoute success, map is drawn, and the viewModels ETA is updated
+                    override fun onSuccess(result: RoutePlanningResponse) {
+                        route = result.routes.first()
+                        route?.let {
+                            // We call our drawRoute method
+                            drawRoute(
+                                tomTomMap = tomTomMap,
+                                route = it,
+                                viewModel = viewModel
+                            )
+                            // We update the viewModels ETA
+                            viewModel.updateETA(it.summary.travelTime.toString())
+                        }
                     }
+
+                    override fun onFailure(failure: RoutingFailure) {
+                        Log.d("FAILURE: RoutePlanningCallback", failure.message)
+                    }
+
+                    override fun onRoutePlanned(route: Route) = Unit
                 }
 
-                override fun onFailure(failure: RoutingFailure) {
-                    Log.d("FAILURE: RoutePlanningCallback", failure.message)
-                }
-
-                override fun onRoutePlanned(route: Route) = Unit
-            }
-
-            // Using the routePlanningOptions and callback values we just made, we call routePlanner's
-            // planRoute method, this finalizes the routing
-            routePlanner.planRoute(routePlanningOptions, callback)
-        })
+                // Using the routePlanningOptions and callback values we just made, we call routePlanner's
+                // planRoute method, this finalizes the routing
+                routePlanner.planRoute(routePlanningOptions, callback)
+            })
     }
 
 
@@ -235,18 +239,18 @@ class RouteManager(context: Context, apiKey: String) {
                     query = location,
                     searchManager = searchManager,
                     onComplete = { // When were done adding waypoints ->
-                    completedCount++
-                    if (completedCount == totalWaypoints) {
-                        searchManager.searchResultGetter(list.last()) { searchResult ->
-                            if (searchResult != null) {
-                                lastDestination = searchResult.place.coordinate
-                            } else {
-                                Log.e("FAILURE", "Adding waypoints in routeLocationsConstructor: Failed to set destination for: ${list.last()}")
+                        completedCount++
+                        if (completedCount == totalWaypoints) {
+                            searchManager.searchResultGetter(list.last()) { searchResult ->
+                                if (searchResult != null) {
+                                    lastDestination = searchResult.place.coordinate
+                                } else {
+                                    Log.e("FAILURE", "Adding waypoints in routeLocationsConstructor: Failed to set destination for: ${list.last()}")
+                                }
+                                onComplete()// Done
                             }
-                            onComplete()// Done
                         }
-                    }
-                })
+                    })
 
             }
         }

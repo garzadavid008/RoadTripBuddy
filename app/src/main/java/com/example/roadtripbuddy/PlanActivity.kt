@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +52,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.example.roadtripbuddy.PlanATripDrawer.PlanATripDrawer
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
 import kotlinx.coroutines.delay
 
@@ -70,7 +73,7 @@ class PlanActivity : AppCompatActivity() {
     @Composable
     fun PlanTripScreen(onBack: () -> Unit) {
         val context = LocalContext.current
-        val viewModel:TripViewModel by viewModels()
+        val viewModel:PlanATripViewModel by viewModels()
         var showBottomDrawer by remember { mutableStateOf(false) }
         var showStartLocationInput by remember { mutableStateOf(true) }
         val mapReadyState = remember { mutableStateOf(false) }
@@ -79,8 +82,23 @@ class PlanActivity : AppCompatActivity() {
             activity = this@PlanActivity,
             mapReadyState = mapReadyState
         ) }
-
-        Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures { change, dragAmount ->
+                        when {
+                            dragAmount < -50 -> { // Upward drag beyond threshold.
+                                showBottomDrawer = true
+                            }
+                            dragAmount > 50 -> {  // Downward drag beyond threshold.
+                                showBottomDrawer = false
+                            }
+                        }
+                    }
+                }
+                .background(Color.Transparent)
+        ){
             Log.d("DEBUG", "mapReadyState.value before map init: ${mapReadyState.value}")
             planMap.PlanMapContent()
 
@@ -88,9 +106,25 @@ class PlanActivity : AppCompatActivity() {
                 Log.d("DEBUG", "mapReadyState.value when passed: ${mapReadyState.value}")
                 StartLocationInputBox(planMap) {
                     showStartLocationInput = false
+                    showBottomDrawer = true
                 }
             }
 
+            if (showBottomDrawer) {
+                PlanATripDrawer(
+                    visible = showBottomDrawer,
+                    onDismiss = { showBottomDrawer = false},
+                    viewModel = viewModel,
+                    resolveAndSuggest = {query, onResult ->
+                        planMap.resolveAndSuggest(query, onResult)
+                    },
+                    onRouteRequest = {viewModel, departAt->
+                        planMap.planOnRouteRequest(viewModel, departAt)
+                    },
+                    clearMap = {planMap.clearMap()},
+                    searchManager = planMap.searchManager
+                )
+            }
             IconButton(
                 onClick = {
                     onBack()
@@ -107,19 +141,7 @@ class PlanActivity : AppCompatActivity() {
                 )
             }
 
-            FloatingActionButton(
-                onClick = { showBottomDrawer = true },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(34.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search Navigation",
-                    tint = Color(0xFF2ebcff),
-                    modifier = Modifier.size(34.dp)
-                )
-            }
+
         }
     }
 
@@ -237,9 +259,10 @@ class PlanActivity : AppCompatActivity() {
                                                 ).show()
                                                 return@searchResultGetter
                                             }
-                                            planMap.updateStartLocation(location.place.coordinate)
-                                            planMap.planATripCameraInit(location)
-                                            onDismiss()
+                                            planMap.updateStartLocation(location.place.coordinate){
+                                                planMap.planATripCameraInit(location)
+                                                onDismiss() //Callback, when updateStartLocation is done, continue
+                                            }
                                         }
                                     )
                                 }
