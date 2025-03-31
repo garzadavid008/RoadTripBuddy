@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class TripViewModel : ViewModel() {
+class SearchDrawerViewModel : ViewModel() {
 
-    // Holds the list of waypoints
+    // Holds the list of waypoints for the navigation(SearchDrawer/RouteEditPage)
     private val _waypoints = MutableStateFlow(mutableListOf<String>())
     val waypoints: StateFlow<List<String>> = _waypoints
 
@@ -51,7 +51,7 @@ class TripViewModel : ViewModel() {
     fun updateETA(newETA: String) {
         _ETA.value = newETA
     }
-
+    
     fun clearWaypoints(){
         _waypoints.value.clear()
     }

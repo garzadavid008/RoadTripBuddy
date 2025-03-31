@@ -30,7 +30,7 @@ open class BaseMapUtils{
 
     // Optional parameter of a TripViewModel, should only be used when zooming in on a GeoPoint in order
     // to show the ETA
-    fun performSearch(query: String, viewModel: TripViewModel? = null) {
+    fun performSearch(query: String, viewModel: SearchDrawerViewModel? = null) {
         searchManager.performSearch(
             query = query,
             viewModel = viewModel!!,
@@ -53,22 +53,22 @@ open class BaseMapUtils{
     fun resolveAndSuggest(query: String, onResult: (List<String>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
         searchManager.resolveAndSuggest(
             query = query,
-            tomTomMap = tomTomMap,
             onResult = onResult,
             objectResult = objectResult
         )
     }
 
-    fun updateStartLocation(location: GeoPoint?){
+    fun updateStartLocation(location: GeoPoint?, onCallback: () -> Unit = {}){
         searchManager.updateStartLocation(
-            location = location
+            location = location,
+            onCallback = onCallback
         )
     }
 
     //ROUTING FUNCTIONALITY(RouteManager method(s))/////////////////////////////////////////////////
 
     //When the user requests a route this method is called, optional parameter for TripViewModel
-    fun onRouteRequest(viewModel: TripViewModel? = null){
+    fun onRouteRequest(viewModel: SearchDrawerViewModel? = null){
         routeManager.onRouteRequest(
             tomTomMap = tomTomMap,
             viewModel = viewModel!!,

@@ -29,7 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.SearchManager
-import com.example.roadtripbuddy.TripViewModel
+import com.example.roadtripbuddy.SearchDrawerViewModel
 import kotlinx.coroutines.delay
 
 //Compose for the Search/Route page
@@ -37,12 +37,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: TripViewModel = viewModel(),
+    viewModel: SearchDrawerViewModel = viewModel(),
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
-    performSearch: (String, TripViewModel) -> Unit,//Function Parameter
+    performSearch: (String, SearchDrawerViewModel) -> Unit,//Function Parameter
     resolveAndSuggest: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (TripViewModel) -> Unit,//Function Parameter
+    onRouteRequest: (SearchDrawerViewModel) -> Unit,//Function Parameter
     clearMap: () -> Unit ,//Function Parameter
     searchManager: SearchManager
 ) {
