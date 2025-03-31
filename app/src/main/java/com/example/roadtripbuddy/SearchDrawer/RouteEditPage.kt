@@ -63,11 +63,14 @@ fun RouteEditPage(
     searchManager: SearchManager,
     onBack: () -> Unit,
     onRoute: (SearchDrawerViewModel) -> Unit,
+    onStartTrip: () -> Unit,
     performAutocomplete: (String, (List<String>) -> Unit) -> Unit
 ) {
     val eta by viewModel.ETA.collectAsState()
     val waypoints by viewModel.waypoints.collectAsState()
     val focusManager = LocalFocusManager.current
+    var showDropdown by remember { mutableStateOf(false) }
+
 
     // This is a flag to not let user add more than one waypoint at a time
     var waypointFlag by remember { mutableStateOf(true) }
@@ -268,6 +271,20 @@ fun RouteEditPage(
                                 modifier = Modifier.padding(end = 8.dp)
                             )
                             Text("Add Waypoint")
+                        }
+                    }
+                    item {
+                        Button(
+                            onClick = { onStartTrip() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Start Directions")
                         }
                     }
                 }
