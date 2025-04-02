@@ -1,5 +1,8 @@
 package com.example.roadtripbuddy.SearchDrawer
 
+import PlacesViewModel
+import SuggPlace
+import com.example.roadtripbuddy.TripViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,18 +22,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.roadtripbuddy.pages.placeCard
 
 @Composable
 fun LocationDetailsPage(
-    viewModel: SearchDrawerViewModel,
+    viewModel: TripViewModel,
     locationName: String,
     isRouteReady: MutableState<Boolean>,
     onBack: () -> Unit,
-    onRouteClick: () -> Unit
+    onRouteClick: () -> Unit,
+    place : SuggPlace?
 ) {
 
     val eta by viewModel.ETA.collectAsState()
-
     LaunchedEffect(eta) {
         isRouteReady.value = eta.isNotEmpty()
     }
@@ -53,9 +57,10 @@ fun LocationDetailsPage(
             // Location details
             Text(locationName, style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Address: 123 Example Street", style = MaterialTheme.typography.bodyMedium)
-            Text("City: Sample City", style = MaterialTheme.typography.bodyMedium)
-            Text("Category: Landmark", style = MaterialTheme.typography.bodyMedium)
+            Text("Address: ${place?.address}", style = MaterialTheme.typography.bodyMedium)
+            val city = place?.address?.split(",")?.getOrNull(1)?.trim() ?: "Unknown"
+            Text("City: $city ", style = MaterialTheme.typography.bodyMedium)
+            Text("Category: ${place?.category}", style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(24.dp))
 

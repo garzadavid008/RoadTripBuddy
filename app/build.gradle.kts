@@ -96,6 +96,8 @@ dependencies {
     implementation("com.tomtom.sdk.navigation:ui:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
     implementation("com.tomtom.sdk.search:search-online:$version")
+    implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2")
+    implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)

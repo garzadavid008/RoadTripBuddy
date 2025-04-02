@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -74,7 +75,7 @@ data class Address ( var address: String)
 data class PanelToggle (var isVis: Boolean)
 //@Preview
 @Composable
-fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address("") )
+fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address(""),onClick:()->Unit )
 {
     var isVisible by remember { mutableStateOf(true) }
     // card for suggested place
@@ -98,6 +99,8 @@ AnimatedVisibility(visible = isVisible) {
                 listofLATandLong.add(latlng)
                 // make the button invis
                 isVisible = false
+                // trigger the action
+                onClick()
             }
             ) {
                 Text("+")
@@ -124,7 +127,6 @@ AnimatedVisibility(visible = isVisible) {
 @Composable
 fun Suggestions(navController: NavController)
 {
-
     // call the places view model
     // placeList will contain all suggested places
     val placesClient: PlacesClient = Places.createClient(LocalContext.current) // client resonsible for sending the request
@@ -217,7 +219,7 @@ fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList(), userAddress: Ad
                     Column {
                         // this will generate the list of places
                         placeList.forEach { place ->
-                            placeCard(place.name, place.rating, place.address, place.latAndLng,userAddress)
+                          //  placeCard(place.name, place.rating, place.address, place.latAndLng,userAddress)
                             //isVisible= toggle.isVis
                         }
 
@@ -231,7 +233,30 @@ fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList(), userAddress: Ad
         }
 
     }
-
     Log.i("Chris"," The current String is ${userAddress.address}")
+}
+
+@Composable
+fun PlaceListPage(
+    placeList: List<SuggPlace>,
+    userAddress: Address? = null,
+    onPlaceClick: (SuggPlace) -> Unit = {}
+) {
+    val scrollState = rememberLazyListState()
+    LazyColumn(
+        state = scrollState,
+        modifier = Modifier.fillMaxSize().padding(16.dp)
+    ) {
+        items(placeList) { place ->
+            placeCard(
+                name = place.name,
+                rating = place.rating,
+                address = place.address,
+                latlng = place.latAndLng,
+                userAddress = userAddress ?: Address(""),
+                onClick = { onPlaceClick(place) }
+            )
+        }
+    }
 }
 

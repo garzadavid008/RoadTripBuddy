@@ -1,11 +1,11 @@
-package com.example.roadtripbuddy.SearchDrawer
+package com.example.roadtripbuddy
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class SearchDrawerViewModel : ViewModel() {
+class TripViewModel : ViewModel() {
 
     // Holds the list of waypoints
     private val _waypoints = MutableStateFlow(mutableListOf<String>())

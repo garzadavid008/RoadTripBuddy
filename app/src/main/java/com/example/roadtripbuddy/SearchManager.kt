@@ -1,53 +1,62 @@
 package com.example.roadtripbuddy
 
-import PlacesViewModel
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
-import com.example.roadtripbuddy.pages.RightSidePanelDemo
-import com.example.roadtripbuddy.pages.Suggestions
-import com.google.android.libraries.places.api.Places
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
-import com.tomtom.sdk.map.display.internal.C
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.routing.options.Itinerary
 import com.tomtom.sdk.routing.options.ItineraryPoint
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
-import com.tomtom.sdk.search.*
-import com.tomtom.sdk.search.autocomplete.*
+import com.tomtom.sdk.search.Search
+import com.tomtom.sdk.search.SearchCallback
+import com.tomtom.sdk.search.SearchOptions
+import com.tomtom.sdk.search.SearchResponse
+import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
+import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
+import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
 import com.tomtom.sdk.search.common.error.SearchFailure
-import com.tomtom.sdk.search.model.result.*
+import com.tomtom.sdk.search.model.result.AutocompleteResult
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
+import com.tomtom.sdk.search.model.result.SearchResult
 import com.tomtom.sdk.search.online.OnlineSearch
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoder
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderCallback
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderOptions
+import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderResponse
+import com.tomtom.sdk.search.reversegeocoder.online.OnlineReverseGeocoder
 import com.tomtom.sdk.vehicle.Vehicle
+import kotlinx.coroutines.launch
+import java.util.Locale
+import kotlin.time.Duration
+import PlacesViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.*
-import kotlin.time.Duration
 
-
-class SearchManager(context: Context, apiKey: String) {
-    private val searchApi: Search = OnlineSearch.create(context, apiKey)
-    var startLocation: GeoPoint? = null
+class SearchManager(
+    context: Context,
+    apiKey: String,
+) {
+    private val searchApi: Search = OnlineSearch.create(context, apiKey)// Initializing Search using the TomTom api key
+    val reverseGeocoder: ReverseGeocoder = OnlineReverseGeocoder.create(context, apiKey) // Initializing ReverseGeocoding
     var fuzzySuggestionsPairs by mutableStateOf(emptyList<Pair<String, SearchResult?>>()) //For the resolveAndSuggest function
-
-    fun updateStartLocation(location: GeoPoint?) {
-        // Add any extra logic here if needed.
-        startLocation = location
-    }
+    var startLocation: GeoPoint? = null
+    var startLocationAddress: String = ""
 
     //Uses fuzzy search to simply convert a string address into a SearchResult object
     fun searchResultGetter(query: String, callback: (SearchResult?) -> Unit){
@@ -69,9 +78,39 @@ class SearchManager(context: Context, apiKey: String) {
         )
     }
 
+    // Updates the start location , and the start location address
+    fun updateStartLocation(location: GeoPoint?){
+        startLocation = location
+        Log.d("reverseGeocoder", location.toString())
 
+        val reverseGeocoderOptions =
+            ReverseGeocoderOptions(
+                position = startLocation!!
+            )
 
-    // helper function so perform search can use Viewmodel and places client for the api calls
+        // We use reverse geocode in order to turn a geopoint (location parameter) into a human readable
+        // address
+        reverseGeocoder.reverseGeocode(
+            reverseGeocoderOptions,
+            object : ReverseGeocoderCallback {
+                override fun onSuccess(result: ReverseGeocoderResponse) {
+                    val firstResult = result.places.first()
+                    startLocationAddress = firstResult.place.address?.freeformAddress
+                        ?.replace("\\s+".toRegex(), " ")  // Replace multiple spaces with one
+                        ?.trim()                        // Remove leading/trailing whitespace
+                        .toString()
+                    Log.d("reverseGeocoder", startLocationAddress)
+                }
+
+                override fun onFailure(failure: SearchFailure){
+                    Log.d("FAILURE", "Reverse Geocode failure: ${failure.message}")
+                }
+            }
+
+        )
+    }
+
+    // helper function
     fun createPlacesClientAndViewmodel(context:Context):PlacesViewModel{
         val placesClient = Places.createClient(context)
         return ViewModelProvider(context as ViewModelStoreOwner, PlacesViewModelFactory(placesClient))[PlacesViewModel::class.java]
@@ -80,8 +119,9 @@ class SearchManager(context: Context, apiKey: String) {
     // a brand/POI(Point of Interest) category, direct it to the locations nearby method
     fun performSearch(
         query: String,
-        viewModel: SearchDrawerViewModel,
-        context: Context,
+        viewModel: TripViewModel?,
+        placesViewModel: PlacesViewModel?,
+        context: BaseMapUtils,
         clearMap: () -> Unit,
         tomTomMap: TomTomMap?,
         planRouteAndGetETA: suspend (RoutePlanningOptions) -> Duration
@@ -100,11 +140,15 @@ class SearchManager(context: Context, apiKey: String) {
 
             if (result is AutocompleteResult){ //If the object returned is a brand/poi category
                 // locations nearby method CALL GOES HERE
-                // val isBrand = result.segments.any{it is AutocompleteSegmentBrand}
+
+
+                //If the object returned is a brand/poi category
+                // locations nearby method CALL GOES HERE
+                //val isBrand = result.segments.any{it is AutocompleteSegmentBrand}
+                //
                 val brandName = result.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name.toString()
                 Log.i("Chris"," Brand NAme : $brandName ")
-               // val context = this@SearchManager
-                val viewModel = createPlacesClientAndViewmodel(context)
+                // val context = this@SearchManager
                 // grabbing the users current position
                 val location = tomTomMap?.currentLocation?.position
 
@@ -115,12 +159,12 @@ class SearchManager(context: Context, apiKey: String) {
                     val long = location.longitude.toDouble()
 
                     CoroutineScope(Dispatchers.IO).launch {
-                        viewModel.getTextSearch(brandName, lat, long) // Call the function
+                        placesViewModel?.getTextSearch(brandName, lat, long) // Call the function
                         Log.i("Chris", "lat and long :  $lat $long")
 
                         // Switch to Main dispatcher for UI updates
                         withContext(Dispatchers.Main) {
-                            viewModel.restaurants.collectLatest { placeList ->
+                            placesViewModel?.restaurants?.collectLatest { placeList ->
                                 Log.i("Chris", "list created : ${placeList.size}")
 
                                 placeList.forEach { places ->
@@ -132,15 +176,11 @@ class SearchManager(context: Context, apiKey: String) {
                                         pinImage = ImageFactory.fromResource(R.drawable.map_marker)
                                     )
                                     tomTomMap.addMarker(mark)
-                                }
-                            }
+                                }                        }
 
                         }
                     }
                 }
-
-
-
             }
             else { // If the object returned is an address
                 val location = result as SearchResult// since objectResult is an Any object, we do this to say treat the result were talking about as a SearchResult
@@ -155,7 +195,7 @@ class SearchManager(context: Context, apiKey: String) {
                 )
 
                 if (startLocation == null) {
-                    Log.d("Debug", "startLocation is null")
+                    Log.d("FAILURE", "startLocation is null")
                     return@resolveAndSuggest
                 }
 
@@ -173,13 +213,21 @@ class SearchManager(context: Context, apiKey: String) {
                     vehicle = Vehicle.Car()
                 )
 
-                // Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
+                // IF the viewModel parameter is NOT null, Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
                 // We do this because in order to get the ETA of a route, we need to plan a route so
                 // we use RouteManagers method planRouteAndGetETA
-                viewModel.viewModelScope.launch  {
+                viewModel?.viewModelScope?.launch  {
                     try {
                         val etaDuration = planRouteAndGetETA(options)
                         viewModel.updateETA(etaDuration.toString())// Updates the searchDrawerViewModel ETA
+
+                        //calling text search to get the info about the name and address based on the geo codes
+                        // and updating the view model so the compose can view  in Location Details
+                        placesViewModel?.getTextSearch(
+                            query,
+                            locationGeoPoint.latitude,
+                            locationGeoPoint.longitude
+                        )
                     } catch (e: Exception) {
                         Log.d("FAILURE", "Route planning failed: ${e.message}",)
                     }
@@ -250,7 +298,7 @@ class SearchManager(context: Context, apiKey: String) {
 
         val autocompleteOptions = AutocompleteOptions(
             query = query,
-            position = tomTomMap?.currentLocation?.position,
+            position = startLocation,
             locale = Locale("en", "US"),
             limit = 5
         )
@@ -303,5 +351,4 @@ class SearchManager(context: Context, apiKey: String) {
             }
         )
     }
-
 }

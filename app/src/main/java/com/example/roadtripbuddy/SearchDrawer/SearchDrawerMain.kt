@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy.SearchDrawer
 
+import PlacesViewModel
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -28,6 +30,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.TripViewModel
+import com.example.roadtripbuddy.pages.PlaceListPage
 import kotlinx.coroutines.delay
 
 //Compose for the Search/Route page
@@ -35,13 +40,15 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: SearchDrawerViewModel = viewModel(),
+    viewModel: TripViewModel = viewModel(),
+    placesViewModel: PlacesViewModel,
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
-    performSearch: (String, SearchDrawerViewModel) -> Unit,//Function Parameter
+    performSearch: (String, TripViewModel) -> Unit,//Function Parameter
     resolveAndSuggest: (String, (List<String>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (SearchDrawerViewModel) -> Unit,//Function Parameter
-    clearMap: () -> Unit //Function Parameter
+    onRouteRequest: (TripViewModel) -> Unit,//Function Parameter
+    clearMap: () -> Unit ,//Function Parameter
+    searchManager: SearchManager
 ) {
     val sheetState = rememberModalBottomSheetState()
     var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
@@ -51,7 +58,22 @@ fun SearchDrawer(
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
     var selectedLocation by rememberSaveable { mutableStateOf("") }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
     var isPageReady = rememberSaveable { mutableStateOf(false) }
-    var initialRouteSet  = rememberSaveable { mutableStateOf(false) }
+    val initialRouteSet  = rememberSaveable { mutableStateOf(false) }
+
+    var showSuggestions by rememberSaveable { mutableStateOf(false) }
+    val places by placesViewModel.restaurants.collectAsState()
+
+    LaunchedEffect(places) {
+        Log.d("Chris", "places updated: ${places.size}")
+        if (places.isNotEmpty() && places.size>1) {
+
+            Log.d("Chris", "places updatedAA: ${places.size}")
+            showSuggestions = true
+            showDetails= false
+        }
+    }
+
+    val selectedPlace = places.firstOrNull()
 
     //AnimatedVisibility keeps state when the SearchDrawer is dismissed/not displayed
     AnimatedVisibility(visible = visible) {
@@ -65,6 +87,7 @@ fun SearchDrawer(
                 LocationDetailsPage(
                     locationName = selectedLocation,
                     viewModel = viewModel,
+                    place = selectedPlace,
                     isRouteReady = isPageReady,
                     onBack = {
                         showDetails = false
@@ -75,7 +98,7 @@ fun SearchDrawer(
                     onRouteClick = { // User clicks route button, takes them to RoutEditPage
                         showDetails = false
                         showRoutePage = true
-                    },
+                    }
                 )
 
             } else if (showRoutePage){
@@ -92,7 +115,21 @@ fun SearchDrawer(
                         clearMap()
                         onRouteRequest(viewModel)
                               },
-                    performAutocomplete = resolveAndSuggest
+                    performAutocomplete = resolveAndSuggest,
+                    searchManager = searchManager
+                )
+            }
+            else if(showSuggestions)
+            {
+                PlaceListPage(
+                    placeList = places,
+                    onPlaceClick  = { selectedPlace ->
+                        clearMap()
+                        selectedLocation = selectedPlace.address
+                        performSearch(selectedPlace.address, viewModel)
+                        showSuggestions = false
+                        showDetails = true
+                    }
                 )
             }
             else
@@ -112,6 +149,7 @@ fun SearchDrawer(
                             performSearch(searchQuery, viewModel)
                             selectedLocation = searchQuery
                             showDetails = true
+
                         },
                         expanded = expanded,
                         onExpandedChange = { expanded = it },

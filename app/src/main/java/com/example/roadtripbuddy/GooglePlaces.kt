@@ -68,7 +68,7 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
                 val circle = CircularBounds.newInstance(center, /* radius = */ 50000.0)
 
                 // Fields to retrieve from the API
-                val placeFields = listOf(Place.Field.NAME, Place.Field.RATING,Place.Field.ADDRESS,Place.Field.LAT_LNG)
+                val placeFields = listOf(Place.Field.NAME, Place.Field.RATING,Place.Field.ADDRESS,Place.Field.LAT_LNG,Place.Field.TYPES)
 
                 //  including and exclusing types
                 // this filters what we want
@@ -88,7 +88,8 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
                         name = place.name ?: "Unknown",
                         rating = place.rating ?: -1.0,
                         address = place.address ?: "No address found", // if its null
-                        latAndLng = place.latLng ?: LatLng(0.0,0.0)
+                        latAndLng = place.latLng ?: LatLng(0.0,0.0),
+                        category = place.types?.firstOrNull()?.name ?: "unknown"
                     )
                 }
             } catch (e: Exception) {
@@ -98,9 +99,12 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
         }
     }
 
+// function to get the PLACE ID so we can feed it into fetchPlace() to get the address, name, types , and phone number
+
+
 
 
 }
 // data class to hold the suggested locations data
 // latAndLng holds a LatLng object that contains the latitude and longitude
-data class SuggPlace(val name: String, val rating: Double, val address:String,val latAndLng:LatLng)
+data class SuggPlace(val name: String, val rating: Double, val address:String,val latAndLng:LatLng, val category: String = "Unknown")

@@ -51,15 +51,18 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.TripViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun RouteEditPage(
-    viewModel: SearchDrawerViewModel = viewModel(),
+    viewModel: TripViewModel = viewModel(),
     initialRouteSet: MutableState<Boolean>,
     initialDestination: String,
+    searchManager: SearchManager,
     onBack: () -> Unit,
-    onRoute: (SearchDrawerViewModel) -> Unit,
+    onRoute: (TripViewModel) -> Unit,
     performAutocomplete: (String, (List<String>) -> Unit) -> Unit
 ) {
     val eta by viewModel.ETA.collectAsState()
@@ -97,7 +100,7 @@ fun RouteEditPage(
     ) {
 
         Text(
-            text = eta, // ETA is your MutableState<String>
+            text = eta,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -119,7 +122,7 @@ fun RouteEditPage(
 
             Text("Start Location:")
             OutlinedTextField(
-                value = "startLocation",
+                value = searchManager.startLocationAddress, // Users location address from the searchManager
                 onValueChange = {},
                 label = { Text("Start") },
                 enabled = false,
