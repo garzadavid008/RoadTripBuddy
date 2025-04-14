@@ -25,24 +25,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.PlanATripViewModel
+import kotlinx.coroutines.flow.StateFlow
 import java.time.DateTimeException
 import java.time.LocalDateTime
 import java.time.Month
+import java.time.ZoneId
+import java.util.Date
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DepartureDateTimeInput(
-    onValidTimeAndDate: (LocalDateTime) -> Unit // when all inputs are valid this function occurs
+    onValidTimeAndDate: (LocalDateTime) -> Unit, // when all inputs are valid this function occurs
+    viewModel: PlanATripViewModel
 ) {
-    // Sample data for dropdowns.
+    // Sample data for dropdowns
     val months = listOf(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     )
     val periods = listOf("AM", "PM")
 
-    val dateAndTime by remember { mutableStateOf(LocalDateTime.now()) } // the time and date at the moment
+    fun Date.toLocalDateTime(): LocalDateTime {
+        return this.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+    }
+
+    val dateAndTime by remember { mutableStateOf(viewModel.initialDeparture.value.toLocalDateTime()) } // the time and date at the moment
 
     // States for dropdown expanded flags
     var monthExpanded by remember { mutableStateOf(false) }
@@ -155,7 +165,7 @@ fun DepartureDateTimeInput(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Hour Input - fixed width.
+            // Hour Input - fixed width
             OutlinedTextField(
                 value = hourQuery,
                 onValueChange = { hourQuery = it.filter { char -> char.isDigit() } },
@@ -166,7 +176,7 @@ fun DepartureDateTimeInput(
                     .width(70.dp)
                     .requiredHeight(60.dp)
             )
-            // Minute Input - fixed width.
+            // Minute Input
             OutlinedTextField(
                 value = minuteQuery,
                 onValueChange = { minuteQuery = it.filter { char -> char.isDigit() } },
@@ -177,7 +187,7 @@ fun DepartureDateTimeInput(
                     .width(70.dp)
                     .requiredHeight(60.dp)
             )
-            // AM/PM Dropdown - fixed width.
+            // AM/PM Dropdown
             ExposedDropdownMenuBox(
                 expanded = periodExpanded,
                 onExpandedChange = { periodExpanded = !periodExpanded },

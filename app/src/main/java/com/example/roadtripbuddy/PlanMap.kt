@@ -42,18 +42,15 @@ class PlanMap(
         tomTomMap?.moveCamera(CameraOptions(location, zoom = 15.0))// set the camera to the users location
         val markerOptions = MarkerOptions(
             coordinate = location!!,
-            // Use your own image resource or styling
             pinImage = ImageFactory.fromResource(R.drawable.map_marker)
         )
         tomTomMap?.addMarker(markerOptions)
     }
 
-    fun planOnRouteRequest(viewModel: PlanATripViewModel, departAt: Date){
+    fun planOnRouteRequest(viewModel: PlanATripViewModel){
         planRouteManager.planOnRouteRequest(
             viewModel = viewModel,
-            departAt = departAt,
             tomTomMap = tomTomMap,
-            searchManager = searchManager
             )
     }
 
