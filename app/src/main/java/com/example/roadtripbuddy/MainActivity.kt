@@ -88,11 +88,6 @@ class MainActivity : AppCompatActivity() {
         activity = this@MainActivity
     )
 
-
-    private val locationService = LocationService(
-        activity = this@MainActivity
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
@@ -200,10 +195,6 @@ class MainActivity : AppCompatActivity() {
             Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
                 navigationMap.NavMapContent()
 
-                // Once BaseMapContent is initialized, we can initialize the Intent
-                // We do this to pass the startLocation (AKA the users location) from the navigationMap.searchManager class instance
-                // and in order to not have to ask for the users location again.
-
                 IconButton(
                     onClick = {
                         scope.launch {
@@ -240,21 +231,14 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
 
+
                 if (navigationMap.mapReadyState.value) {
                     SearchDrawer(
                         visible = showBottomDrawer,
                         placesViewModel =viewModel ,
                         viewModel = searchDrawerVM,
                         onDismiss = { showBottomDrawer = false },
-                        performSearch = { query, eta -> navigationMap.performSearch(query, eta) },
-                        resolveAndSuggest = { query, onResult ->
-                            navigationMap.resolveAndSuggest(query, onResult)
-                        },
-                        onRouteRequest = { viewModel ->
-                            navigationMap.onRouteRequest(viewModel)
-                            destinationSelected = true // This might be where the second "Start Directions" button might be.
-                        },
-                        clearMap = { navigationMap.clearMap() },
+                        navMap = navigationMap,
                         searchManager = navigationMap.searchManager,
                         onStartTrip = { navigationMap.startTrip() }
                     )

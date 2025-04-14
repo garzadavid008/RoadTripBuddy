@@ -9,7 +9,6 @@ import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.search.model.result.SearchResult
-import java.util.Date
 
 class PlanMap(
     private val context: Context,

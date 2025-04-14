@@ -1,10 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-        //firebase
+    //firebase
     alias(libs.plugins.google.gms.google.services)
 // fire base
-   // id("com.google.gms.google-services")
+    // id("com.google.gms.google-services")
 }
 
 
@@ -151,26 +151,14 @@ dependencies {
     implementation("com.google.android.libraries.places:places:3.5.0")
     implementation("com.google.android.gms:play-services-maps:18.1.0")
 
-
-//    implementation("com.google.firebase:firebase-firestore-ktx") {
-//        exclude(group = "com.google.protobuf", module = "protobuf-java")
-//    }
-   // implementation("com.google.protobuf:protobuf-javalite:3.25.5")
-
-    //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
- //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
-}
-// Apply resolution strategy outside dependencies
-
-
     // Testing dependencies
-    //Unit testing
+//Unit testing
     testImplementation("io.mockk:mockk:1.12.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.arch.core:core-testing:2.1.0")
 
 
-    // Jetpack ui testing
+// Jetpack ui testing
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
@@ -179,8 +167,16 @@ dependencies {
 
 
 
-    // Espresso ui testing
+// Espresso ui testing
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
 
+//    implementation("com.google.firebase:firebase-firestore-ktx") {
+//        exclude(group = "com.google.protobuf", module = "protobuf-java")
+//    }
+    // implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+
+    //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
+    //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
 }
+// Apply resolution strategy outside dependencies

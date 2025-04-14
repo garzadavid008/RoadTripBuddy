@@ -34,8 +34,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.SearchManager
 import com.example.roadtripbuddy.pages.PlaceListPage
 import com.example.roadtripbuddy.Autocomplete
+import com.example.roadtripbuddy.NavigationMap
 import com.example.roadtripbuddy.SearchDrawerViewModel
-import com.example.roadtripbuddy.SearchManager
+import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.delay
 
@@ -45,14 +46,11 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: TripViewModel = viewModel(),
+    viewModel: SearchDrawerViewModel = viewModel(),
     placesViewModel: PlacesViewModel,
+    navMap: NavigationMap,
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
-    performSearch: (String, SearchDrawerViewModel) -> Unit,//Function Parameter
-    resolveAndSuggest: (String, (List<Pair<String, Any?>>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (SearchDrawerViewModel) -> Unit,//Function Parameter
-    clearMap: () -> Unit ,//Function Parameter
     searchManager: SearchManager,
     onStartTrip: () -> Unit
 ) {
@@ -101,7 +99,7 @@ fun SearchDrawer(
                     isRouteReady = isPageReady,
                     onBack = {
                         showDetails = false
-                        clearMap()
+                        navMap.clearMap()
                         viewModel.updateETA("")
                         isPageReady = mutableStateOf(false)
                     },
@@ -118,12 +116,12 @@ fun SearchDrawer(
                     routeFlag = routeFlag,
                     onBack = {
                         showRoutePage = false
-                        clearMap()
+                        navMap.clearMap()
                         viewModel.clearWaypoints()
                     },
                     onRoute = { vm ->
-                        clearMap()
-                        onRouteRequest(vm)
+                        navMap.clearMap()
+                        navMap.onRouteRequest(vm)
                     },
                     onStartTrip = {
                         onDismiss()            //  hides the drawer
@@ -149,15 +147,20 @@ fun SearchDrawer(
                 PlaceListPage(
                     placeList = places,
                     onPlaceClick  = { selectedPlace ->
-                        clearMap()
-                        selectedLocation = selectedPlace.address
-                        performSearch(selectedPlace.address, viewModel)
-                        showSuggestions = false
-                        showDetails = true
-                 )
-            } else if (ifAutocomplete){
+                        navMap.clearMap()
+                        navMap.resolveAndSuggest(selectedPlace.address, onResult = { result ->
+                            selectedLocation = result.first().second as SearchResult
+                            navMap.performSearch(selectedPlace.address, viewModel)
+                            showSuggestions = false
+                            showDetails = true
+                        })
+                    }
+                )
+            } else if(ifAutocomplete) {
                 Autocomplete(
-                    resolveAndSuggest = resolveAndSuggest,
+                    resolveAndSuggest = { query, onResult ->
+                        navMap.resolveAndSuggest(query = query, onResult = onResult)
+                    },
                     address = waypointPair?.second?.place?.address?.freeformAddress ?: "",
                     onDone = { searchResult ->
                         // If the waypointPair.second (AKA the searchResult) is null, were adding so we call addWaypoint
@@ -193,16 +196,19 @@ fun SearchDrawer(
                             expanded = true
                         },
                         onSearch = { searchQuery ->
-                            resolveAndSuggest(searchQuery){ results ->
+                            navMap.resolveAndSuggest(query = searchQuery, onResult = { results ->
                                 val (address, searchResult) = results.first()
                                 if (searchResult is SearchResult){
-                                    performSearch(address, viewModel)
+                                    navMap.performSearch(address, viewModel)
                                     selectedLocation = searchResult
                                     showDetails = true
-                                } else {
-                                    // PLaces Nearby
+                                } else if (searchResult is AutocompleteResult) {
+                                   navMap.findPlaces(
+                                       result = searchResult,
+                                       placesViewModel = placesViewModel
+                                   )
                                 }
-                            }
+                            })
                         },
                         expanded = expanded,
                         onExpandedChange = { expanded = it },
@@ -214,9 +220,9 @@ fun SearchDrawer(
                     LaunchedEffect(query) { //Pulsing the API call for autocomplete
                         if (query.isNotEmpty()) {
                             delay(300)
-                            resolveAndSuggest(query) { initSuggestions ->
+                            navMap.resolveAndSuggest(query = query, onResult = {initSuggestions ->
                                 autocompleteSuggestions= initSuggestions.distinct()
-                            }
+                            })
                         } else {
                             autocompleteSuggestions = emptyList()
                         }
@@ -236,14 +242,17 @@ fun SearchDrawer(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            if (objectResult is SearchResult){
+                                            if (objectResult is SearchResult) {
                                                 query = suggestion
                                                 selectedLocation = objectResult
                                                 expanded = false
-                                                performSearch(query, viewModel)
+                                                navMap.performSearch(query, viewModel)
                                                 showDetails = true
-                                            } else {
-                                                // Places Nearby
+                                            } else if (objectResult is AutocompleteResult) {
+                                                navMap.findPlaces(
+                                                    result = objectResult,
+                                                    placesViewModel = placesViewModel
+                                                )
                                             }
                                         }
                                         .padding(8.dp)

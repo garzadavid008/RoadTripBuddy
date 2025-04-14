@@ -10,9 +10,8 @@ import com.tomtom.sdk.map.display.gesture.MapLongClickListener
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.navigation.TomTomNavigation
-import com.tomtom.sdk.navigation.online.Configuration
-import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
 import com.tomtom.sdk.navigation.ui.NavigationFragment
+import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 
 //All the methods in this class are directly used in MainActivity
@@ -47,6 +46,17 @@ open class BaseMapUtils{
                 routeManager.planRouteAndGetETA(options)
             }
 
+        )
+    }
+
+    fun findPlaces(
+        result: AutocompleteResult,
+        placesViewModel: PlacesViewModel?
+    ){
+        searchManager.findPlaces(
+            result = result,
+            tomTomMap = tomTomMap,
+            placesViewModel = placesViewModel
         )
     }
 
