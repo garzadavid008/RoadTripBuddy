@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+
 import PlacesViewModel
 import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
@@ -9,6 +10,8 @@ import com.tomtom.sdk.map.display.gesture.MapLongClickListener
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.navigation.TomTomNavigation
+import com.tomtom.sdk.navigation.online.Configuration
+import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
 import com.tomtom.sdk.navigation.ui.NavigationFragment
 import com.tomtom.sdk.search.model.result.SearchResult
 
@@ -32,7 +35,7 @@ open class BaseMapUtils{
 
     // Optional parameter of a TripViewModel, should only be used when zooming in on a GeoPoint in order
     // to show the ETA
-    fun performSearch(query: String, viewModel: TripViewModel? = null,placesViewModel: PlacesViewModel? = null ,context: Context? = null) {
+    fun performSearch(query: String, viewModel: SearchDrawerViewModel? = null,placesViewModel: PlacesViewModel? = null ,context: Context? = null) {
         searchManager.performSearch(
             query = query,
             viewModel = viewModel!!,
@@ -54,25 +57,26 @@ open class BaseMapUtils{
         )
     }
 
-    fun resolveAndSuggest(query: String, onResult: (List<String>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
+    fun resolveAndSuggest(query: String, onResult: (List<Pair<String, Any?>>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
         searchManager.resolveAndSuggest(
             query = query,
-            tomTomMap = tomTomMap,
             onResult = onResult,
             objectResult = objectResult
         )
     }
 
-    fun updateStartLocation(location: GeoPoint?){
+    fun updateStartLocation(location: GeoPoint?, onCallback: () -> Unit = {}){
         searchManager.updateStartLocation(
-            location = location
+            location = location,
+            onCallback = onCallback
         )
     }
 
     //ROUTING FUNCTIONALITY(RouteManager method(s))/////////////////////////////////////////////////
 
     //When the user requests a route this method is called, optional parameter for TripViewModel
-    fun onRouteRequest(viewModel: TripViewModel? = null){
+
+    fun onRouteRequest(viewModel: SearchDrawerViewModel? = null){
         routeManager.onRouteRequest(
             tomTomMap = tomTomMap,
             viewModel = viewModel!!,

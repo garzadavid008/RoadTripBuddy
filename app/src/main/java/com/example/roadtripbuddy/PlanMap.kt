@@ -9,12 +9,15 @@ import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.search.model.result.SearchResult
+import java.util.Date
 
 class PlanMap(
     private val context: Context,
     private val activity: PlanActivity,
     private val mapReadyState: MutableState<Boolean>
 ) : BaseMapUtils(){
+
+    private lateinit var planRouteManager: PlanRouteManager
 
     @Composable
     fun PlanMapContent() {
@@ -24,7 +27,7 @@ class PlanMap(
             onMapReady = { map ->
                 tomTomMap = map //Initializes the tomTomMap object
                 searchManager = SearchManager(context = context, apiKey = apiKey)// Initializing an instance of the searchManager class
-                routeManager = RouteManager(context = context, apiKey = apiKey)// Initializing an instance of the routeManager class
+                planRouteManager = PlanRouteManager(context = context, apiKey = apiKey)// Initializing an instance of the routeManager class
                 mapReadyState.value = true
             },
             onMapDispose = {
@@ -39,10 +42,16 @@ class PlanMap(
         tomTomMap?.moveCamera(CameraOptions(location, zoom = 15.0))// set the camera to the users location
         val markerOptions = MarkerOptions(
             coordinate = location!!,
-            // Use your own image resource or styling
             pinImage = ImageFactory.fromResource(R.drawable.map_marker)
         )
         tomTomMap?.addMarker(markerOptions)
+    }
+
+    fun planOnRouteRequest(viewModel: PlanATripViewModel){
+        planRouteManager.planOnRouteRequest(
+            viewModel = viewModel,
+            tomTomMap = tomTomMap,
+            )
     }
 
 }

@@ -2,7 +2,7 @@ package com.example.roadtripbuddy.SearchDrawer
 
 import PlacesViewModel
 import SuggPlace
-import com.example.roadtripbuddy.TripViewModel
+import com.example.roadtripbuddy.SearchDrawerViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

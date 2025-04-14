@@ -1,3 +1,4 @@
+
 package com.example.roadtripbuddy
 
 
@@ -65,7 +66,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
-import com.example.roadtripbuddy.TripViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 import com.example.roadtripbuddy.pages.Suggestions
@@ -76,6 +76,10 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.roadtripbuddy.SearchDrawerViewModel
+import com.example.roadtripbuddy.pages.LoginPage
+import com.example.roadtripbuddy.pages.SignupPage
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -84,6 +88,10 @@ class MainActivity : AppCompatActivity() {
         activity = this@MainActivity
     )
 
+
+    private val locationService = LocationService(
+        activity = this@MainActivity
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,7 +107,6 @@ class MainActivity : AppCompatActivity() {
         setContent {
             RoadTripBuddyApp()
         }
-
     }
 
     @Composable
@@ -135,7 +142,7 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MapScreen(navController: NavController, navigationMap: NavigationMap) {
         val authState = authViewModel.authState.observeAsState()
-        val searchDrawerVM: TripViewModel by viewModels()
+        val searchDrawerVM: SearchDrawerViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
@@ -152,6 +159,8 @@ class MainActivity : AppCompatActivity() {
         // view model for googles places
         val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
        // val placeList by viewModel.restaurants.collectAsState()
+        var destinationSelected by remember { mutableStateOf(false) }
+
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -230,24 +239,37 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
-                    if (navigationMap.mapReadyState.value) {
-                        SearchDrawer(
-                            visible = showBottomDrawer,
-                            placesViewModel =viewModel ,
-                            viewModel = searchDrawerVM,
-                            onDismiss = {showBottomDrawer = false},
-                            performSearch = {query, eta -> navigationMap.performSearch(query, eta, placesViewModel = viewModel)},
-                            resolveAndSuggest = {query, onResult ->
-                                navigationMap.resolveAndSuggest(query, onResult)
-                            },
-                            onRouteRequest = {viewModel ->
-                                navigationMap.onRouteRequest(
-                                    viewModel = viewModel,
-                                )},
-                            clearMap = {navigationMap.clearMap()},
-                            searchManager = navigationMap.searchManager
-                        )
+
+                if (navigationMap.mapReadyState.value) {
+                    SearchDrawer(
+                        visible = showBottomDrawer,
+                        placesViewModel =viewModel ,
+                        viewModel = searchDrawerVM,
+                        onDismiss = { showBottomDrawer = false },
+                        performSearch = { query, eta -> navigationMap.performSearch(query, eta) },
+                        resolveAndSuggest = { query, onResult ->
+                            navigationMap.resolveAndSuggest(query, onResult)
+                        },
+                        onRouteRequest = { viewModel ->
+                            navigationMap.onRouteRequest(viewModel)
+                            destinationSelected = true // This might be where the second "Start Directions" button might be.
+                        },
+                        clearMap = { navigationMap.clearMap() },
+                        searchManager = navigationMap.searchManager,
+                        onStartTrip = { navigationMap.startTrip() }
+                    )
+                }
+
+                if (destinationSelected) {
+                    FloatingActionButton(
+                        onClick = { navigationMap.startTrip() },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    ) {
+                        Text("Start Directions")
                     }
+                }
             }
         }
     }

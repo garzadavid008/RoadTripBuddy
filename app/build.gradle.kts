@@ -78,6 +78,7 @@ android {
 val version = "1.23.1"
 
 dependencies {
+    implementation("sh.calvin.reorderable:reorderable:2.4.3")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.navigation:navigation-compose:2.8.8")
@@ -93,11 +94,13 @@ dependencies {
     implementation("com.tomtom.sdk.location:provider-simulation:$version")
     implementation("com.tomtom.sdk.maps:map-display:$version")
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
-    implementation("com.tomtom.sdk.navigation:ui:$version")
+    implementation("com.tomtom.sdk.location:provider-default:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
     implementation("com.tomtom.sdk.search:search-online:$version")
     implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2")
     implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
+    implementation("com.tomtom.sdk.maps.visualization:navigation:$version")
+    implementation("com.tomtom.sdk.navigation:ui:1.23.2")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)
@@ -108,6 +111,7 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.locationdelegation)
+    implementation(libs.androidx.foundation.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -159,3 +163,24 @@ dependencies {
 // Apply resolution strategy outside dependencies
 
 
+    // Testing dependencies
+    //Unit testing
+    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.arch.core:core-testing:2.1.0")
+
+
+    // Jetpack ui testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+
+
+
+    // Espresso ui testing
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+
+}

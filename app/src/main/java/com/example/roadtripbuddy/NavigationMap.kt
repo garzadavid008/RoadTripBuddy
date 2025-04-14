@@ -48,4 +48,11 @@ open class NavigationMap(
             }
         )
     }
+    
+    fun startTrip() {
+        locationService.startLiveTracking()
+    }
+
+
+
 }
