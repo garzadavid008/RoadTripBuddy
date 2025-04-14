@@ -112,13 +112,7 @@ class PlanActivity : AppCompatActivity() {
                     visible = showBottomDrawer,
                     onDismiss = { showBottomDrawer = false},
                     viewModel = viewModel,
-                    resolveAndSuggest = {query, onResult ->
-                        planMap.resolveAndSuggest(query, onResult)
-                    },
-                    onRouteRequest = {viewModel ->
-                        planMap.planOnRouteRequest(viewModel)
-                    },
-                    clearMap = {planMap.clearMap()},
+                    planMap = planMap,
                     searchManager = planMap.searchManager
                 )
             }
@@ -203,20 +197,6 @@ class PlanActivity : AppCompatActivity() {
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        /*
-                        LaunchedEffect(startLocationQuery.text) {
-                            // Trigger autocomplete only if the query is non empty
-                            if (startLocationQuery.text.isNotEmpty()) {
-                                delay(300)
-                                planMap.resolveAndSuggest(query = startLocationQuery.text, onResult = { initSuggestions ->
-                                    suggestions = initSuggestions.distinct()
-                                })
-                            } else {
-                                suggestions = emptyList()
-                            }
-                        }
-
-                         */
                         // Display suggestions only when the text field is focused
                         if (isFieldFocused && suggestions.isNotEmpty()) {
                             LazyColumn(

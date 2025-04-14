@@ -26,7 +26,7 @@ import com.example.roadtripbuddy.pages.placeCard
 
 @Composable
 fun LocationDetailsPage(
-    viewModel: TripViewModel,
+    viewModel: SearchDrawerViewModel,
     locationName: String,
     isRouteReady: MutableState<Boolean>,
     onBack: () -> Unit,

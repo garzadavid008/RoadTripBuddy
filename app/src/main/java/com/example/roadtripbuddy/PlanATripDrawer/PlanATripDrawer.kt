@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.Autocomplete
 import com.example.roadtripbuddy.PlanATripViewModel
+import com.example.roadtripbuddy.PlanMap
 import com.example.roadtripbuddy.SearchManager
 import com.example.roadtripbuddy.WaypointItem
 import com.tomtom.sdk.search.model.result.SearchResult
@@ -28,9 +29,7 @@ fun PlanATripDrawer(
     viewModel: PlanATripViewModel = viewModel(),
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
-    resolveAndSuggest: (String, (List<Pair<String, Any?>>) -> Unit) -> Unit,//Function Parameter
-    onRouteRequest: (PlanATripViewModel) -> Unit,//Function Parameter
-    clearMap: () -> Unit,//Function Parameter
+    planMap: PlanMap,
     searchManager: SearchManager
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -50,10 +49,12 @@ fun PlanATripDrawer(
                     searchManager = searchManager,
                     viewModel = viewModel,
                     onRoute = {viewModel->
-                        clearMap()
-                        onRouteRequest(viewModel)
+                        planMap.clearMap()
+                        planMap.planOnRouteRequest(viewModel)
                     },
-                    resolveAndSuggest = resolveAndSuggest,
+                    resolveAndSuggest = {query, onResult ->
+                        planMap.resolveAndSuggest(query = query, onResult = onResult)
+                    },
                     onPlanWaypointEdit = { pair ->
                         //when user clicks on a waypoint they want to edit, RouteEditPage returns a
                         // pair of the index and the waypoint at said index
@@ -67,7 +68,9 @@ fun PlanATripDrawer(
                 )
             } else {
                 Autocomplete(
-                    resolveAndSuggest = resolveAndSuggest,
+                    resolveAndSuggest = {query, onResult ->
+                        planMap.resolveAndSuggest(query = query, onResult = onResult)
+                    },
                     address = planWaypointPair?.second?.searchResult?.place?.address?.freeformAddress ?: "",
                     onDone = { searchResult ->
                         // If the planWaypointPair.second (AKA the searchResult) is null, were adding so we call addWaypoint
