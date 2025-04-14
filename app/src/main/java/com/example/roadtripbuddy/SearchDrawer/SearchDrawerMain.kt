@@ -1,5 +1,7 @@
 package com.example.roadtripbuddy.SearchDrawer
 
+import PlacesViewModel
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.pages.PlaceListPage
 import com.example.roadtripbuddy.Autocomplete
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.SearchManager
@@ -40,7 +45,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: SearchDrawerViewModel = viewModel(),
+    viewModel: TripViewModel = viewModel(),
+    placesViewModel: PlacesViewModel,
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
     performSearch: (String, SearchDrawerViewModel) -> Unit,//Function Parameter
@@ -63,6 +69,22 @@ fun SearchDrawer(
     var waypointPair by remember { mutableStateOf<Pair<Int,SearchResult?>?>(null) } // For the autocomplete composable page,
     //we store an index and a waypoint from said index from the RouteEditPage in here in order to send it to the autocomplete page
 
+    var showSuggestions by rememberSaveable { mutableStateOf(false) }
+    val places by placesViewModel.restaurants.collectAsState()
+
+    LaunchedEffect(places) {
+        Log.d("Chris", "places updated: ${places.size}")
+        if (places.isNotEmpty() && places.size>1) {
+
+            Log.d("Chris", "places updatedAA: ${places.size}")
+            showSuggestions = true
+            showDetails= false
+        }
+    }
+
+    val selectedPlace = places.firstOrNull()
+
+
     //AnimatedVisibility keeps state when the SearchDrawer is dismissed/not displayed
     AnimatedVisibility(visible = visible) {
         ModalBottomSheet(
@@ -75,6 +97,7 @@ fun SearchDrawer(
                 LocationDetailsPage(
                     locationName = selectedLocation?.place?.address?.freeformAddress!!,
                     viewModel = viewModel,
+                    place = selectedPlace,
                     isRouteReady = isPageReady,
                     onBack = {
                         showDetails = false
@@ -121,6 +144,17 @@ fun SearchDrawer(
                         ifAutocomplete = true
                     }
                 )
+            } else if(showSuggestions)
+            {
+                PlaceListPage(
+                    placeList = places,
+                    onPlaceClick  = { selectedPlace ->
+                        clearMap()
+                        selectedLocation = selectedPlace.address
+                        performSearch(selectedPlace.address, viewModel)
+                        showSuggestions = false
+                        showDetails = true
+                 )
             } else if (ifAutocomplete){
                 Autocomplete(
                     resolveAndSuggest = resolveAndSuggest,

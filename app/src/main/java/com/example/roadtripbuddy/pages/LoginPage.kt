@@ -46,12 +46,22 @@ import androidx.navigation.NavController
 import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
+import com.example.roadtripbuddy.User
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+
 //import com.example.playground.isPasswordString
 
 //
 //@Preview
 @Composable
 fun LoginPage( navController: NavController,authViewModel:AuthViewModel) {
+
+    // creating the instance of db
+    val db = Firebase.firestore
+    // calling the user collection
+    val userCollection = db.collection("users")
 
     // for the toast
     val context = LocalContext.current
@@ -156,7 +166,13 @@ fun LoginPage( navController: NavController,authViewModel:AuthViewModel) {
             }) {
                 Text(text = "Dont have an account? Sign up here")
             }
-
+            // take them back to home
+            TextButton(onClick = {
+                //this will take them back to the map page
+                navController.navigate("map")
+            }) {
+                Text(text = "Back to Map")
+            }
         }
     }
 

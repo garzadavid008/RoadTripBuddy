@@ -2,6 +2,7 @@
 package com.example.roadtripbuddy
 
 
+import PlacesViewModel
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -38,12 +39,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,11 +60,22 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
+import com.example.roadtripbuddy.pages.LoginPage
+import com.example.roadtripbuddy.pages.SignupPage
+import com.example.roadtripbuddy.pages.Suggestions
+import kotlinx.coroutines.launch
+//import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
+import com.example.roadtripbuddy.pages.Suggestions
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
@@ -68,6 +83,11 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModels()
+    val userViewModel: UserViewModel by viewModels()
+    private val locationService = LocationService(
+        activity = this@MainActivity
+    )
+
 
     private val locationService = LocationService(
         activity = this@MainActivity
@@ -75,6 +95,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // calling firebase/firestore
+        FirebaseApp.initializeApp(this)
+        val firestore = FirebaseFirestore.getInstance()
+        //creating the places api instance
+        Places.initialize(applicationContext, getString(R.string.google_maps_key))
+        val placesClient: PlacesClient = Places.createClient(this)
 
         locationService.requestLocationPermissions()
 
@@ -106,6 +132,7 @@ class MainActivity : AppCompatActivity() {
             composable("about") { AboutScreen(navController) }
             composable("login") { LoginPage(navController, authViewModel) }
             composable("signup") { SignupPage(navController, authViewModel) }
+            composable("suggestion") { Suggestions(navController) }
         }
     }
 
@@ -123,6 +150,15 @@ class MainActivity : AppCompatActivity() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
+
+        var destinationList by rememberSaveable(stateSaver = listSaver(
+            save = { ArrayList(it) },  // Convert to ArrayList for saving
+            restore = { it.toMutableList() }  // Restore as MutableList
+        )) { mutableStateOf(mutableListOf<String>()) }
+         val placesClient: PlacesClient = Places.createClient(this)
+        // view model for googles places
+        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
+       // val placeList by viewModel.restaurants.collectAsState()
         var destinationSelected by remember { mutableStateOf(false) }
 
 
@@ -157,6 +193,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     "logout" -> authViewModel.signout() // sign out
+                    "suggest" -> navController.navigate("suggestion")
                 }
             }
         ) {
@@ -202,9 +239,11 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier.size(34.dp)
                     )
                 }
+
                 if (navigationMap.mapReadyState.value) {
                     SearchDrawer(
                         visible = showBottomDrawer,
+                        placesViewModel =viewModel ,
                         viewModel = searchDrawerVM,
                         onDismiss = { showBottomDrawer = false },
                         performSearch = { query, eta -> navigationMap.performSearch(query, eta) },

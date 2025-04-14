@@ -7,11 +7,33 @@ plugins {
    // id("com.google.gms.google-services")
 }
 
+
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.google.protobuf") {
+            useTarget("com.google.protobuf:protobuf-javalite:3.21.7")
+        }
+    }
+}
+
+
+
 val tomtomApiKey: String by project
 
 android {
     namespace = "com.example.roadtripbuddy"
     compileSdk = 35
+
+    packagingOptions {
+        resources.excludes.addAll(listOf(
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE",
+            "META-INF/LICENSE.txt",
+            "META-INF/NOTICE",
+            "META-INF/NOTICE.txt"
+        ))
+    }
 
     defaultConfig {
         applicationId = "com.example.roadtripbuddy"
@@ -94,21 +116,51 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // fire base depen
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+//    // fire base depen
+//    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+////    implementation("com.google.firebase:firebase-analytics")
+////    // you would add other dependencies you will use here from fire base
+////    // for auth
+////    implementation("com.google.firebase:firebase-auth")
+//// Use an older compatible Firebase version
+//    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
+//
+//    // If you're using other Firebase services, ensure they match the BOM
 //    implementation("com.google.firebase:firebase-analytics")
-//    // you would add other dependencies you will use here from fire base
-//    // for auth
-//    implementation("com.google.firebase:firebase-auth")
-// Use an older compatible Firebase version
-    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
-
-    // If you're using other Firebase services, ensure they match the BOM
-    implementation("com.google.firebase:firebase-analytics")
-
-    // Downgrade Google Play Services dependencies if necessary
-    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
+//
+//    // Downgrade Google Play Services dependencies if necessary
+//    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
     debugImplementation(libs.androidx.ui.tooling)
+//
+//    // firestore depend
+//    implementation("com.google.firebase:firebase-firestore-ktx")
+
+
+    //implementation(platform("com.google.firebase:firebase-bom:33.10.0")) //Get the latest version from Firebase release notes
+    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
+
+    implementation("com.google.firebase:firebase-firestore-ktx") // Or firebase-firestore if using Java
+
+
+    implementation("com.google.firebase:firebase-auth") //Let the BOM manage the version
+
+    // for http request
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
+
+    // google places api sdk
+    implementation("com.google.android.libraries.places:places:3.5.0")
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+
+//    implementation("com.google.firebase:firebase-firestore-ktx") {
+//        exclude(group = "com.google.protobuf", module = "protobuf-java")
+//    }
+   // implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+
+    //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
+ //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+}
+// Apply resolution strategy outside dependencies
 
 
     // Testing dependencies

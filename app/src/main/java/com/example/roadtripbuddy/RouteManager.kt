@@ -2,6 +2,8 @@ package com.example.roadtripbuddy
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
+//import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import androidx.compose.ui.graphics.Color
 import com.tomtom.sdk.annotations.InternalTomTomSdkApi
 import com.tomtom.sdk.location.GeoPoint
@@ -114,7 +116,7 @@ class RouteManager(context: Context, apiKey: String) {
 
     //Calculates a route based on a list of waypoints from the TripViewModel
     fun onRouteRequest(
-        viewModel: SearchDrawerViewModel,
+        viewModel: TripViewModel,
         tomTomMap: TomTomMap?,
         searchManager: SearchManager
     ) {

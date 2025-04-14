@@ -1,5 +1,8 @@
 package com.example.roadtripbuddy
 
+
+import PlacesViewModel
+import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.map.display.TomTomMap
@@ -27,16 +30,17 @@ open class BaseMapUtils{
     var startLocation: GeoPoint? = null
     var startLocationAddress: String? = ""
 
-
     //SEARCH FUNCTIONALITY(SearchManager methods)///////////////////////////////////////////////////
 
 
     // Optional parameter of a TripViewModel, should only be used when zooming in on a GeoPoint in order
     // to show the ETA
-    fun performSearch(query: String, viewModel: SearchDrawerViewModel? = null) {
+    fun performSearch(query: String, viewModel: SearchDrawerViewModel? = null,placesViewModel: PlacesViewModel? = null ,context: Context? = null) {
         searchManager.performSearch(
             query = query,
             viewModel = viewModel!!,
+            placesViewModel = placesViewModel,
+            context = this@BaseMapUtils, // added context for searchNearby
             clearMap = { tomTomMap?.clear() },
             tomTomMap = tomTomMap,
             planRouteAndGetETA = { options ->
@@ -71,6 +75,7 @@ open class BaseMapUtils{
     //ROUTING FUNCTIONALITY(RouteManager method(s))/////////////////////////////////////////////////
 
     //When the user requests a route this method is called, optional parameter for TripViewModel
+
     fun onRouteRequest(viewModel: SearchDrawerViewModel? = null){
         routeManager.onRouteRequest(
             tomTomMap = tomTomMap,

@@ -1,9 +1,12 @@
 package com.example.roadtripbuddy
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class AuthViewModel: ViewModel()  {
 
@@ -62,7 +65,7 @@ class AuthViewModel: ViewModel()  {
     }
 
     // function for the sign up
-    fun signup(email:String,password:String)
+    fun signup(email:String,password:String,name:String,vehicle:String)
     {
         //We must first check if the email or passwords strings are empty
         if(email.isEmpty() || password.isEmpty())
@@ -77,6 +80,22 @@ class AuthViewModel: ViewModel()  {
                 {
                     // the user was created !
                     _authState.value = AuthState.Authenticated
+                    // creating the instance of db
+                    val db = Firebase.firestore
+                    // calling the user collection
+                    val userCollection = db.collection("users")
+                    // create User obj
+                    val user = User(name,email,vehicle)
+                    val fireBaseUser = auth.currentUser
+                    val userId = fireBaseUser?.uid!!
+                    // adding to the db with their specific auth iD
+                    userCollection.document(userId).set(user.toMap()).addOnSuccessListener {
+                        Log.d("Firestore", "User document added successfully!")
+                    }
+                        .addOnFailureListener { e ->
+                            Log.w("Firestore", "Error adding user document", e)
+                        }
+
                 }else
                 {
                     // firebase couldnt log them in. so provide the error

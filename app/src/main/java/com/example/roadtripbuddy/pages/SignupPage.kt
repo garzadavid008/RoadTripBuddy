@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy.pages
 
+import android.provider.ContactsContract.CommonDataKinds.Email
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -46,6 +47,14 @@ import androidx.navigation.NavController
 import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
+//import com.google.firebase.Firebase
+//import com.google.firebase.firestore.firestore
+
+import com.example.roadtripbuddy.User
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.tomtom.sdk.vehicle.Vehicle
+
 //import com.example.playground.isPasswordString
 //modifier: Modifier = Modifier, authViewModel:AuthViewModel
 
@@ -67,6 +76,7 @@ fun isPasswordString(password:String) : Boolean
     // validtae
     return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecialChar
 }
+
 //@Preview
 @Composable
 fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
@@ -79,6 +89,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
     var repass by remember { mutableStateOf("") }
     var isPasswordValid by remember { mutableStateOf(true) }
     var name by remember { mutableStateOf("") }
+    var vehicle by remember { mutableStateOf("") }
 // holds the auth state
     val authState = authViewModel.authState.observeAsState()
 
@@ -108,11 +119,30 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(text = "Sign Up", modifier = Modifier.padding(20.dp))
+            Row {
+                Image(
+                    painter = painterResource(id = R.drawable.name),
+                    contentDescription = "Person Image for signup",
+                    modifier = Modifier.weight(1f,fill=false)
+                )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("name") }
                 )
+            }
+            Row {
+                Image(
+                    painter = painterResource(id = R.drawable.car),
+                    contentDescription = "Person Image for signup",
+                    modifier = Modifier.weight(1f,fill=false)
+                )
+                OutlinedTextField(
+                    value = vehicle,
+                    onValueChange = { vehicle = it },
+                    label = { Text("Enter Vehicle Type (eg SUV, Sedan)") }
+                )
+            }
             Row (
             ){
                 Image(
@@ -169,7 +199,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
                     }
                     else{
                         // singing up the user
-                        authViewModel.signup(email,password)
+                        authViewModel.signup(email,password,name,vehicle)
                     }
                 },
                 modifier = Modifier.padding(16.dp),
@@ -204,9 +234,17 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
             }) {
                 Text(text = "Already have an account,Login!")
             }
+            // take them back to home
+            TextButton(onClick = {
+                //this will take them back to the map page
+                navController.navigate("map")
+            }) {
+                Text(text = "Back to Map")
+            }
 
         }
     }
 
+    // adding
 
 }

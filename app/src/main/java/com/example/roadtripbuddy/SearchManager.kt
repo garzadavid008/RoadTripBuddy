@@ -38,7 +38,15 @@ import com.tomtom.sdk.vehicle.Vehicle
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.time.Duration
-
+import PlacesViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.libraries.places.api.Places
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 
 class SearchManager(
     context: Context,
@@ -104,12 +112,19 @@ class SearchManager(
 
         )
     }
+    
+    fun createPlacesClientAndViewmodel(context:Context):PlacesViewModel{
+        val placesClient = Places.createClient(context)
+        return ViewModelProvider(context as ViewModelStoreOwner, PlacesViewModelFactory(placesClient))[PlacesViewModel::class.java]
+    }
 
     // Method to either find, add marker, and zoom into an initial SearchResult, or if the query is
     // a brand/POI(Point of Interest) category, direct it to the locations nearby method
     fun performSearch(
         query: String,
         viewModel: SearchDrawerViewModel?,
+        placesViewModel: PlacesViewModel?,
+        context: BaseMapUtils,
         clearMap: () -> Unit,
         tomTomMap: TomTomMap?,
         planRouteAndGetETA: suspend (RoutePlanningOptions) -> Duration
@@ -128,6 +143,47 @@ class SearchManager(
 
             if (result is AutocompleteResult){ //If the object returned is a brand/poi category
                 // locations nearby method CALL GOES HERE
+
+
+                //If the object returned is a brand/poi category
+                // locations nearby method CALL GOES HERE
+                //val isBrand = result.segments.any{it is AutocompleteSegmentBrand}
+                //
+                val brandName = result.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name.toString()
+                Log.i("Chris"," Brand NAme : $brandName ")
+                // val context = this@SearchManager
+                // grabbing the users current position
+                val location = tomTomMap?.currentLocation?.position
+
+                if(location != null)
+                {
+
+                    val lat = location.latitude.toDouble()
+                    val long = location.longitude.toDouble()
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        placesViewModel?.getTextSearch(brandName, lat, long) // Call the function
+                        Log.i("Chris", "lat and long :  $lat $long")
+
+                        // Switch to Main dispatcher for UI updates
+                        withContext(Dispatchers.Main) {
+                            placesViewModel?.restaurants?.collectLatest { placeList ->
+                                Log.i("Chris", "list created : ${placeList.size}")
+
+                                placeList.forEach { places ->
+                                    Log.i("Chris", "Name : ${places.name}")
+                                    val geoPoint = GeoPoint(places.latAndLng.latitude, places.latAndLng.longitude)
+
+                                    val mark = MarkerOptions(
+                                        coordinate = geoPoint,
+                                        pinImage = ImageFactory.fromResource(R.drawable.map_marker)
+                                    )
+                                    tomTomMap.addMarker(mark)
+                                }                        }
+
+                        }
+                    }
+                }
             }
             else { // If the object returned is an address
                 val location = result as SearchResult// since objectResult is an Any object, we do this to say treat the result were talking about as a SearchResult
@@ -167,6 +223,14 @@ class SearchManager(
                     try {
                         val etaDuration = planRouteAndGetETA(options)
                         viewModel.updateETA(etaDuration.toString())// Updates the searchDrawerViewModel ETA
+
+                        //calling text search to get the info about the name and address based on the geo codes
+                        // and updating the view model so the compose can view  in Location Details
+                        placesViewModel?.getTextSearch(
+                            query,
+                            locationGeoPoint.latitude,
+                            locationGeoPoint.longitude
+                        )
                     } catch (e: Exception) {
                         Log.d("FAILURE", "Route planning failed: ${e.message}",)
                     }
