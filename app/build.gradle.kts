@@ -56,6 +56,7 @@ android {
 val version = "1.23.1"
 
 dependencies {
+    implementation("sh.calvin.reorderable:reorderable:2.4.3")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.navigation:navigation-compose:2.8.8")
@@ -72,11 +73,11 @@ dependencies {
     implementation("com.tomtom.sdk.maps:map-display:$version")
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
     implementation("com.tomtom.sdk.location:provider-default:$version")
-    implementation("com.tomtom.sdk.navigation:ui:$version")
     implementation("com.tomtom.sdk.routing:route-planner-online:$version")
     implementation("com.tomtom.sdk.search:search-online:$version")
     implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2")
     implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
+    implementation("com.tomtom.sdk.maps.visualization:navigation:$version")
     implementation("com.tomtom.sdk.navigation:ui:1.23.2")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)

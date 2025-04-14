@@ -1,11 +1,8 @@
 package com.example.roadtripbuddy.SearchDrawer
 
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,8 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
@@ -35,75 +31,69 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.view.HapticFeedbackConstantsCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.roadtripbuddy.SearchManager
 import com.example.roadtripbuddy.SearchDrawerViewModel
-import kotlinx.coroutines.delay
+import com.example.roadtripbuddy.SearchManager
+import com.tomtom.sdk.search.model.result.SearchResult
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun RouteEditPage(
     viewModel: SearchDrawerViewModel = viewModel(),
-    initialRouteSet: MutableState<Boolean>,
-    initialDestination: String,
+    routeFlag: MutableState<Boolean>,
     searchManager: SearchManager,
     onBack: () -> Unit,
     onRoute: (SearchDrawerViewModel) -> Unit,
     onStartTrip: () -> Unit,
-    performAutocomplete: (String, (List<String>) -> Unit) -> Unit
+    onWaypointEdit: (Pair<Int, SearchResult>) -> Unit,
+    onWaypointAdd: () -> Unit
 ) {
     val eta by viewModel.ETA.collectAsState()
     val waypoints by viewModel.waypoints.collectAsState()
     val focusManager = LocalFocusManager.current
-    var showDropdown by remember { mutableStateOf(false) }
+    val view = LocalView.current
 
+    val lazyListState = rememberLazyListState()
 
-    // This is a flag to not let user add more than one waypoint at a time
-    var waypointFlag by remember { mutableStateOf(true) }
-
+    // calls route on composition only if the route hasnt been updated via routeFlag
     LaunchedEffect(Unit) {
-        if (viewModel.waypoints.value.isEmpty()) {
-            viewModel.initializeWaypoints(initialDestination) //mInitialize waypoints
+        if (viewModel.waypoints.value.isNotEmpty() && !routeFlag.value) {
+            Log.d("UPDATING ROUTE LIST", viewModel.waypoints.value.toString())
+            onRoute(viewModel) // Only calls when waypoints are available
+            routeFlag.value = true
         }
     }
 
-    // Calls onRoute once at the beginning
-    LaunchedEffect(viewModel.waypoints) {
-        if (viewModel.waypoints.value.isNotEmpty() && !initialRouteSet.value) {
-            onRoute(viewModel) // Only calls when waypoints are available
-            initialRouteSet.value = true
-        }
-    }
-    // Function to update the route and trigger onRoute
-    fun updateRoute() {
-        Log.d("UPDATING ROUTE LIST", viewModel.waypoints.value.toString())
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        viewModel.moveWaypoint(from.index, to.index)
+
+        ViewCompat.performHapticFeedback(
+            view,
+            HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK
+        )
+
         onRoute(viewModel)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    focusManager.clearFocus()
-                })
-            }
-    ) {
-
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { focusManager.clearFocus() }
+        )
         Text(
             text = eta,
             style = MaterialTheme.typography.bodyLarge,
@@ -111,7 +101,6 @@ fun RouteEditPage(
                 .align(Alignment.TopEnd)
                 .padding(16.dp)
         )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,125 +127,63 @@ fun RouteEditPage(
             Text("Waypoints:")
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            LazyColumn(modifier = Modifier.fillMaxWidth(), state = lazyListState) {
                 itemsIndexed(waypoints, key = { _, waypoint -> waypoint.hashCode() }) { index, waypoint ->
-                    var query by remember { mutableStateOf(waypoint) }
-                    var suggestions by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
-                    var isFieldFocused by remember { mutableStateOf(false) }
+                    ReorderableItem(reorderableLazyListState, key = waypoint.hashCode() ) { isDragging ->
+                        val address by remember { mutableStateOf(waypoint?.place?.address?.freeformAddress!!) }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = { newValue ->
-                                query = newValue
-                            },
-                            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(
-                                onDone = { //When user presses done ->
-                                    viewModel.updateWaypoint(index, query)
-                                    updateRoute()
-                                    focusManager.clearFocus()
-                                }
-                            ),
-                            label = { Text("Waypoint ${index + 1}") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .onFocusChanged { focusState ->
-                                    isFieldFocused = focusState.isFocused
-                                    if (!focusState.isFocused) {
-                                        suggestions = emptyList()
-                                    }
-                                }
-                                .onKeyEvent { keyEvent -> // For testing basically, makes the Enter button on our keyboards commit a waypoint[index] change
-                                    if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
-                                        viewModel.updateWaypoint(index, query)
-                                        updateRoute()
-                                        waypointFlag = true
-                                        focusManager.clearFocus()
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                }
-                        )
-                        //REMOVE WAYPOINT BUTTON
-                        if (waypoints.size > 1) { // Waypoint size should always be > 1
-                            IconButton(
-                                onClick = {
-                                    viewModel.removeWaypoint(index)
-                                    Handler(Looper.getMainLooper()).postDelayed({
-                                        updateRoute()
-                                    }, 100)
-                                    // If the flag is false make it true, if we don't do this the user gets stuck
-                                    if (!waypointFlag) {
-                                        waypointFlag = true
-                                    }
-                                },
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Remove Waypoint",
-                                    tint = Color.Red
-                                )
-                            }
-                        }
-
-                    }
-
-                    LaunchedEffect(query) { //Pulsing the API call for autocomplete
-                        if (query.isNotEmpty()) {
-                            delay(300)
-                            performAutocomplete(query) { initSuggestions ->
-                                suggestions = initSuggestions.distinct()
-                            }
-                        } else {
-                            suggestions = emptyList()
-                        }
-                    }
-
-                    // Only display autocomplete results/suggestions when the user is actively using the textField and suggestions are not empty
-                    if (isFieldFocused && suggestions.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            suggestions.forEach { suggestion ->
-                                Text(
-                                    text = suggestion,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            query = suggestion
-                                            viewModel.updateWaypoint(index, suggestion)
-                                            Handler(Looper.getMainLooper()).postDelayed({
-                                                updateRoute()
-                                            }, 100)
-                                            suggestions = emptyList()
-                                            waypointFlag = true
-                                            focusManager.clearFocus()
-                                        }
-                                        .padding(8.dp)
+                            WaypointTextField(
+                                address = address,
+                                onClick = {
+                                    onWaypointEdit(Pair(index, waypoint!!))
+                                    Log.d("DEBUG", "I HAVE BEEN CLICKED")
+                                          },
+                                modifier = Modifier.draggableHandle(
+                                    onDragStarted = {
+                                        ViewCompat.performHapticFeedback(
+                                            view,
+                                            HapticFeedbackConstantsCompat.GESTURE_START
+                                        )
+                                    },
+                                    onDragStopped = {
+                                        ViewCompat.performHapticFeedback(
+                                            view,
+                                            HapticFeedbackConstantsCompat.GESTURE_END
+                                        )
+                                    },
                                 )
+
+                            )
+                            //REMOVE WAYPOINT BUTTON
+                            // Makes sure the user can remove waypoints while in the middle of dragging
+                            if (!isDragging && waypoints.size > 1) { // Waypoint size should always be > 1
+                                IconButton(
+                                    onClick = {
+                                        viewModel.removeWaypoint(index)
+                                        onRoute(viewModel)
+                                    },
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Remove Waypoint",
+                                        tint = Color.Gray
+                                    )
+                                }
                             }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                // If waypointFlag is true and if waypoint size doesnt exceed 20
-                if (waypointFlag && waypoints.size < 20) { //Limiting the amount of waypoints user can add for now, change it for testing
+
+                if (waypoints.size < 20) { //Limiting the amount of waypoints user can add for now, change it for testing
                     item {
                         Button( //ADD WAYPOINT BUTTON
-                            onClick = {
-                                viewModel.addWaypoint()
-                                //on click make the flag false to not let the user add another waypoint until this one is initialized
-                                waypointFlag = false
-                            },
+                            onClick = { onWaypointAdd() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp),

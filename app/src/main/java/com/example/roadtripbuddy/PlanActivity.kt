@@ -24,9 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +32,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +50,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.example.roadtripbuddy.PlanATripDrawer.PlanATripDrawer
-import com.example.roadtripbuddy.SearchDrawer.SearchDrawer
 import kotlinx.coroutines.delay
 
 class PlanActivity : AppCompatActivity() {
@@ -65,7 +61,8 @@ class PlanActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         usersLocationAddress = intent.getStringExtra("start_location")
         setContent {
-            PlanTripScreen(onBack = { finish() })
+            PlanTripScreen(onBack = {
+                finish() })
         }
     }
 
@@ -118,8 +115,8 @@ class PlanActivity : AppCompatActivity() {
                     resolveAndSuggest = {query, onResult ->
                         planMap.resolveAndSuggest(query, onResult)
                     },
-                    onRouteRequest = {viewModel, departAt->
-                        planMap.planOnRouteRequest(viewModel, departAt)
+                    onRouteRequest = {viewModel ->
+                        planMap.planOnRouteRequest(viewModel)
                     },
                     clearMap = {planMap.clearMap()},
                     searchManager = planMap.searchManager
@@ -127,6 +124,7 @@ class PlanActivity : AppCompatActivity() {
             }
             IconButton(
                 onClick = {
+                    viewModel.clearPlanWaypoints()
                     onBack()
                 },
                 modifier = Modifier
@@ -205,6 +203,7 @@ class PlanActivity : AppCompatActivity() {
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                        /*
                         LaunchedEffect(startLocationQuery.text) {
                             // Trigger autocomplete only if the query is non empty
                             if (startLocationQuery.text.isNotEmpty()) {
@@ -216,6 +215,8 @@ class PlanActivity : AppCompatActivity() {
                                 suggestions = emptyList()
                             }
                         }
+
+                         */
                         // Display suggestions only when the text field is focused
                         if (isFieldFocused && suggestions.isNotEmpty()) {
                             LazyColumn(

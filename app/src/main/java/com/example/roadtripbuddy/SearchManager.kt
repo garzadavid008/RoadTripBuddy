@@ -224,7 +224,7 @@ class SearchManager(
     // under search bars, ObjectResult is for the performSearch method.
     fun resolveAndSuggest(
         query: String,
-        onResult: (List<String>) -> Unit = {},//An optional function parameter that returns a suggestion list of strings (this is for the search bar suggestions)
+        onResult: (List<Pair<String, Any?>>) -> Unit = {},//An optional function parameter that returns a suggestion list of strings (this is for the search bar suggestions)
         objectResult: (Any?) -> Unit = {} //An optional function parameter that returns an object, either and AutocompleteResult or SearchResult
     ) {
         if (query.isBlank()) {
@@ -237,11 +237,8 @@ class SearchManager(
         val autocompleteOptions = AutocompleteOptions(
             query = query,
             position = startLocation ?: GeoPoint(39.8333, 98.5833),
-            locale = Locale("en", "US"),
-            limit = 5
+            locale = Locale("en", "US")
         )
-
-
 
         searchApi.autocompleteSearch(// first we use autocomplete search for brands and poi categories
             autocompleteOptions,
@@ -280,7 +277,8 @@ class SearchManager(
                             .take(5)
 
                         objectResult(combinedResults.firstOrNull()?.second)
-                        onResult(combinedResults.map { it.first })
+                        onResult(combinedResults)
+                        //onResult(combinedResults.map { it.first })
                     }
                 }
 

@@ -7,6 +7,8 @@ import com.tomtom.sdk.map.display.gesture.MapLongClickListener
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.navigation.TomTomNavigation
+import com.tomtom.sdk.navigation.online.Configuration
+import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
 import com.tomtom.sdk.navigation.ui.NavigationFragment
 import com.tomtom.sdk.search.model.result.SearchResult
 
@@ -24,6 +26,7 @@ open class BaseMapUtils{
     private var pendingClearMap: Boolean = false
     var startLocation: GeoPoint? = null
     var startLocationAddress: String? = ""
+
 
     //SEARCH FUNCTIONALITY(SearchManager methods)///////////////////////////////////////////////////
 
@@ -50,7 +53,7 @@ open class BaseMapUtils{
         )
     }
 
-    fun resolveAndSuggest(query: String, onResult: (List<String>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
+    fun resolveAndSuggest(query: String, onResult: (List<Pair<String, Any?>>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
         searchManager.resolveAndSuggest(
             query = query,
             onResult = onResult,
