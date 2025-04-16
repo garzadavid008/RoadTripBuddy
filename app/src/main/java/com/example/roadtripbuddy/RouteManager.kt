@@ -32,7 +32,7 @@ import kotlin.time.Duration
 
 class RouteManager(context: Context, apiKey: String) {
 
-    private val routePlanner = OnlineRoutePlanner.create(context, apiKey)
+    val routePlanner = OnlineRoutePlanner.create(context, apiKey)
     private var waypointList = mutableListOf<ItineraryPoint>() //For the route constructor, sets up waypoints for route itinerary
     private var lastDestination: GeoPoint? = null // For the route constructor, sets up the final destination for route itinerary
     private var route: Route? = null

@@ -25,7 +25,7 @@ android {
     namespace = "com.example.roadtripbuddy"
     compileSdk = 35
 
-    packagingOptions {
+    packaging {
         resources.excludes.addAll(listOf(
             "META-INF/DEPENDENCIES",
             "META-INF/LICENSE",
@@ -101,6 +101,7 @@ dependencies {
     implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
     implementation("com.tomtom.sdk.maps.visualization:navigation:$version")
     implementation("com.tomtom.sdk.navigation:ui:1.23.2")
+    implementation("com.tomtom.sdk.navigation:navigation:$version")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.drawerlayout)

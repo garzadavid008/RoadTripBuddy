@@ -3,11 +3,28 @@ package com.example.roadtripbuddy
 import android.content.Context
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import android.util.Log
+import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
+import com.tomtom.sdk.navigation.ui.NavigationFragment
+import com.tomtom.sdk.navigation.ui.NavigationUiOptions
+import com.tomtom.sdk.routing.route.Route
+import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
+import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
+import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
+import com.tomtom.sdk.routing.options.Itinerary
+import com.tomtom.sdk.routing.options.ItineraryPoint
+import com.tomtom.sdk.routing.options.RoutePlanningOptions
+import com.tomtom.sdk.routing.*
+import com.tomtom.sdk.navigation.RoutePlan
+import com.tomtom.sdk.location.Place
+import com.tomtom.sdk.navigation.online.Configuration
+
+
+
 
 //This is the map that appears in MainActivity. This map acts as a simple GPS navigation
 open class NavigationMap(
@@ -48,11 +65,72 @@ open class NavigationMap(
             }
         )
     }
-    
-    fun startTrip() {
-        locationService.startLiveTracking()
+
+    fun planRouteAndStartNavigation(viewModel: SearchDrawerViewModel) {
+        val waypoints = viewModel.waypoints.value
+        if (waypoints.isEmpty()) return
+
+        val origin = searchManager.startLocation ?: return
+        val destination = waypoints.lastOrNull()?.place?.coordinate ?: return
+        val intermediatePoints = waypoints.dropLast(1).mapNotNull { it?.place?.coordinate }
+
+        val itinerary = Itinerary(
+            origin = ItineraryPoint(Place(origin)),
+            destination = ItineraryPoint(Place(destination)),
+            waypoints = intermediatePoints.map { ItineraryPoint(Place(it)) }
+        )
+
+        val options = RoutePlanningOptions(
+            itinerary = itinerary,
+            guidanceOptions = GuidanceOptions(),
+        )
+
+        val callback = object : RoutePlanningCallback {
+            override fun onSuccess(result: RoutePlanningResponse) {
+                val route = result.routes.firstOrNull() ?: return
+                startNavigation(route, options)
+            }
+
+            override fun onFailure(failure: RoutingFailure) {
+                Log.e("RoutePlanning", "Failed to plan route: ${failure.message}")
+            }
+
+            override fun onRoutePlanned(route: Route) = Unit
+        }
+
+        routeManager.routePlanner.planRoute(options, callback)
     }
 
+    fun startNavigation(route: Route, options: RoutePlanningOptions) {
+        navigationTileStore = NavigationTileStore.create(
+            context,
+            NavigationTileStoreConfiguration(apiKey)
+        )
+
+        val config = Configuration(
+            context = context,
+            navigationTileStore = navigationTileStore,
+            locationProvider = locationService.getLocationProvider(),
+            routePlanner = routeManager.routePlanner
+        )
+
+        tomTomNavigation = OnlineTomTomNavigationFactory.create(config)
+
+        if (!isNavigationFragmentInitialized()) {
+            val navigationUiOptions = NavigationUiOptions(keepInBackground = true)
+            navigationFragment = NavigationFragment.newInstance(navigationUiOptions)
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container_view_tag, navigationFragment)
+                .commitNowAllowingStateLoss()
+        }
+
+        navigationFragment.setTomTomNavigation(tomTomNavigation)
+        navigationFragment.startNavigation(RoutePlan(route, options))
+
+        tomTomNavigation.addProgressUpdatedListener {
+            tomTomMap?.routes?.firstOrNull()?.progress = it.distanceAlongRoute
+        }
+    }
 
 
 }

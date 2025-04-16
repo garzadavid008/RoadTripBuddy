@@ -76,10 +76,14 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.SignupPage
 import kotlinx.coroutines.launch
+import android.widget.FrameLayout
+import androidx.compose.foundation.layout.fillMaxWidth
+
 
 class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -145,17 +149,16 @@ class MainActivity : AppCompatActivity() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
+        var destinationSelected by remember { mutableStateOf(false) }
 
         var destinationList by rememberSaveable(stateSaver = listSaver(
             save = { ArrayList(it) },  // Convert to ArrayList for saving
             restore = { it.toMutableList() }  // Restore as MutableList
         )) { mutableStateOf(mutableListOf<String>()) }
-         val placesClient: PlacesClient = Places.createClient(this)
+        val placesClient: PlacesClient = Places.createClient(activity)
         // view model for googles places
-        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
-       // val placeList by viewModel.restaurants.collectAsState()
-        var destinationSelected by remember { mutableStateOf(false) }
-
+        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
+        // val placeList by viewModel.restaurants.collectAsState()
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -168,8 +171,10 @@ class MainActivity : AppCompatActivity() {
                     drawerState.close()
                 }
                 when (item.id) {
-                    "plan_a_trip" -> activity.startActivity(Intent(this@MainActivity, PlanActivity::class.java)
-                        .putExtra("start_location", navigationMap.searchManager.startLocationAddress))
+                    "plan_a_trip" -> activity.startActivity(
+                        Intent(activity, PlanActivity::class.java)
+                            .putExtra("start_location", navigationMap.searchManager.startLocationAddress)
+                    )
 
                     "about" -> navController.navigate("about") {
                         popUpTo("map") {
@@ -235,18 +240,20 @@ class MainActivity : AppCompatActivity() {
                 if (navigationMap.mapReadyState.value) {
                     SearchDrawer(
                         visible = showBottomDrawer,
-                        placesViewModel =viewModel ,
+                        placesViewModel = viewModel,
                         viewModel = searchDrawerVM,
                         onDismiss = { showBottomDrawer = false },
                         navMap = navigationMap,
                         searchManager = navigationMap.searchManager,
-                        onStartTrip = { navigationMap.startTrip() }
+                        onStartTrip = { locationService.createRouteAndStart(searchDrawerVM) }
                     )
                 }
 
                 if (destinationSelected) {
                     FloatingActionButton(
-                        onClick = { navigationMap.startTrip() },
+                        onClick = {
+                            locationService.createRouteAndStart(searchDrawerVM)
+                        },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
@@ -254,6 +261,16 @@ class MainActivity : AppCompatActivity() {
                         Text("Start Directions")
                     }
                 }
+
+                AndroidView(
+                    factory = { context: android.content.Context ->
+                        FrameLayout(context).apply { id = R.id.fragment_container_view_tag }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(300.dp) // Adjust height or use dynamic visibility later
+                )
             }
         }
     }

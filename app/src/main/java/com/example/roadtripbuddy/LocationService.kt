@@ -28,7 +28,7 @@ class LocationService(
     private lateinit var locationProvider: LocationProvider
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
 
-    private lateinit var map: BaseMapUtils
+    private lateinit var map: NavigationMap
     private lateinit var isInitialCameraPositionSet: MutableState<Boolean>
 
     // Init flags for safe state
@@ -147,6 +147,28 @@ class LocationService(
         locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
         map.tomTomMap?.setLocationProvider(locationProvider)
     }
+
+    fun createRouteAndStart(viewModel: SearchDrawerViewModel) {
+        if (!::map.isInitialized) {
+            Log.e("LocationService", "Map not initialized. Cannot create route.")
+            return
+        }
+
+        map.routeManager.onRouteRequest(
+            viewModel = viewModel,
+            tomTomMap = map.tomTomMap,
+            searchManager = map.searchManager
+        )
+
+        startLiveTracking()
+
+        map.planRouteAndStartNavigation(viewModel) //
+    }
+
+    fun getLocationProvider(): LocationProvider {
+        return locationProvider
+    }
+
 }
 
 
