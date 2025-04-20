@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy.pages
 
-import PlacesViewModel
-import SuggPlace
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
@@ -58,8 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.PlacesViewModelFactory
 import com.example.roadtripbuddy.R
+import com.example.roadtripbuddy.SuggPlace
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient

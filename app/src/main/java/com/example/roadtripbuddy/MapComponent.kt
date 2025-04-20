@@ -102,6 +102,7 @@ fun TomTomMapComponent(
         update = { view ->
             view.getMapAsync { map ->
                 if (!isMapInitialized) {
+                    view.markerBalloonViewAdapter = CustomBalloonViewAdapter(context)
                     onMapReady(map)
                 }
                 isMapInitialized = true

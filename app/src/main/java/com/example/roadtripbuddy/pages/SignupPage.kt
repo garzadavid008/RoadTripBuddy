@@ -1,6 +1,5 @@
 package com.example.roadtripbuddy.pages
 
-import android.provider.ContactsContract.CommonDataKinds.Email
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -40,7 +39,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -49,11 +47,6 @@ import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
 //import com.google.firebase.Firebase
 //import com.google.firebase.firestore.firestore
-
-import com.example.roadtripbuddy.User
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
-import com.tomtom.sdk.vehicle.Vehicle
 
 //import com.example.playground.isPasswordString
 //modifier: Modifier = Modifier, authViewModel:AuthViewModel
@@ -133,7 +126,7 @@ fun SignupPage(navController: NavController, authViewModel:AuthViewModel) {
             }
             Row {
                 Image(
-                    painter = painterResource(id = R.drawable.car),
+                    painter = painterResource(id = R.drawable.ic_car),
                     contentDescription = "Person Image for signup",
                     modifier = Modifier.weight(1f,fill=false)
                 )
