@@ -1,6 +1,5 @@
 package com.example.roadtripbuddy.SearchDrawer
 
-import PlacesViewModel
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -35,6 +34,7 @@ import com.example.roadtripbuddy.SearchManager
 import com.example.roadtripbuddy.pages.PlaceListPage
 import com.example.roadtripbuddy.Autocomplete
 import com.example.roadtripbuddy.NavigationMap
+import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult

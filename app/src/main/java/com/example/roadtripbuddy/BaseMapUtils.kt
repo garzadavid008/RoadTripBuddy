@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.GeoPoint
@@ -117,6 +115,8 @@ open class BaseMapUtils{
             usersMarkerLocation = geoPoint
             true
         }
+
+
 
     fun setUpMapListeners() {
         tomTomMap?.addMapLongClickListener(mapLongClickListener)
