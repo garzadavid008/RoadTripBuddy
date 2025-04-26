@@ -1,13 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    //firebase
     alias(libs.plugins.google.gms.google.services)
-// fire base
-    // id("com.google.gms.google-services")
 }
-
-
 
 configurations.all {
     resolutionStrategy.eachDependency {
@@ -16,8 +11,6 @@ configurations.all {
         }
     }
 }
-
-
 
 val tomtomApiKey: String by project
 
@@ -41,8 +34,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.roadtripbuddy.CustomTestRunner"
     }
 
     buildTypes {
@@ -78,105 +70,78 @@ android {
 val version = "1.23.1"
 
 dependencies {
-    implementation("sh.calvin.reorderable:reorderable:2.4.3")
-    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.navigation:navigation-compose:2.8.8")
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
-    implementation("androidx.compose.material3:material3:1.3.1")
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation("com.tomtom.sdk.navigation:navigation-online:$version")
-    implementation("com.tomtom.sdk.location:provider-default:$version")
-    implementation("com.tomtom.sdk.location:provider-map-matched:$version")
-    implementation("com.tomtom.sdk.location:provider-simulation:$version")
-    implementation("com.tomtom.sdk.maps:map-display:$version")
-    implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
-    implementation("com.tomtom.sdk.location:provider-default:$version")
-    implementation("com.tomtom.sdk.routing:route-planner-online:$version")
-    implementation("com.tomtom.sdk.search:search-online:$version")
-    implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2")
-    implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
-    implementation("com.tomtom.sdk.maps.visualization:navigation:$version")
-    implementation("com.tomtom.sdk.navigation:ui:1.23.2")
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.fragment)
-    implementation(libs.androidx.drawerlayout)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.runtime.android)
-    implementation(libs.androidx.runtime.livedata)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.locationdelegation)
-    implementation(libs.androidx.foundation.android)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    // Core Android and Kotlin Libraries
+    implementation(libs.androidx.core.ktx) // Kotlin extensions for Android
+    implementation(libs.androidx.appcompat) // AppCompat for backward compatibility
+    implementation(libs.material) // Material Design components
+    implementation(libs.androidx.constraintlayout) // ConstraintLayout for UI
+    implementation(libs.androidx.fragment) // Fragment support
+    implementation(libs.androidx.drawerlayout) // DrawerLayout for navigation
+    implementation(libs.androidx.runtime.android) // Android runtime
+    implementation(libs.androidx.runtime.livedata) // LiveData for reactive data
+    implementation(libs.androidx.foundation.layout.android) // Foundation layout utilities
+    implementation(libs.locationdelegation) // Location delegation utilities
+    implementation(libs.androidx.foundation.android) // Android foundation
 
-//    // fire base depen
-//    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-////    implementation("com.google.firebase:firebase-analytics")
-////    // you would add other dependencies you will use here from fire base
-////    // for auth
-////    implementation("com.google.firebase:firebase-auth")
-//// Use an older compatible Firebase version
-//    implementation("com.google.firebase:firebase-auth:22.2.0") // Instead of 23.2.0
-//
-//    // If you're using other Firebase services, ensure they match the BOM
-//    implementation("com.google.firebase:firebase-analytics")
-//
-//    // Downgrade Google Play Services dependencies if necessary
-//    implementation("com.google.android.gms:play-services-measurement-api:21.0.0")
-    debugImplementation(libs.androidx.ui.tooling)
-//
-//    // firestore depend
-//    implementation("com.google.firebase:firebase-firestore-ktx")
+    // Jetpack Compose
+    implementation(platform("androidx.compose:compose-bom:2024.10.00")) // Compose BOM for version management
+    implementation("androidx.activity:activity-compose:1.9.3") // Compose Activity integration
+    implementation("androidx.compose.ui:ui") // Compose UI core
+    implementation("androidx.compose.ui:ui-tooling-preview") // Compose preview tools
+    implementation("androidx.compose.material3:material3") // Material3 components for Compose
 
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.3") // Compose navigation
+    implementation(libs.androidx.navigation.fragment.ktx) // Fragment navigation
+    implementation(libs.androidx.navigation.ui.ktx) // Navigation UI utilities
 
-    //implementation(platform("com.google.firebase:firebase-bom:33.10.0")) //Get the latest version from Firebase release notes
-    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1")) // Firebase BOM for version management
+    implementation("com.google.firebase:firebase-firestore-ktx") // Firestore for Kotlin
+    implementation("com.google.firebase:firebase-auth") // Firebase Authentication
 
-    implementation("com.google.firebase:firebase-firestore-ktx") // Or firebase-firestore if using Java
+    // TomTom SDK
+    implementation("com.tomtom.sdk.navigation:navigation-online:$version") // TomTom navigation
+    implementation("com.tomtom.sdk.location:provider-default:$version") // Default location provider
+    implementation("com.tomtom.sdk.location:provider-map-matched:$version") // Map-matched location
+    implementation("com.tomtom.sdk.location:provider-simulation:$version") // Simulated location
+    implementation("com.tomtom.sdk.maps:map-display:$version") // Map display
+    implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version") // Navigation tile store
+    implementation("com.tomtom.sdk.routing:route-planner-online:$version") // Route planner
+    implementation("com.tomtom.sdk.search:search-online:$version") // Search API
+    implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2") // Reverse geocoding
+    implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2") // Online reverse geocoding
+    implementation("com.tomtom.sdk.maps.visualization:navigation:$version") // Navigation visualization
+    implementation("com.tomtom.sdk.navigation:ui:1.23.2") // Navigation UI
 
+    // Google APIs
+    implementation("com.google.android.libraries.places:places:3.5.0") // Google Places API
+    implementation("com.google.android.gms:play-services-maps:19.0.0") // Google Maps
 
-    implementation("com.google.firebase:firebase-auth") //Let the BOM manage the version
+    // HTTP Client
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14") // OkHttp for network requests
 
-    // for http request
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
+    // Other Libraries
+    implementation("sh.calvin.reorderable:reorderable:2.4.3") // Reorderable list library
 
-    // google places api sdk
-    implementation("com.google.android.libraries.places:places:3.5.0")
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
+    // Unit Testing
+    testImplementation(libs.junit) // JUnit for unit tests
+    testImplementation("io.mockk:mockk:1.13.13") // MockK for mocking
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
 
-    // Testing dependencies
-//Unit testing
-    testImplementation("io.mockk:mockk:1.12.0")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.arch.core:core-testing:2.1.0")
+    // LocalLifecycleOwner and LocalViewModelStoreOwner
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecyle support for Compose
+    //implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7") { force = true } removed due to being redundant
 
+    // Android Instrumentation Testing
+    androidTestImplementation(libs.androidx.junit) // Android JUnit extensions
+    androidTestImplementation(libs.androidx.espresso.core) // Espresso for UI testing
+    androidTestImplementation("androidx.test.ext:junit:1.2.1") // Test extensions for JUnit
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1") // Latest Espresso
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.3") // Navigation testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.4") // Compose UI testing
 
-// Jetpack ui testing
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
-
-
-
-// Espresso ui testing
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-
-
-//    implementation("com.google.firebase:firebase-firestore-ktx") {
-//        exclude(group = "com.google.protobuf", module = "protobuf-java")
-//    }
-    // implementation("com.google.protobuf:protobuf-javalite:3.25.5")
-
-    //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
-    //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+// Debug Tools
+    debugImplementation ("androidx.compose.ui:ui-tooling") // Compose UI tooling
+    debugImplementation ("androidx.compose.ui:ui-test-manifest") // Compose test manifest
 }
-// Apply resolution strategy outside dependencies

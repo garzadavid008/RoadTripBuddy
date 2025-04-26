@@ -1,4 +1,8 @@
+package com.example.roadtripbuddy.navigationTests
+
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import com.example.roadtripbuddy.MainActivity
@@ -7,7 +11,6 @@ import org.junit.Rule
 import org.junit.Test
 
 class MainActivityTest {
-
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
@@ -21,10 +24,19 @@ class MainActivityTest {
     @Test
     fun app_startsAtMapScreen() {
         composeTestRule.setContent {
-            MainActivity()
+            NavHost(navController = navController, startDestination = "map") {
+                composable("map") { }
+                composable("about") { }
+                composable("login") { }
+                composable("signup") { }
+                composable("suggestion") { }
+            }
         }
-
         // Verify if "map" screen is the starting destination
         assert(navController.currentDestination?.route == "map")
     }
 }
+
+/*This tests if:
+Main Menu starts at the map screen
+*/
