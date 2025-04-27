@@ -78,6 +78,7 @@ android {
 val version = "1.23.1"
 
 dependencies {
+    implementation("com.composables:core:1.20.1")
     implementation("sh.calvin.reorderable:reorderable:2.4.3")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.activity:activity-compose:1.10.1")

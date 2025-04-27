@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.GeoPoint
@@ -126,8 +124,5 @@ open class BaseMapUtils{
         tomTomMap?.removeMapLongClickListener(mapLongClickListener)
     }
 
-    protected fun isNavigationFragmentInitialized(): Boolean {
-        return this::navigationFragment.isInitialized
-    }
 
 }

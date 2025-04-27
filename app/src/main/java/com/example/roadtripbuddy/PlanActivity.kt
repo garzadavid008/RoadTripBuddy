@@ -72,6 +72,7 @@ class PlanActivity : AppCompatActivity() {
         val context = LocalContext.current
         val viewModel:PlanATripViewModel by viewModels()
         var showBottomDrawer by remember { mutableStateOf(false) }
+        var mapFocus = rememberSaveable { mutableStateOf(false) }
         var showStartLocationInput by remember { mutableStateOf(true) }
         val mapReadyState = remember { mutableStateOf(false) }
         val planMap = remember { PlanMap(
@@ -82,18 +83,6 @@ class PlanActivity : AppCompatActivity() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures { change, dragAmount ->
-                        when {
-                            dragAmount < -50 -> { // Upward drag beyond threshold.
-                                showBottomDrawer = true
-                            }
-                            dragAmount > 50 -> {  // Downward drag beyond threshold.
-                                showBottomDrawer = false
-                            }
-                        }
-                    }
-                }
                 .background(Color.Transparent)
         ){
             Log.d("DEBUG", "mapReadyState.value before map init: ${mapReadyState.value}")
@@ -106,16 +95,17 @@ class PlanActivity : AppCompatActivity() {
                     showBottomDrawer = true
                 }
             }
+            Log.d("Debug", "PlanActivity onMapFocus: $mapFocus")
 
-            if (showBottomDrawer) {
+            if (showBottomDrawer){
                 PlanATripDrawer(
-                    visible = showBottomDrawer,
-                    onDismiss = { showBottomDrawer = false},
+                    onMapFocus = mapFocus,
                     viewModel = viewModel,
                     planMap = planMap,
                     searchManager = planMap.searchManager
                 )
             }
+
             IconButton(
                 onClick = {
                     viewModel.clearPlanWaypoints()

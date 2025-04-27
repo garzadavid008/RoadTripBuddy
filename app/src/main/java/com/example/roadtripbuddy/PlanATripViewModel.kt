@@ -1,7 +1,9 @@
 package com.example.roadtripbuddy
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.tomtom.sdk.map.display.route.Route
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +21,10 @@ class PlanATripViewModel : ViewModel() {
     private val _ETA = MutableStateFlow("")
     val ETA: StateFlow<String> = _ETA
 
-    private val _initialDeparture = MutableStateFlow<Date>(Date())
+    private val _initialDeparture = MutableStateFlow(Date())
     val initialDeparture: StateFlow<Date> = _initialDeparture
+
+    val selectedRoutePair = mutableStateOf<Pair<Route?, com.tomtom.sdk.routing.route.Route?>?>(null)
 
 
     fun updateSearchResult(index: Int, newSearchResult: SearchResult) {
@@ -31,7 +35,6 @@ class PlanATripViewModel : ViewModel() {
                 )
             }
         }
-        updateDepartureTimes()
     }
 
     fun updateTimeSpent(index: Int, newHour: Int, newMinute: Int){
@@ -43,32 +46,10 @@ class PlanATripViewModel : ViewModel() {
                 )
             }
         }
-        updateDepartureTimes()
     }
 
-
-    private fun updateDepartureTimes() {
-        // Create a mutable copy of the current waypoints
-        val updatedList = _planWaypoints.value.toMutableList()
-        var currentTimeMillis = initialDeparture.value?.time
-
-        // Iterate over each waypoint and update its departAt based on its waiting time
-        for (i in updatedList.indices) {
-            // The first destination (meaning the start) will always hold the initial departure time
-            if (i == 0){
-                updatedList[i].departAt = initialDeparture.value
-            } else {
-                if (currentTimeMillis != null) {
-                    val waitMinutes = updatedList[i].hour * 60 + updatedList[i].minute
-                    // Increase current time by the waiting time (converted to milliseconds)
-                    currentTimeMillis += waitMinutes * 60 * 1000L
-                    updatedList[i].departAt = Date(currentTimeMillis)
-                }
-            }
-        }
-        // Update the state with the recalculated list
-        _planWaypoints.value = updatedList
-
+    fun setSelectedRoutePair(routePairs: Pair<Route?, com.tomtom.sdk.routing.route.Route?>?){
+        selectedRoutePair.value = routePairs
     }
 
     fun removePlanWaypoint(index: Int){
@@ -88,24 +69,11 @@ class PlanATripViewModel : ViewModel() {
             val item = list.removeAt(fromIndex)
             list.add(toIndex, item)
         }
-        updateDepartureTimes()
     }
 
     fun addPlanWaypoint(searchResult: SearchResult) {
         _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
             add(WaypointItem(searchResult = searchResult, hour= 0, minute = 0))
-        }
-    }
-
-    fun initializePlanWaypoints(searchResult: SearchResult){
-        if (_planWaypoints.value.isEmpty()) {
-            _planWaypoints.value = mutableListOf(
-                WaypointItem(
-                    searchResult = searchResult,
-                    hour = 0,
-                    minute = 0,
-                )
-            )
         }
     }
 
@@ -122,6 +90,7 @@ class PlanATripViewModel : ViewModel() {
 
     fun updateInitialDeparture(newDate: Date){
         _initialDeparture.value = newDate
+        //updateDepartureTimes()
     }
 
     fun clearPlanWaypoints(){

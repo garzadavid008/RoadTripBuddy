@@ -1,8 +1,5 @@
-
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -96,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         val firestore = FirebaseFirestore.getInstance()
         //creating the places api instance
         Places.initialize(applicationContext, getString(R.string.google_maps_key))
-        val placesClient: PlacesClient = Places.createClient(this)
+       // val placesClient: PlacesClient = Places.createClient(this)
 
         locationService.requestLocationPermissions()
 
