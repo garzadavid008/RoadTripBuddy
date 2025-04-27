@@ -6,10 +6,7 @@ import PlacesViewModel
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings.System
-import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
@@ -39,7 +36,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -83,6 +79,7 @@ import com.example.roadtripbuddy.pages.SignupPage
 import kotlinx.coroutines.launch
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.fillMaxWidth
+import android.util.Log
 
 
 class MainActivity : AppCompatActivity() {
@@ -252,8 +249,11 @@ class MainActivity : AppCompatActivity() {
                 if (destinationSelected) {
                     FloatingActionButton(
                         onClick = {
-                            locationService.createRouteAndStart(searchDrawerVM)
-                        },
+                            if (!activity.isFinishing && !activity.isDestroyed && navigationMap.mapReadyState.value) {
+                                navigationMap.createRouteAndStart(searchDrawerVM)
+                            } else {
+                                Log.e("Navigation", "Map not ready yet.")
+                            }                        },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
@@ -269,7 +269,7 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .height(300.dp) // Adjust height or use dynamic visibility later
+                        .height(500.dp) // Adjust height or use dynamic visibility later
                 )
             }
         }
