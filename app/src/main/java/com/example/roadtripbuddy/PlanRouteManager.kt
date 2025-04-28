@@ -12,6 +12,7 @@ import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.Marker
+import com.tomtom.sdk.map.display.marker.MarkerClickListener
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.map.display.route.RouteClickListener
 import com.tomtom.sdk.map.display.route.RouteOptions
@@ -39,6 +40,7 @@ class PlanRouteManager(context: Context, apiKey: String) {
     private val routePlanner = OnlineRoutePlanner.create(context, apiKey)
     private val routeMarkers = mutableMapOf<String, Marker>()
     private var routeClickListener: RouteClickListener? = null
+    private var markerClickListener: MarkerClickListener? = null
     private val displayRoutes = mutableMapOf<String, Route >()
 
 
@@ -77,6 +79,7 @@ class PlanRouteManager(context: Context, apiKey: String) {
         var routeTotalETA: Duration = Duration.ZERO
 
         routeClickListener?.let { tomTomMap?.removeRouteClickListener(it) }
+        markerClickListener?.let { tomTomMap?.removeMarkerClickListener(it) }
 
         routeList.forEachIndexed { index, route ->
 
@@ -114,7 +117,7 @@ class PlanRouteManager(context: Context, apiKey: String) {
 
                 else -> RouteOptions(
                     geometry = route.geometry,
-                    departureMarkerVisible = true, // intermediate route: you might choose a default marker
+                    departureMarkerVisible = true,
                     departureMarkerPinImage = ImageFactory.fromResource(R.drawable.map_marker),
                     routeOffset = route.routePoints.map { it.routeOffset },
                     color = RouteOptions.DEFAULT_COLOR,
@@ -128,7 +131,6 @@ class PlanRouteManager(context: Context, apiKey: String) {
             }
         }
 
-
         viewModel.updateETA(routeTotalETA)
 
         if (withZoom) {
@@ -140,6 +142,12 @@ class PlanRouteManager(context: Context, apiKey: String) {
             onRouteLegClick(routeClick = routeClick, viewModel = viewModel, tomTomMap = tomTomMap)
             true
         }
+
+        markerClickListener = MarkerClickListener { markerClick ->
+
+        }
+
+
 
 
         tomTomMap?.addRouteClickListener(routeClickListener!!)
@@ -212,6 +220,20 @@ class PlanRouteManager(context: Context, apiKey: String) {
 
             // draw once all legs are done
             drawRoutes(tomTomMap, routes, viewModel)
+        }
+    }
+
+    fun onMarkerClick(
+        marker: Marker,
+        tomTomMap: TomTomMap?,
+        viewModel: PlanATripViewModel
+    ){
+        if (marker.isSelected()){
+            marker.deselect()
+        }
+        else {
+            marker.select()
+            viewModel.setSelectedMarker(marker)
         }
     }
 

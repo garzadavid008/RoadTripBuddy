@@ -55,19 +55,14 @@ import java.util.Date
 @Composable
 fun PlanATripWaypoints(
     viewModel: PlanATripViewModel = viewModel(),
-    searchManager: SearchManager,
     onRoute: (PlanATripViewModel) -> Unit,
-    resolveAndSuggest: (String, (List<Pair<String, Any?>>) -> Unit) -> Unit,
     onPlanWaypointEdit: (Pair<Int, WaypointItem>) -> Unit,
     onPlanWaypointAdd: () -> Unit
 ) {
-    val eta by viewModel.ETA.collectAsState()
     val waypoints by viewModel.planWaypoints.collectAsState()
+
+    // We store the waypoints to see if the user made any changes, if yes we prompt them to save
     val focusManager = LocalFocusManager.current
-
-    // Using TextFieldValue to capture both text and selection
-    val defaultLocation = searchManager.startLocationAddress
-
 
     val view = LocalView.current
 
@@ -87,16 +82,6 @@ fun PlanATripWaypoints(
             view,
             HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK
         )
-    }
-
-    LaunchedEffect(Unit){
-        // We grab the SearchResult of the defaultLocation AKA the location the user specified as the start
-        if (viewModel.planWaypoints.value.isEmpty()){
-            resolveAndSuggest(defaultLocation) { result -> // Calling resolveAndSuggest, which is an asynchronous call
-                val searchResult = result.first().second as SearchResult
-                viewModel.addPlanWaypoint(searchResult)// Initialize waypoints
-            }
-        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -125,18 +110,32 @@ fun PlanATripWaypoints(
                 Text("Plan A Trip", style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 // Plan Route button
-                Button(
-                    onClick = {
-                        updateRoute()
-                    },
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF6ACFFF),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("PlanRoute")
+                if(waypoints.size > 1){
+                    Button(
+                        onClick = {
+                            updateRoute()
+                        },
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6ACFFF),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("PlanRoute")
+                    }
+                } else {
+                    Button(
+                        onClick = {},
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Gray,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("PlanRoute")
+                    }
                 }
+
             }
             // Composable function for input date and time, and returns a callback with either a null
             // or a valid LocalDateTime and then converts said LocalDateTime into a Date and stores it into the view models initialDeparture

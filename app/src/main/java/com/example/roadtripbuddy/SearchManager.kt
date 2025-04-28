@@ -253,7 +253,6 @@ class SearchManager(
         val searchOptions = SearchOptions(
             query = query,
             locale = Locale("en", "US"),
-            limit = 5,
             geoBias = startLocation
         )
 
@@ -336,11 +335,9 @@ class SearchManager(
                                 if (pair.first.startsWith(query, ignoreCase = true)) score += 0.2f
                                 score
                             })
-                            .take(5)
 
                         objectResult(combinedResults.firstOrNull()?.second)
                         onResult(combinedResults)
-                        //onResult(combinedResults.map { it.first })
                     }
                 }
 
