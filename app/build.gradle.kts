@@ -1,6 +1,11 @@
+import com.google.protobuf.gradle.*
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.protobuf)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.kapt)
     //firebase
     alias(libs.plugins.google.gms.google.services)
 // fire base
@@ -9,10 +14,32 @@ plugins {
 
 
 
+configurations.configureEach {
+    resolutionStrategy {
+        force("com.squareup:javapoet:1.13.0")   // or 1.15.0 – anything ≥1.13.0
+    }
+}
 configurations.all {
+    exclude(group = "com.google.protobuf", module = "protobuf-kotlin")
+
+    // 2) Keep every protobuf artefact on ONE version (matches your protoc)
     resolutionStrategy.eachDependency {
-        if (requested.group == "com.google.protobuf") {
-            useTarget("com.google.protobuf:protobuf-javalite:3.21.7")
+        if (requested.group == "com.google.protobuf"
+            && requested.name.startsWith("protobuf-")      // runtime / compiler
+        ) {
+            useVersion("3.25.3")
+        }
+        // leave protoc-gen-kotlin (and any other tools) at their own versions
+    }
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+
+    generateProtoTasks {
+        all().configureEach {
+            builtins { id("java")   { option("lite") } }   // Java-Lite classes
+            builtins { id("kotlin") { option("lite") } }   // Kotlin wrappers
         }
     }
 }
@@ -78,6 +105,14 @@ android {
 val version = "1.23.1"
 
 dependencies {
+    implementation(libs.hilt.android)
+    implementation(libs.material)
+    kapt(libs.hilt.compiler)
+    kapt("com.squareup:javapoet:1.13.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.datastore:datastore:1.1.0")
+    implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
     implementation("com.composables:core:1.20.1")
     implementation("sh.calvin.reorderable:reorderable:2.4.3")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -180,4 +215,7 @@ dependencies {
     //implementation("com.google.firebase:firebase-firestore-ktx") //Let the BOM manage
     //   implementation("com.google.protobuf:protobuf-javalite:3.25.5")
 }
-// Apply resolution strategy outside dependencies
+
+hilt {
+    enableAggregatingTask = false
+}

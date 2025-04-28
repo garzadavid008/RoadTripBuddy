@@ -1,4 +1,5 @@
 package com.example.roadtripbuddy
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.libraries.places.api.net.PlacesClient

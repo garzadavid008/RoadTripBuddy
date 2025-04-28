@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.roadtripbuddy.SuggPlace
-import com.example.roadtripbuddy.pages.placeCard
 
 @Composable
 fun LocationDetailsPage(

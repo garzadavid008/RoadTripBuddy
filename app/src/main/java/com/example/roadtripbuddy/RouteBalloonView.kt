@@ -8,7 +8,7 @@ import com.tomtom.sdk.map.display.marker.BalloonViewAdapter
 import com.tomtom.sdk.map.display.marker.Marker
 
 @Suppress("unused")
-class CustomBalloonViewAdapter(private val context: Context) : BalloonViewAdapter {
+class RouteBalloonView(private val context: Context) : BalloonViewAdapter {
     override fun onCreateBalloonView(marker: Marker): View {
         val view = LayoutInflater.from(context).inflate(R.layout.route_balloon_view, null)
 

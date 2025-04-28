@@ -1,55 +1,59 @@
 package com.example.roadtripbuddy.PlanATripDrawer
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.core.BottomSheet
-import com.composables.core.ModalBottomSheet
-import com.composables.core.Sheet
 import com.composables.core.SheetDetent
 import com.composables.core.SheetDetent.Companion.FullyExpanded
 import com.composables.core.rememberBottomSheetState
-import com.composables.core.rememberModalBottomSheetState
 import com.example.roadtripbuddy.Autocomplete
 import com.example.roadtripbuddy.PlanATripViewModel
 import com.example.roadtripbuddy.PlanMap
 import com.example.roadtripbuddy.RouteLegInfo
-import com.example.roadtripbuddy.SearchManager
 import com.example.roadtripbuddy.WaypointItem
 
 //Compose for the Search/Route page
+@SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlanATripDrawer(
-    modifier: Modifier = Modifier,
     onMapFocus: MutableState<Boolean>,
     viewModel: PlanATripViewModel = viewModel(),
     planMap: PlanMap,
-    searchManager: SearchManager
+    onBack: (Boolean) -> Unit
 ) {
     Log.d("Debug", "PlanDrawer onMapFocus: $onMapFocus")
 
@@ -72,6 +76,15 @@ fun PlanATripDrawer(
     var planWaypointPair by remember { mutableStateOf<Pair<Int, WaypointItem?>?>(null) } // For the autocomplete composable page,
     val selectedRoutePair by viewModel.selectedRoutePair
 
+    val waypoints by viewModel.planWaypoints.collectAsState()
+    val initialDeparture by viewModel.initialDeparture.collectAsState()
+    //Snapshot of the waypoint list
+    val initialWaypoints = remember { waypoints.toList() }
+    //Snapshot of the initialDeparture
+    val initialDepartureSnapshot = remember { initialDeparture}
+
+    var saveDialog by remember { mutableStateOf(false) }
+
     if (sheetState.currentDetent != peek){
         onMapFocus.value = false
     }
@@ -85,6 +98,46 @@ fun PlanATripDrawer(
         // if we detect a change in the selectedRoutePair and its null, click off the routeLegInfo page
         else {
             routeLegInfo = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Transparent)
+    ) {
+        IconButton(
+            onClick = {
+                saveDialog = true
+            },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(24.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color(0xFF2ebcff),
+                modifier = Modifier.size(48.dp)
+            )
+        }
+    }
+
+    if(saveDialog){
+        val waypointBool = initialWaypoints != waypoints
+        val initialDepartureBool = initialDepartureSnapshot != initialDeparture
+
+        if (waypointBool || initialDepartureBool){
+            SaveConfirmDialog(
+                onResult = { save ->
+                    onBack(save)
+                    saveDialog = false
+                }
+            )
+        }
+        else{
+            saveDialog = false
+            onBack(false)
         }
     }
 
@@ -136,14 +189,10 @@ fun PlanATripDrawer(
                 )
             } else {
                 PlanATripWaypoints(
-                    searchManager = searchManager,
                     viewModel = viewModel,
                     onRoute = {viewModel->
                         planMap.clearMap()
                         planMap.planOnRouteRequest(viewModel)
-                    },
-                    resolveAndSuggest = {query, onResult ->
-                        planMap.resolveAndSuggest(query = query, onResult = onResult)
                     },
                     onPlanWaypointEdit = { pair ->
                         //when user clicks on a waypoint they want to edit, RouteEditPage returns a
@@ -158,4 +207,26 @@ fun PlanATripDrawer(
                 )
             }
     }
+}
+
+@Composable
+fun SaveConfirmDialog(
+    onResult: (Boolean) -> Unit,
+    onDismiss: () -> Unit = { onResult(false) }
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title   = { Text("Save changes?") },
+        text    = { Text("Would you like to save your work before leaving?") },
+        confirmButton = {
+            TextButton(
+                onClick = { onResult(true) }
+            ) { Text("Yes") }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onResult(false) }
+            ) { Text("No") }
+        }
+    )
 }

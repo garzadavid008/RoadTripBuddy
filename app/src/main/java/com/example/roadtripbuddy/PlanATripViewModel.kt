@@ -3,6 +3,9 @@ package com.example.roadtripbuddy
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.example.roadtripbuddy.data.Trip
+import com.example.roadtripbuddy.data.toDomain
+import com.tomtom.sdk.map.display.marker.Marker
 import com.tomtom.sdk.map.display.route.Route
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +29,17 @@ class PlanATripViewModel : ViewModel() {
 
     val selectedRoutePair = mutableStateOf<Pair<Route?, com.tomtom.sdk.routing.route.Route?>?>(null)
 
+    val selectedMarker = mutableStateOf<Marker?>(null)
+
+    fun loadTrip(trip: Trip) {
+        updateInitialDeparture(Date(trip.initialDeparture))
+
+        val items = trip.waypointsList
+            .map { it.toDomain() }           // the mapper you wrote earlier
+            .toMutableList()
+
+        _planWaypoints.value = items
+    }
 
     fun updateSearchResult(index: Int, newSearchResult: SearchResult) {
         _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
@@ -50,6 +64,10 @@ class PlanATripViewModel : ViewModel() {
 
     fun setSelectedRoutePair(routePairs: Pair<Route?, com.tomtom.sdk.routing.route.Route?>?){
         selectedRoutePair.value = routePairs
+    }
+
+    fun setSelectedMarker(marker: Marker?){
+        selectedMarker.value = marker
     }
 
     fun removePlanWaypoint(index: Int){
