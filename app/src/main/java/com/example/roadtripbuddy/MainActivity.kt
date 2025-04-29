@@ -167,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                 when (item.id) {
                     "plan_a_trip" -> activity.startActivity(
                         Intent(activity, PlanActivity::class.java)
-                            .putExtra("start_location", navigationMap.searchManager.startLocationAddress)
+                            .putExtra("start_location", navigationMap.searchManager.startLocation)
                     )
 
                     "about" -> navController.navigate("about") {

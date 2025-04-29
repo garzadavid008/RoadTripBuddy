@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchDrawer(
     modifier: Modifier = Modifier,
-    viewModel: SearchDrawerViewModel = viewModel(),
+    viewModel: SearchDrawerViewModel,
     placesViewModel: PlacesViewModel,
     navMap: NavigationMap,
     visible: Boolean, // added parameter to control visibility
@@ -55,9 +55,6 @@ fun SearchDrawer(
     onStartTrip: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
-    var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
-    var autocompleteSuggestions by rememberSaveable { mutableStateOf<List<Pair<String, Any?>>>(emptyList()) } // List of dynamic autocomplete results
-    var expanded by rememberSaveable { mutableStateOf(false) }
     var showDetails by rememberSaveable { mutableStateOf(false) } // Boolean for the LocationDetailsPage, if true it displays said compose
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
     var selectedLocation by rememberSaveable { mutableStateOf<SearchResult?>(null) }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
@@ -154,7 +151,12 @@ fun SearchDrawer(
                             showSuggestions = false
                             showDetails = true
                         })
-                    }
+                    },
+                    onBack = {
+                        showSuggestions = false
+                        navMap.clearMap()
+                             },
+                    onCameraMove = { navMap.showNearbyMarkers(searchManager.startLocation!!)}
                 )
             } else if(ifAutocomplete) {
                 Autocomplete(
@@ -184,83 +186,20 @@ fun SearchDrawer(
             }
             else
             {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    SearchBarDefaults.InputField(
-                        query = query,
-                        onQueryChange = { newQuery ->
-                            query = newQuery
-                            expanded = true
-                        },
-                        onSearch = { searchQuery ->
-                            navMap.resolveAndSuggest(query = searchQuery, onResult = { results ->
-                                val (address, searchResult) = results.first()
-                                if (searchResult is SearchResult){
-                                    navMap.performSearch(address, viewModel)
-                                    selectedLocation = searchResult
-                                    showDetails = true
-                                } else if (searchResult is AutocompleteResult) {
-                                   navMap.findPlaces(
-                                       result = searchResult,
-                                       placesViewModel = placesViewModel
-                                   )
-                                }
-                            })
-                        },
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it },
-                        placeholder = { Text("Search Location") },
-                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null) },
-                    )
-
-                    LaunchedEffect(query) { //Pulsing the API call for autocomplete
-                        if (query.isNotEmpty()) {
-                            delay(300)
-                            navMap.resolveAndSuggest(query = query, onResult = {initSuggestions ->
-                                autocompleteSuggestions= initSuggestions.distinct()
-                            })
-                        } else {
-                            autocompleteSuggestions = emptyList()
-                        }
+                SearchDrawerAutocomplete(
+                    navMap = navMap,
+                    placesViewModel = placesViewModel,
+                    searchDrawerViewModel = viewModel,
+                    onDone = {searchResult ->
+                        selectedLocation = searchResult
+                        placesViewModel.getTextSearch(
+                            searchResult.place.address?.freeformAddress!!,
+                            searchResult.place.coordinate.latitude,
+                            searchResult.place.coordinate.longitude
+                        )
+                        showDetails = true
                     }
-
-                    if (query.isNotEmpty()) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                                .background(Color.White)
-                        ) {
-                            items(items = autocompleteSuggestions) { suggestionPair ->
-                                val (suggestion, objectResult) = suggestionPair
-                                Text(
-                                    text = suggestion,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            if (objectResult is SearchResult) {
-                                                query = suggestion
-                                                selectedLocation = objectResult
-                                                expanded = false
-                                                navMap.performSearch(query, viewModel)
-                                                showDetails = true
-                                            } else if (objectResult is AutocompleteResult) {
-                                                navMap.findPlaces(
-                                                    result = objectResult,
-                                                    placesViewModel = placesViewModel
-                                                )
-                                            }
-                                        }
-                                        .padding(8.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+                )
             }
         }
     }
