@@ -8,6 +8,9 @@ pluginManagement {
             }
         }
         mavenCentral()
+        maven {
+            url = uri("https://repositories.tomtom.com/artifactory/maven")
+        }
         gradlePluginPortal()
     }
 }
@@ -16,8 +19,15 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("https://repositories.tomtom.com/artifactory/maven")
+
+        // TomTom repo ONLY for TomTom artifacts
+        exclusiveContent {
+            forRepository {
+                maven { url = uri("https://repositories.tomtom.com/artifactory/maven") }
+            }
+            filter {
+                includeGroupByRegex("com\\.tomtom.*")   // nothing else will look here
+            }
         }
     }
 }

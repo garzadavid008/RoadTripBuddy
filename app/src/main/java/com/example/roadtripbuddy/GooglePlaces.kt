@@ -1,3 +1,5 @@
+package com.example.roadtripbuddy
+
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.android.libraries.places.api.model.CircularBounds
@@ -8,6 +10,8 @@ import com.google.android.libraries.places.api.net.SearchByTextRequest
 import com.google.android.libraries.places.api.net.SearchNearbyRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
+
 //import  com.google.android.libraries.places.api.net*
 //import com.google.android.libraries.places.api.model.Place
 
@@ -15,26 +19,40 @@ import kotlinx.coroutines.withContext
 // THIS MAKES THE API call
 class GooglePlacesRepository(private val placesClient: PlacesClient) {
 
-    suspend fun fetchNearbyRestaurants(latitude: Double, longitude: Double): List<SuggPlace> {
+
+    private fun calculateDistance(
+        orgLat: Double, orgLong:Double,
+        deslat:Double, destLong: Double
+    ): Double
+    {
+        val result = FloatArray(1)
+        android.location.Location.distanceBetween(
+            orgLat,orgLong,deslat,destLong,result
+        )
+        // formula to convert meters to miles
+        val number = result[0] * 0.000621371
+        return (number * 100.0).roundToInt() / 100.0
+    }
+    suspend fun fetchNearbyRestaurants(latitude: Double, longitude: Double, interest: MutableList<String>): List<SuggPlace> {
         return withContext(Dispatchers.IO) {
             try {
 
                 // Define search area as a 600m diameter circle
                 val center = LatLng(latitude, longitude)
-                val circle = CircularBounds.newInstance(center, /* radius = */ 600.0)
+                val circle = CircularBounds.newInstance(center, /* radius = */ 50000.0)
 
                 // Fields to retrieve from the API
-                val placeFields = listOf(Place.Field.NAME, Place.Field.RATING,Place.Field.ADDRESS,Place.Field.LAT_LNG)
+                val placeFields = listOf(Place.Field.NAME, Place.Field.RATING,Place.Field.ADDRESS,Place.Field.LAT_LNG,Place.Field.USER_RATINGS_TOTAL)
 
                 //  including and exclusing types
                 // this filters what we want
-                val includedTypes = listOf("restaurant", "cafe")
-               // val excludedTypes = listOf("pizza_restaurant", "american_restaurant")
+                val includedTypes = interest
+                // val excludedTypes = listOf("pizza_restaurant", "american_restaurant")
 
                 //  builds SearchNearbyRequest builder
                 val request = SearchNearbyRequest.builder(circle, placeFields)
                     .setIncludedTypes(includedTypes)
-                   // .setExcludedTypes(excludedTypes)
+                    // .setExcludedTypes(excludedTypes)
                     .setMaxResultCount(5)
                     .build()
 
@@ -43,11 +61,15 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
 
                 // Convert response to list of Place objects
                 return@withContext response.places.map { place ->
+                    val distMiles = calculateDistance(latitude,longitude,place.latLng.latitude,place.latLng.longitude)
                     SuggPlace(
                         name = place.name ?: "Unknown",
                         rating = place.rating ?: -1.0,
                         address = place.address ?: "No address", // if its null put no address
-                        latAndLng = place.latLng ?: LatLng(0.0,0.0)
+                        latAndLng = place.latLng ?: LatLng(0.0,0.0),
+                        //user rating come here
+                        popular = place.userRatingsTotal ?: 0,
+                        distanceFromLocation = distMiles
                     )
                 }
             } catch (e: Exception) {
@@ -107,4 +129,4 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
 }
 // data class to hold the suggested locations data
 // latAndLng holds a LatLng object that contains the latitude and longitude
-data class SuggPlace(val name: String, val rating: Double, val address:String,val latAndLng:LatLng, val category: String = "Unknown")
+data class SuggPlace(val name: String, val rating: Double, val address:String,val latAndLng:LatLng, val category: String = "Unknown",val distanceFromLocation:Double =0.0, val popular:Int=0)

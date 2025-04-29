@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy.SearchDrawer
 
-import PlacesViewModel
-import SuggPlace
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,7 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.roadtripbuddy.pages.placeCard
+import com.example.roadtripbuddy.SuggPlace
 
 @Composable
 fun LocationDetailsPage(

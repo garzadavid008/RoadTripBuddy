@@ -38,11 +38,6 @@ import com.tomtom.sdk.vehicle.Vehicle
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.time.Duration
-import PlacesViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -258,7 +253,6 @@ class SearchManager(
         val searchOptions = SearchOptions(
             query = query,
             locale = Locale("en", "US"),
-            limit = 5,
             geoBias = startLocation
         )
 
@@ -341,11 +335,9 @@ class SearchManager(
                                 if (pair.first.startsWith(query, ignoreCase = true)) score += 0.2f
                                 score
                             })
-                            .take(5)
 
                         objectResult(combinedResults.firstOrNull()?.second)
                         onResult(combinedResults)
-                        //onResult(combinedResults.map { it.first })
                     }
                 }
 

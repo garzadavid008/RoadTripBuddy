@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.GeoPoint
@@ -21,9 +19,9 @@ open class BaseMapUtils{
     lateinit var searchManager: SearchManager
     lateinit var routeManager: RouteManager
     var tomTomMap: TomTomMap? = null
-    private lateinit var navigationTileStore: NavigationTileStore
-    private lateinit var tomTomNavigation: TomTomNavigation
-    private lateinit var navigationFragment: NavigationFragment
+    protected lateinit var navigationTileStore: NavigationTileStore
+    protected lateinit var tomTomNavigation: TomTomNavigation
+    protected lateinit var navigationFragment: NavigationFragment
     private var usersMarkerLocation: GeoPoint? = null
     private var pendingClearMap: Boolean = false
     var startLocation: GeoPoint? = null
@@ -125,5 +123,6 @@ open class BaseMapUtils{
     fun removeMapListeners() {
         tomTomMap?.removeMapLongClickListener(mapLongClickListener)
     }
+
 
 }

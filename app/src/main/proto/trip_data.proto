@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package com.example.roadtripbuddy.data;
+
+option java_package = "com.example.roadtripbuddy.data";
+option java_multiple_files = true;
+
+// The whole file we’ll persist = one Trips message
+message Trips {
+    repeated Trip trips = 1;
+}
+
+message Trip {
+    int64   id        = 1;      // epoch millis when created (key + ordering)
+    string  name      = 2;      // “Weekend Run”
+    repeated Waypoint waypoints = 3;
+    int64 initial_departure = 4;
+}
+
+message Waypoint {
+    string search_json = 1;
+    int32  hour    = 2;
+    int32  minute  = 3;
+}

@@ -1,6 +1,5 @@
 package com.example.roadtripbuddy.pages
 
-//import android.provider.ContactsContract.CommonDataKinds.Email
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-//import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -118,7 +116,7 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
             }
             Row {
                 Image(
-                    painter = painterResource(id = R.drawable.car),
+                    painter = painterResource(id = R.drawable.ic_car),
                     contentDescription = "Person Image for signup",
                     modifier = Modifier.weight(1f,fill=false)
                 )
