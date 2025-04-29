@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity() {
         val navController = rememberNavController()
         val authState by authViewModel.authState.observeAsState()
 
+        /*
         // Redirect to login if unauthenticated
         LaunchedEffect(authState) {
             if (authState == AuthState.Unauthenticated) {
@@ -126,6 +127,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+         */
 
         NavHost(
             navController = navController,
@@ -159,7 +162,6 @@ class MainActivity : AppCompatActivity() {
         )) { mutableStateOf(mutableListOf<String>()) }
         val placesClient: PlacesClient = Places.createClient(activity)
         // view model for googles places
-        var destinationSelected by remember { mutableStateOf(false) }
         val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
         // val placeList by viewModel.restaurants.collectAsState()
 
@@ -176,7 +178,7 @@ class MainActivity : AppCompatActivity() {
                 when (item.id) {
                     "plan_a_trip" -> activity.startActivity(
                         Intent(activity, PlanActivity::class.java)
-                            .putExtra("start_location", navigationMap.searchManager.startLocationAddress)
+                            .putExtra("start_location", navigationMap.searchManager.startLocation)
                     )
 
                     "about" -> navController.navigate("about") {

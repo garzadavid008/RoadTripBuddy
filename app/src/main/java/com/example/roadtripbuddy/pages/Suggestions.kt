@@ -7,6 +7,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,7 +96,7 @@ fun placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:L
             border = BorderStroke(1.dp, Color.Black),
             modifier = Modifier
                 .wrapContentSize()
-                .size(width = 275.dp, height = 140.dp).padding(10.dp).fillMaxWidth()
+                .size(width = 275.dp, height = 150.dp).padding(10.dp).fillMaxWidth()
             ,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -114,7 +115,7 @@ fun placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:L
                 }
                 // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
                 Column {
-                    Text("Place $name", modifier = Modifier.padding(10.dp))
+                    Text(name, modifier = Modifier.padding(10.dp))
                     Text("Distance From Location:$distance Miles", modifier = Modifier.padding(10.dp))
                     Text("Rating $rating",modifier = Modifier.padding(10.dp))
                     Text("Address $address",modifier = Modifier.padding(10.dp))
@@ -240,9 +241,20 @@ fun RightSidePanelDemo(myClass:SuggestedLocation) {
 fun PlaceListPage(
     placeList: List<SuggPlace>,
     userAddress: Address? = null,
-    onPlaceClick: (SuggPlace) -> Unit = {}
+    onPlaceClick: (SuggPlace) -> Unit = {},
+    onBack: () -> Unit,
+    onCameraMove: () -> Unit
 ) {
     val scrollState = rememberLazyListState()
+
+    Box(
+        modifier = Modifier
+            .clickable { onBack() }
+            .padding(24.dp)
+    ) {
+        Text("← Back", color = Color.Blue)
+    }
+
     LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -259,6 +271,7 @@ fun PlaceListPage(
             )
         }
     }
+    onCameraMove()
 }
 
 @Composable

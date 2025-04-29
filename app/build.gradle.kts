@@ -99,88 +99,119 @@ android {
 
 val version = "1.23.1"
 dependencies {
-    // Hilt
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // Core Android and Kotlin Libraries
+    implementation(libs.androidx.core.ktx) // Kotlin extensions for Android
+    implementation(libs.androidx.appcompat) // AppCompat for backward compatibility
+    implementation(libs.material) // Material Design components
+    implementation(libs.androidx.constraintlayout) // ConstraintLayout for UI
+    implementation(libs.androidx.fragment) // Fragment support
+    implementation(libs.androidx.drawerlayout) // DrawerLayout for navigation
+    implementation(libs.androidx.runtime.android) // Android runtime
+    implementation(libs.androidx.runtime.livedata) // LiveData for reactive data
+    implementation(libs.androidx.foundation.layout.android) // Foundation layout utilities
+    implementation(libs.locationdelegation) // Location delegation utilities
+    implementation(libs.androidx.foundation.android) // Android foundation
 
-    // Core Android & Kotlin
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.locationdelegation)
-    implementation("androidx.datastore:datastore:1.1.0")
-    implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
-
-    // Protobuf Tools
-    kapt("com.squareup:javapoet:1.13.0")
-
-    // UI toolkits
-    implementation(platform("androidx.compose:compose-bom:2024.10.00"))
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-    // Lifecycle & LiveData
-    implementation(libs.androidx.runtime.android)
-    implementation(libs.androidx.runtime.livedata)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-
-    // Layouts
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.drawerlayout)
-    implementation(libs.androidx.foundation.android)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation("sh.calvin.reorderable:reorderable:2.4.3")
+    // Jetpack Compose
+    implementation(platform("androidx.compose:compose-bom:2024.10.00")) // Compose BOM for version management
+    implementation("androidx.activity:activity-compose:1.9.3") // Compose Activity integration
+    implementation("androidx.compose.ui:ui") // Compose UI core
+    implementation("androidx.compose.ui:ui-tooling-preview") // Compose preview tools
+    implementation("androidx.compose.material3:material3") // Material3 components for Compose
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.8")
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
+    implementation("androidx.navigation:navigation-compose:2.8.3") // Compose navigation
+    implementation(libs.androidx.navigation.fragment.ktx) // Fragment navigation
+    implementation(libs.androidx.navigation.ui.ktx) // Navigation UI utilities
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1")) // Firebase BOM for version management
+    implementation("com.google.firebase:firebase-firestore-ktx") // Firestore for Kotlin
+    implementation("com.google.firebase:firebase-auth") // Firebase Authentication
 
     // TomTom SDK
-    implementation("com.tomtom.sdk.navigation:navigation-online:$version")
-    implementation("com.tomtom.sdk.location:provider-default:$version")
-    implementation("com.tomtom.sdk.location:provider-map-matched:$version")
-    implementation("com.tomtom.sdk.location:provider-simulation:$version")
-    implementation("com.tomtom.sdk.maps:map-display:$version")
-    implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version")
-    implementation("com.tomtom.sdk.routing:route-planner-online:$version")
-    implementation("com.tomtom.sdk.search:search-online:$version")
-    implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2")
-    implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2")
-    implementation("com.tomtom.sdk.maps.visualization:navigation:$version")
-    implementation("com.tomtom.sdk.navigation:ui:1.23.2")
+    implementation("com.tomtom.sdk.navigation:navigation-online:$version") // TomTom navigation
+    implementation("com.tomtom.sdk.location:provider-default:$version") // Default location provider
+    implementation("com.tomtom.sdk.location:provider-map-matched:$version") // Map-matched location
+    implementation("com.tomtom.sdk.location:provider-simulation:$version") // Simulated location
+    implementation("com.tomtom.sdk.maps:map-display:$version") // Map display
+    implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version") // Navigation tile store
+    implementation("com.tomtom.sdk.routing:route-planner-online:$version") // Route planner
+    implementation("com.tomtom.sdk.search:search-online:$version") // Search API
+    implementation("com.tomtom.sdk.search:reverse-geocoder:1.23.2") // Reverse geocoding
+    implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2") // Online reverse geocoding
+    implementation("com.tomtom.sdk.maps.visualization:navigation:$version") // Navigation visualization
+    implementation("com.tomtom.sdk.navigation:ui:1.23.2") // Navigation UI
 
     // Google APIs
-    implementation("com.google.android.libraries.places:places:3.5.0")
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    implementation("com.google.android.libraries.places:places:3.5.0") // Google Places API
+    implementation("com.google.android.gms:play-services-maps:19.0.0") // Google Maps
 
-    // Networking
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    // HTTP Client
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14") // OkHttp for network requests
 
-    // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    // Other Libraries
+    implementation("sh.calvin.reorderable:reorderable:2.4.3") // Reorderable list library
 
     // Unit Testing
-    testImplementation(libs.junit)
-    testImplementation("io.mockk:mockk:1.13.13")
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation(libs.junit) // JUnit for unit tests
+    testImplementation("io.mockk:mockk:1.13.13") // MockK for mocking
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
+
+    // LocalLifecycleOwner and LocalViewModelStoreOwner
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecycle support for Compose
 
     // Android Instrumentation Testing
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.4")
+    androidTestImplementation(libs.androidx.junit) // Android JUnit extensions
+    androidTestImplementation(libs.androidx.espresso.core) // Espresso for UI testing
+    androidTestImplementation("androidx.test.ext:junit:1.2.1") // Test extensions for JUnit
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1") // Latest Espresso
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.3") // Navigation testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.4") // Compose UI testing
 
-    // Firebase (use one BOM)
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-auth")
+    // Debug Tools
+    debugImplementation("androidx.compose.ui:ui-tooling") // Compose UI tooling
+    debugImplementation("androidx.compose.ui:ui-test-manifest") // Compose test manifest
+
+    // Hilt & Compiler
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    kapt("com.squareup:javapoet:1.13.0")
+
+    // Additional integrations & tooling
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.datastore:datastore:1.1.0")
+    implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
+    implementation("com.composables:core:1.20.1")
+
+    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.navigation:navigation-compose:2.8.8")
+    implementation("androidx.compose.ui:ui:1.7.8")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
+    implementation("androidx.compose.material3:material3:1.3.1")
+    implementation("com.tomtom.sdk.navigation:navigation:$version")
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
+    implementation("com.google.android.libraries.places:places:3.5.0")
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.arch.core:core-testing:2.1.0")
+
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
+
+
+hilt {
+    enableAggregatingTask = false
+}
+
+
 
