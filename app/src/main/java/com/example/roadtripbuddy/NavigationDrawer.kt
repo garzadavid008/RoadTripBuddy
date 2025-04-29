@@ -24,14 +24,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
-
 @Composable
 fun NavigationDrawer(
     drawerState: DrawerState,
     gesturesStatus: Boolean,
     authState: AuthState,
     navController: NavController,
-    authViewModel: AuthViewModel,
+    authViewModel: IAuthViewModel, // changed from AuthView model 4/19/25
     onItemClick: (MenuItems) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit // Add this parameter
