@@ -29,23 +29,17 @@ class SignUpTest {
     @get:Rule
 
     val composeTestRule = createComposeRule()
-    //val composeTestRule = createAndroidComposeRule<MainActivity>()
-    //val composeTestRule = createAndroidComposeRule<TestActivity>()
-
+    // navController is used to simulate and monitor navigation.
     private lateinit var navController: TestNavHostController
+    // authViewModel is mocked to simulate success/fail authentication
     private lateinit var authViewModel: IAuthViewModel
 
-    // navController is used to simulate and monitor navigation.
-    // authViewModel is mocked to simulate success/fail authentication
+
+
     @Before
     fun setup() {
         navController = TestNavHostController(ApplicationProvider.getApplicationContext())
         navController.navigatorProvider.addNavigator(ComposeNavigator())
-        //composeTestRule.setContent {
-        //    navController.setLifecycleOwner(LocalLifecycleOwner.current)
-           // navController.setViewModelStore(LocalViewModelStoreOwner.current!!.viewModelStore)
-      //  }
-        //navController.navigatorProvider.addNavigator(ComposeNavigator())
         authViewModel = MockAuthViewModel(loginSuccessful = true, signupSuccessful = true)
     }
 
@@ -63,7 +57,7 @@ class SignUpTest {
         composeTestRule.onNodeWithTag("password_field").assertExists()
         composeTestRule.onNodeWithTag("confirm_password_field").assertExists()
         composeTestRule.onNodeWithTag("submit_button").assertExists()
-        composeTestRule.onNodeWithText("Already have an account, Login!").assertExists() // Added space(not having space cause a test to fail for several days):<
+        composeTestRule.onNodeWithText("Already have an account, Login!").assertExists()
         composeTestRule.onNodeWithText("Back to Map").assertExists()
     }
 

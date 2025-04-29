@@ -20,12 +20,10 @@ class AuthViewModelTest {
 
     @get:Rule
     val rule = InstantTaskExecutorRule() // Allows LiveData to work synchronously in tests
-    //val coroutineRule = MainCoroutineRule() // For coroutine testing
+
     private lateinit var authViewModel: IAuthViewModel // changed to IAuthViewModel
     private val firebaseAuth: FirebaseAuth = mockk(relaxed = true) // Mock Firebase Auth
     private val authStateObserver = mockk<Observer<AuthState>>(relaxed = true)
-    //private val firestore: FirebaseFirestore = mockk(relaxed = true)
-    //private val db: FirebaseFirestore = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -66,7 +64,7 @@ class AuthViewModelTest {
         verify { observer.onChanged(AuthState.Authenticated) } // Expect Authenticated
     }
 
-    // THis is tests ensure that all items covered in Authentication test were tested.
+    // This is tests ensure that all items covered in Authentication test were tested.
     @Test
     fun `login with valid credentials sets Authenticated state`() {
         // Arrange

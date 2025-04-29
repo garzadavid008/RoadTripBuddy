@@ -34,7 +34,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "com.example.roadtripbuddy.CustomTestRunner"
+        testInstrumentationRunner = "com.example.roadtripbuddy.CustomTestRunner" // ui.test.junit4.createAndroidComposeRule  // was removed for customTest
     }
 
     buildTypes {
@@ -130,8 +130,8 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
 
     // LocalLifecycleOwner and LocalViewModelStoreOwner
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecyle support for Compose
-    //implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7") { force = true } removed due to being redundant
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecycle support for Compose
+
 
     // Android Instrumentation Testing
     androidTestImplementation(libs.androidx.junit) // Android JUnit extensions

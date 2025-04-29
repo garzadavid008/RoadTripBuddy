@@ -1,7 +1,7 @@
 package com.example.roadtripbuddy.authenticationTests // Groups tests under authenticationTests
 
 import androidx.compose.ui.test.* // Contains performClick, onNodeWithText, performTextInput
-//import androidx.compose.ui.test.junit4.createAndroidComposeRule
+//import androidx.compose.ui.test.junit4.createAndroidComposeRule  // ws removed for customTest
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -30,7 +30,6 @@ class AuthNavigationTest {
     @get:Rule
 
     val composeTestRule = createComposeRule()
-    //val composeTestRule = createAndroidComposeRule<TestActivity>()
 
     // Initialize test nav controller before each test.
     private lateinit var navController: TestNavHostController
@@ -40,11 +39,7 @@ class AuthNavigationTest {
     fun setup() {
         navController = TestNavHostController(ApplicationProvider.getApplicationContext())
         navController.navigatorProvider.addNavigator(ComposeNavigator())
-        //composeTestRule.setContent {
-          //  navController.setLifecycleOwner(LocalLifecycleOwner.current)
-            //navController.setViewModelStore(LocalViewModelStoreOwner.current!!.viewModelStore)
-      //  }
-        //navController.navigatorProvider.addNavigator(ComposeNavigator())
+
         authViewModel = MockAuthViewModel(loginSuccessful = true, signupSuccessful = true)
     }
 
@@ -68,7 +63,6 @@ class AuthNavigationTest {
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             navController.currentDestination?.route == "map"
         }
-       // composeTestRule.waitForIdle()
         // Assert navigation
         assertEquals("map", navController.currentDestination?.route)
     }
@@ -115,7 +109,7 @@ class AuthNavigationTest {
     }
 
     // Test to verify after mock signup, nav to map functions
-    @Test// this needs to change to Signup toLogin since SignUpPage navigates to 'login'?// chang back to map if errors persists
+    @Test
     fun navigate_fromSignupToLogin() {
         composeTestRule.setContent {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
@@ -127,12 +121,6 @@ class AuthNavigationTest {
         // Simulate user interaction
         // Click the "Already have an account, Login!" button, Removed everything else since it triggered a signup after a successful nav to map
         composeTestRule.onNodeWithText("Already have an account, Login!").performClick()
-       // composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-       // composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
-       // composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
-       // composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
-       // composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
-        //composeTestRule.onNodeWithTag("submit_button").performClick()
 
         // Wait for navigation
         composeTestRule.waitUntil(timeoutMillis = 5000) {
@@ -144,7 +132,7 @@ class AuthNavigationTest {
     }
 }
 
-/* Need to implement after I can verify if needed or not
+/*
 * if it goes from signup-> login -> map
 * or signup -> map
 * Untested Scenarios not listed as of yet, list currently pending if need to add anything else

@@ -32,8 +32,6 @@ class LoginPageTest {
     @get:Rule
 
     val composeTestRule = createComposeRule()
-    //val composeTestRule = createAndroidComposeRule<MainActivity>()
-    //val composeTestRule = createAndroidComposeRule<TestActivity>()
 
     private lateinit var navController: TestNavHostController
     private lateinit var authViewModel: IAuthViewModel
@@ -44,10 +42,7 @@ class LoginPageTest {
         // Sets up fake navController to tract navigation.
         navController = TestNavHostController(ApplicationProvider.getApplicationContext())
         navController.navigatorProvider.addNavigator(ComposeNavigator())
-        //composeTestRule.setContent {
-           // navController.setLifecycleOwner(LocalLifecycleOwner.current)
-           // navController.setViewModelStore(LocalViewModelStoreOwner.current!!.viewModelStore)
-       // }
+
         // Sets up MockAuthViewModel into AuthViewModel to test whether login succeeded/fail.
         authViewModel = MockAuthViewModel(loginSuccessful = true)
     }
@@ -124,9 +119,8 @@ class LoginPageTest {
                 composable("login") { LoginPage(navController, authViewModel) }
             }
         }
-        //composeTestRule.waitForIdle()
+
         composeTestRule.onNodeWithTag("submit_button").performClick()
-       // composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
@@ -138,7 +132,6 @@ class LoginPageTest {
     }
 
     // Tests that any invalid email format is caught and rejected before submitting.
-    // Should remain in login page, (Needs to be added) show "invalid email format" message
     @Test
     fun loginButton_invalidEmailFormat_showsError() {
         authViewModel = MockAuthViewModel(loginSuccessful = false)
@@ -234,7 +227,7 @@ class LoginPageTest {
         assertEquals("login", navController.currentDestination?.route)
     }
 
-    // Mock test for "Account Disabled" (recall to view MockAuthViewModel to ensure this works)
+    // Mock test for "Account Disabled"
     @Test
     fun loginButton_accountDisabled_showsError() {
         authViewModel = MockAuthViewModel(loginSuccessful = false, loginError = "Firebase: Account disabled")

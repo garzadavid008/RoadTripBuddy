@@ -33,20 +33,11 @@ import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.R
 import com.example.roadtripbuddy.IAuthViewModel
 //import androidx.lifecycle.compose.collectAsStateWithLifecycle
-//import com.example.roadtripbuddy.User
-//import com.google.firebase.auth.FirebaseAuth
-//import com.google.firebase.firestore.ktx.firestore
-//import com.google.firebase.ktx.Firebase
-//import com.example.playground.isPasswordString
 
-//
 //  @Preview
     @Composable
     fun LoginPage(navController: NavController, authViewModel: IAuthViewModel) {
-    // creating the instance of db
-    //val db = Firebase.firestore
-    // calling the user collection
-    // val userCollection = db.collection("users") // not being used
+
     // for the toast
     val context = LocalContext.current
     // var for the user name, using REMEMBER to preserve the state of the variable across compose functions

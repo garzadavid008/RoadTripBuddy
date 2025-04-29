@@ -34,13 +34,6 @@ import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.IAuthViewModel
 //import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
-//import com.google.firebase.Firebase
-//import com.google.firebase.firestore.firestore
-
-//import com.example.roadtripbuddy.User
-//import com.google.firebase.firestore.ktx.firestore
-//import com.google.firebase.ktx.Firebase
-//import com.tomtom.sdk.vehicle.Vehicle
 
 // a function to validate passwords for strength
 fun isPasswordString(password:String) : Boolean
