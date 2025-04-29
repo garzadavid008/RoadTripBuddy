@@ -1,33 +1,37 @@
 package com.example.roadtripbuddy
 
-import android.util.Log
+//import jaandroid.util.Log // package does not exist (In my end anyways)
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import android.util.Log // this was added for logging
 
-class AuthViewModel: ViewModel()  {
+// added constructor to accept FirebaseAuth with a default value
+// fixes to many arguments error in AuthViewModel(firebaseAuth) in AuthViewModelTest hopefully
+class AuthViewModel(
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+) : ViewModel(), IAuthViewModel {
 
     // creating the fire base methods
-
-    private val auth : FirebaseAuth = FirebaseAuth.getInstance()
-
+    //private val auth : FirebaseAuth = FirebaseAuth.getInstance()// reposition
     // var to hold the authState
     // this is private and has a _ because this will be hidden from the UI for security
     private val _authState = MutableLiveData<AuthState>()
     // this will be used when speaking with the UI
-    val authState: LiveData<AuthState> = _authState
+    override val authState: LiveData<AuthState> = _authState
 
     init {
         // everytime we launch an activity it will launch this
         checkAuth()
     }
 
-
-    // a function to check if we are loggin in or not
-    fun checkAuth()
+    // a function to check if we are logged in in or not, Note Override modifier was added
+    // to ensure AuthViewModel detects and implements IAuthViewModel otherwise IAuthViewModel members are "hidden".
+    //Whatever that means.
+    override fun checkAuth()
     {
         // USER IS NOT LOGGED IN
         if(auth.currentUser == null)
@@ -41,12 +45,13 @@ class AuthViewModel: ViewModel()  {
     }
 
 
-    fun login(email:String,password:String)
+    override fun login(email:String,password:String)
     {
         //We must first check if the email or passwords strings are empty
         if(email.isEmpty() || password.isEmpty())
         {
             _authState.value = AuthState.Error("Email or Password cannot be empty")
+            return// added to return that its empty for clarity
         }
         // set the state of the user to loading whenever they are in the login page
         _authState.value = AuthState.Loading
@@ -58,19 +63,20 @@ class AuthViewModel: ViewModel()  {
                     _authState.value = AuthState.Authenticated
                 }else
                 {
-                    // firebase couldnt log them in. so provide the error
+                    // firebase couldn't log them in. so provide the error
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong.Try again")
                 }
             }
     }
 
     // function for the sign up
-    fun signup(email:String,password:String,name:String,vehicle:String)
+    override fun signup(name: String, email: String, password: String, vehicle: String) // changed to match the order of IAuthModel
     {
         //We must first check if the email or passwords strings are empty
         if(email.isEmpty() || password.isEmpty())
         {
             _authState.value = AuthState.Error("Email or Password cannot be empty")
+            return// added to return that its empty for clarity
         }
         // set the state of the user to loading whenever they are in the login page
         _authState.value = AuthState.Loading
@@ -98,19 +104,18 @@ class AuthViewModel: ViewModel()  {
 
                 }else
                 {
-                    // firebase couldnt log them in. so provide the error
+                    // firebase couldn't log them in. so provide the error
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong.Try again")
                 }
             }
     }
 
-    // function to signout
-    fun signout()
-    {
-        // change the auth to Unauth
-        _authState.value = AuthState.Unauthenticated;
+    // function to sign-out
+    override fun signout() {
+        // Sign out from Firebase and update state
+        auth.signOut()
+        _authState.value = AuthState.Unauthenticated
     }
-
 }
 
 // a class to handle the authenticated state of the user. if they are login or not
@@ -121,3 +126,8 @@ sealed class AuthState
     object  Loading : AuthState() // when the user is loading .
     data class Error(val message:String) : AuthState()
 }
+// Sealed sub-objects can be converted to 'data object'
+// changes done should ensure IAuthViewModel is implemented,
+// current functions remain intact,
+// Ensuring compatibility with:
+// MainActivity.kt, LoginPage, SignupPage, and NavigationDrawer
