@@ -11,4 +11,4 @@ interface IAuthViewModel {
 }
 /*This is an Interface that will mimic the behaviour of AuthViewModel
 And will serve as a dependency for LoginPageTest, MockAuthViewModel
-* Note 'signout is considered a typo but no real errors so I won't bother.*/
+* Note 'signout' is considered a typo but no real errors so I won't bother.*/
