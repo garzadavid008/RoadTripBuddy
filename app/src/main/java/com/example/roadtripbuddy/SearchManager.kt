@@ -38,11 +38,6 @@ import com.tomtom.sdk.vehicle.Vehicle
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.time.Duration
-import PlacesViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -178,65 +173,46 @@ class SearchManager(
                 return@resolveAndSuggest
             }
 
-            if (result is AutocompleteResult){ //If the object returned is a brand/poi category
-                // locations nearby method CALL GOES HERE
+            val location = result as SearchResult// since objectResult is an Any object, we do this to say treat the result were talking about as a SearchResult
+            val locationGeoPoint = location.place.coordinate
 
+            clearMap()
 
-                //If the object returned is a brand/poi category
-                // locations nearby method CALL GOES HERE
-                //val isBrand = result.segments.any{it is AutocompleteSegmentBrand}
-                //
+            // Create marker options if the coordinate is available
+            val markerOptions = MarkerOptions(
+                coordinate = locationGeoPoint,
+                pinImage = ImageFactory.fromResource(R.drawable.map_marker)
+            )
 
+            if (startLocation == null) {
+                Log.d("FAILURE", "startLocation is null")
+                return@resolveAndSuggest
             }
-            else { // If the object returned is an address
-                val location = result as SearchResult// since objectResult is an Any object, we do this to say treat the result were talking about as a SearchResult
-                val locationGeoPoint = location.place.coordinate
 
-                clearMap()
+            tomTomMap?.addMarker(markerOptions)
+            tomTomMap?.moveCamera(CameraOptions(locationGeoPoint, zoom = 15.0))
 
-                // Create marker options if the coordinate is available
-                val markerOptions = MarkerOptions(
-                    coordinate = locationGeoPoint,
-                    pinImage = ImageFactory.fromResource(R.drawable.map_marker)
-                )
+            val itinerary = Itinerary(
+                origin = ItineraryPoint(Place(startLocation!!)),
+                destination = ItineraryPoint(Place(locationGeoPoint)),
+                waypoints = emptyList()  // emptyList() because no waypoints are needed
+            )
+            val options = RoutePlanningOptions(
+                itinerary = itinerary,
+                guidanceOptions = GuidanceOptions(),
+                vehicle = Vehicle.Car()
+            )
 
-                if (startLocation == null) {
-                    Log.d("FAILURE", "startLocation is null")
-                    return@resolveAndSuggest
-                }
+            // IF the viewModel parameter is NOT null, Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
+            // We do this because in order to get the ETA of a route, we need to plan a route so
+            // we use RouteManagers method planRouteAndGetETA
+            viewModel?.viewModelScope?.launch  {
+                try {
+                    val etaDuration = planRouteAndGetETA(options)
+                    viewModel.updateETA(etaDuration.toString())// Updates the searchDrawerViewModel ETA
 
-                tomTomMap?.addMarker(markerOptions)
-                tomTomMap?.moveCamera(CameraOptions(locationGeoPoint, zoom = 15.0))
-
-                val itinerary = Itinerary(
-                    origin = ItineraryPoint(Place(startLocation!!)),
-                    destination = ItineraryPoint(Place(locationGeoPoint)),
-                    waypoints = emptyList()  // emptyList() because no waypoints are needed
-                )
-                val options = RoutePlanningOptions(
-                    itinerary = itinerary,
-                    guidanceOptions = GuidanceOptions(),
-                    vehicle = Vehicle.Car()
-                )
-
-                // IF the viewModel parameter is NOT null, Launch a coroutine to update the ETA(estimated time of arrival) asynchronously
-                // We do this because in order to get the ETA of a route, we need to plan a route so
-                // we use RouteManagers method planRouteAndGetETA
-                viewModel?.viewModelScope?.launch  {
-                    try {
-                        val etaDuration = planRouteAndGetETA(options)
-                        viewModel.updateETA(etaDuration.toString())// Updates the searchDrawerViewModel ETA
-
-                        //calling text search to get the info about the name and address based on the geo codes
-                        // and updating the view model so the compose can view  in Location Details
-                        placesViewModel?.getTextSearch(
-                            query,
-                            locationGeoPoint.latitude,
-                            locationGeoPoint.longitude
-                        )
-                    } catch (e: Exception) {
-                        Log.d("FAILURE", "Route planning failed: ${e.message}",)
-                    }
+                } catch (e: Exception) {
+                    Log.d("FAILURE", "Route planning failed: ${e.message}",)
                 }
             }
         })
@@ -258,7 +234,6 @@ class SearchManager(
         val searchOptions = SearchOptions(
             query = query,
             locale = Locale("en", "US"),
-            limit = 5,
             geoBias = startLocation
         )
 
@@ -341,11 +316,9 @@ class SearchManager(
                                 if (pair.first.startsWith(query, ignoreCase = true)) score += 0.2f
                                 score
                             })
-                            .take(5)
 
                         objectResult(combinedResults.firstOrNull()?.second)
                         onResult(combinedResults)
-                        //onResult(combinedResults.map { it.first })
                     }
                 }
 

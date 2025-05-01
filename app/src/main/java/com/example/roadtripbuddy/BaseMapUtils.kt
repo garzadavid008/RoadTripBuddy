@@ -1,11 +1,10 @@
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.content.Context
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.map.display.TomTomMap
+import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.gesture.MapLongClickListener
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
@@ -13,6 +12,7 @@ import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.ui.NavigationFragment
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
+import kotlin.time.Duration.Companion.seconds
 
 //All the methods in this class are directly used in MainActivity
 open class BaseMapUtils{
@@ -21,9 +21,9 @@ open class BaseMapUtils{
     lateinit var searchManager: SearchManager
     lateinit var routeManager: RouteManager
     var tomTomMap: TomTomMap? = null
-    private lateinit var navigationTileStore: NavigationTileStore
-    private lateinit var tomTomNavigation: TomTomNavigation
-    private lateinit var navigationFragment: NavigationFragment
+    protected lateinit var navigationTileStore: NavigationTileStore
+    protected lateinit var tomTomNavigation: TomTomNavigation
+    protected lateinit var navigationFragment: NavigationFragment
     private var usersMarkerLocation: GeoPoint? = null
     private var pendingClearMap: Boolean = false
     var startLocation: GeoPoint? = null
@@ -125,5 +125,30 @@ open class BaseMapUtils{
     fun removeMapListeners() {
         tomTomMap?.removeMapLongClickListener(mapLongClickListener)
     }
+
+    fun defaultCameraPosition(startLocation: GeoPoint?){
+        var defaultCameraPosition = CameraOptions()
+        if (startLocation != null){
+            defaultCameraPosition = CameraOptions(
+                position = startLocation,
+                zoom = 3.0
+            )
+        }else {
+            defaultCameraPosition = CameraOptions(
+                position = GeoPoint(38.00, -97.00),
+                zoom = 3.0
+            )
+        }
+        tomTomMap?.moveCamera(defaultCameraPosition)
+    }
+
+    fun showNearbyMarkers(location: GeoPoint){
+        val cameraPosition = CameraOptions(
+            position = location,
+            zoom = 10.0
+        )
+        tomTomMap?.animateCamera(cameraPosition, 3.seconds)
+    }
+
 
 }

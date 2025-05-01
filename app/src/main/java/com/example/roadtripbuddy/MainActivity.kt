@@ -1,16 +1,11 @@
-
 package com.example.roadtripbuddy
 
-
-import PlacesViewModel
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-//import android.provider.Settings.System
-//import android.widget.Toast
-import androidx.activity.compose.setContent
 //import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
@@ -27,6 +22,8 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 //import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.* // Covers derivedStateOf, getValue, mutableStateOf, remember, rememberCoroutineScope, setValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +56,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 //import com.example.roadtripbuddy.AuthViewModel
 //import com.example.roadtripbuddy.IAuthViewModel
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.roadtripbuddy.SearchDrawerViewModel
+import com.example.roadtripbuddy.pages.LoginPage
+import com.example.roadtripbuddy.pages.SignupPage
+import kotlinx.coroutines.launch
+import android.widget.FrameLayout
+import androidx.compose.foundation.layout.fillMaxWidth
+import android.util.Log
+
 
 class MainActivity : AppCompatActivity() {
     private val authViewModel: IAuthViewModel by viewModels<AuthViewModel>()
@@ -75,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         //creating the places api instance
         Places.initialize(applicationContext, getString(R.string.google_maps_key))
         val placesClient: PlacesClient = Places.createClient(this)
+
         locationService.requestLocationPermissions()
 
         // Only set content if not running in a test environment
@@ -111,6 +118,7 @@ class MainActivity : AppCompatActivity() {
         val navController = rememberNavController()
         val authState by authViewModel.authState.observeAsState()
 
+        /*
         // Redirect to login if unauthenticated
         LaunchedEffect(authState) {
             if (authState == AuthState.Unauthenticated) {
@@ -119,6 +127,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+         */
 
         NavHost(
             navController = navController,
@@ -144,17 +154,16 @@ class MainActivity : AppCompatActivity() {
             derivedStateOf { drawerState.isOpen }
         }
         var showBottomDrawer by remember { mutableStateOf(false) }
+        var destinationSelected by remember { mutableStateOf(false) }
 
         var destinationList by rememberSaveable(stateSaver = listSaver(
             save = { ArrayList(it) },  // Convert to ArrayList for saving
             restore = { it.toMutableList() }  // Restore as MutableList
         )) { mutableStateOf(mutableListOf<String>()) }
-         val placesClient: PlacesClient = Places.createClient(this)
+        val placesClient: PlacesClient = Places.createClient(activity)
         // view model for googles places
-        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
-       // val placeList by viewModel.restaurants.collectAsState() note if destinationSelected should be Modifiable keep var
-        var destinationSelected by remember { mutableStateOf(false) }
-
+        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
+        // val placeList by viewModel.restaurants.collectAsState()
 
         NavigationDrawer(
             drawerState = drawerState,
@@ -167,8 +176,10 @@ class MainActivity : AppCompatActivity() {
                     drawerState.close()
                 }
                 when (item.id) {
-                    "plan_a_trip" -> activity.startActivity(Intent(this@MainActivity, PlanActivity::class.java)
-                        .putExtra("start_location", navigationMap.searchManager.startLocationAddress))
+                    "plan_a_trip" -> activity.startActivity(
+                        Intent(activity, PlanActivity::class.java)
+                            .putExtra("start_location", navigationMap.searchManager.startLocation)
+                    )
 
                     "about" -> navController.navigate("about") {
                         popUpTo("map") {
@@ -234,18 +245,23 @@ class MainActivity : AppCompatActivity() {
                 if (navigationMap.mapReadyState.value) {
                     SearchDrawer(
                         visible = showBottomDrawer,
-                        placesViewModel =viewModel ,
+                        placesViewModel = viewModel,
                         viewModel = searchDrawerVM,
                         onDismiss = { showBottomDrawer = false },
                         navMap = navigationMap,
                         searchManager = navigationMap.searchManager,
-                        onStartTrip = { navigationMap.startTrip() }
+                        onStartTrip = { locationService.createRouteAndStart(searchDrawerVM) }
                     )
                 }
 
                 if (destinationSelected) {
                     FloatingActionButton(
-                        onClick = { navigationMap.startTrip() },
+                        onClick = {
+                            if (!activity.isFinishing && !activity.isDestroyed && navigationMap.mapReadyState.value) {
+                                navigationMap.createRouteAndStart(searchDrawerVM)
+                            } else {
+                                Log.e("Navigation", "Map not ready yet.")
+                            }                        },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
@@ -253,6 +269,16 @@ class MainActivity : AppCompatActivity() {
                         Text("Start Directions")
                     }
                 }
+
+                AndroidView(
+                    factory = { context: android.content.Context ->
+                        FrameLayout(context).apply { id = R.id.fragment_container_view_tag }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(500.dp) // Adjust height or use dynamic visibility later
+                )
             }
         }
     }

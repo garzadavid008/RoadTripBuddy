@@ -52,7 +52,7 @@ fun DepartureDateTimeInput(
         return this.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
     }
 
-    val dateAndTime by remember { mutableStateOf(viewModel.initialDeparture.value.toLocalDateTime()) } // the time and date at the moment
+    val dateAndTime by remember { mutableStateOf(viewModel.initialDeparture.value.toLocalDateTime()) }
 
     // States for dropdown expanded flags
     var monthExpanded by remember { mutableStateOf(false) }

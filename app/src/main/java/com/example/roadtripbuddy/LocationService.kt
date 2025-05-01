@@ -28,7 +28,7 @@ class LocationService(
     private lateinit var locationProvider: LocationProvider
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
 
-    private lateinit var map: BaseMapUtils
+    private lateinit var map: NavigationMap
     private lateinit var isInitialCameraPositionSet: MutableState<Boolean>
 
     // Init flags for safe state
@@ -129,24 +129,41 @@ class LocationService(
         onLocationUpdateListener = OnLocationUpdateListener { location ->
             val position = location.position
 
-            // ✅ Center and zoom to user when starting tracking
             map.tomTomMap?.moveCamera(CameraOptions(position, zoom = 17.0))
 
-            // Add or update user marker
-            if (userLiveMarker == null) {
-                val markerOptions = MarkerOptions(
-                    coordinate = position,
-                    pinImage = ImageFactory.fromResource(R.drawable.map_marker)
-                )
-                userLiveMarker = map.tomTomMap?.addMarker(markerOptions)
-            } else {
-                userLiveMarker?.coordinate = position
-            }
         }
 
         locationProvider.addOnLocationUpdateListener(onLocationUpdateListener)
         map.tomTomMap?.setLocationProvider(locationProvider)
     }
+
+    fun createRouteAndStart(viewModel: SearchDrawerViewModel) {
+        if (!::map.isInitialized) {
+            Log.e("LocationService", "Map not initialized. Cannot create route.")
+            return
+        }
+
+        map.routeManager.onRouteRequest(
+            viewModel = viewModel,
+            tomTomMap = map.tomTomMap,
+            searchManager = map.searchManager
+        )
+
+        startLiveTracking()
+
+        map.createRouteAndStart(viewModel) //
+    }
+
+    fun getLocationProvider(): LocationProvider {
+        return locationProvider
+    }
+
+    fun getTomTomMap() = map.tomTomMap
+
+    fun resetUserLiveMarker() {
+        userLiveMarker = null
+    }
+
 }
 
 

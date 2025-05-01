@@ -1,7 +1,5 @@
 package com.example.roadtripbuddy.pages
 
-import PlacesViewModel
-import SuggPlace
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
@@ -9,6 +7,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,11 +35,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,11 +60,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.PlacesViewModelFactory
 import com.example.roadtripbuddy.R
+import com.example.roadtripbuddy.SuggPlace
+import com.example.roadtripbuddy.SuggestedLocation
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 // this will carry the list of LatLng objects
@@ -75,41 +83,42 @@ data class Address ( var address: String)
 data class PanelToggle (var isVis: Boolean)
 //@Preview
 @Composable
-fun  placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address(""),onClick:()->Unit )
+fun placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address(""),onClick:()->Unit, distance:Double )
 {
     var isVisible by remember { mutableStateOf(true) }
     // card for suggested place
 
-AnimatedVisibility(visible = isVisible) {
-    OutlinedCard(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        border = BorderStroke(1.dp, Color.Black),
-        modifier = Modifier
-            .wrapContentSize()
-            .size(width = 275.dp, height = 140.dp).padding(10.dp).fillMaxWidth()
-        ,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            FilledTonalButton(onClick = {
-                //toggle.isVis= false
-                //push the address into the list for the Searchmanager performSearch can use it
-                userAddress.address = address
-                listofLATandLong.add(latlng)
-                // make the button invis
-                isVisible = false
-                // trigger the action
-                onClick()
-            }
-            ) {
-                Text("+")
-            }
-           // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
-            Column {
-                Text("Place $name", modifier = Modifier.padding(10.dp))
-                Text("Rating $rating",modifier = Modifier.padding(10.dp))
-                Text("Address $address",modifier = Modifier.padding(10.dp))
+    AnimatedVisibility(visible = isVisible) {
+        OutlinedCard(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(1.dp, Color.Black),
+            modifier = Modifier
+                .wrapContentSize()
+                .size(width = 275.dp, height = 150.dp).padding(10.dp).fillMaxWidth()
+            ,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = {
+                    //toggle.isVis= false
+                    //push the address into the list for the Searchmanager performSearch can use it
+                    userAddress.address = address
+                    listofLATandLong.add(latlng)
+                    // make the button invis
+                    isVisible = false
+                    // trigger the action
+                    onClick()
+                }
+                ) {
+                    Text("+")
+                }
+                // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
+                Column {
+                    Text(name, modifier = Modifier.padding(10.dp))
+                    Text("Distance From Location:$distance Miles", modifier = Modifier.padding(10.dp))
+                    Text("Rating $rating",modifier = Modifier.padding(10.dp))
+                    Text("Address $address",modifier = Modifier.padding(10.dp))
 
                 }
             }
@@ -131,14 +140,24 @@ fun Suggestions(navController: NavController)
     // placeList will contain all suggested places
     val placesClient: PlacesClient = Places.createClient(LocalContext.current) // client resonsible for sending the request
     val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))  // stores the info from the API and prepares it for the UI
-    val placeList by viewModel.restaurants.collectAsState() // contains the list of nearby places and we display it on the screen
-    val userList12 :MutableList<String> = mutableListOf()
-    val wantedAddress : Address = Address("")
-    wantedAddress.address= "test test"
-    // this function will run when page is loaded
+    val includedTypes : MutableList<String> = mutableListOf()
+    val GasincludedTypes : MutableList<String> = mutableListOf()
+    val FunincludedTypes : MutableList<String> = mutableListOf()
+    includedTypes.add("restaurant")
+
+    GasincludedTypes.add("gas_station")
+    GasincludedTypes.add("car_wash")
+    FunincludedTypes.add("convention_center")
+    FunincludedTypes.add("movie_theater")
+    FunincludedTypes.add("park")
+    val myClass = remember  { SuggestedLocation(viewModel) }
     LaunchedEffect(Unit) {
-        //viewModel.getNearbyRestaurants(26.243629, -98.245079) // Example location
-        viewModel.getTextSearch("whataburger",26.243629, -98.245079)
+        myClass.setUpList(26.243629, -98.245079, includedTypes, "food")
+        myClass.setUpList(26.243629, -98.245079, FunincludedTypes, "fun")
+        myClass.setUpList(26.243629, -98.245079, GasincludedTypes, "gas")
+        Log.d("Chris","The size of list is ${myClass.foodList} ")
+        Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
+        Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
     }
     Scaffold(
         topBar = {
@@ -153,53 +172,40 @@ fun Suggestions(navController: NavController)
             )
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(innerPadding)  // Apply Scaffold's inner padding
-                .padding(16.dp),        // Add any additional padding you need
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            // list of suggestions here
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(vertical = 25.dp),
-                    horizontalArrangement = Arrangement.Center, // center the data
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Places Near By",
-                       // style = MaterialTheme.typography.bodySmall
-                    )
-                    RightSidePanelDemo(placeList,wantedAddress)
+        Column(modifier = Modifier.padding(innerPadding)) {
+            Text(
+                "Places Near By",
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+
+            CategoryFilteredList(
+                foodList = myClass.foodList,
+                entertainmentList = myClass.entertainment,
+                gasList = myClass.gasAndService,
+                onPlaceClick = { selectedPlace ->
+                    // handle click
+
                 }
-            }
-//            // this will generate the list of places
-//            items(placeList)
-//            { place ->
-//               // placeCard(place.name,place.rating,place.address,place.latAndLng)
-//            }
+            )
+            RightSidePanelDemo(myClass)
         }
+
+
 
     }
-
 }
 
-@Preview
-@Composable
-fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList(), userAddress: Address= Address("")) {
-    var isVisible by remember { mutableStateOf(false) }
-    //var toggle2: PanelToggle by remember { mutableStateOf(false) }
-//    var toggle : PanelToggle = PanelToggle(false)
-//    toggle.isVis= isVisible
 
+// refactor this later (make each question into a data class, make it so only one button is clicked at a time per question)
+@Composable
+fun RightSidePanelDemo(myClass:SuggestedLocation) {
+    var isVisible by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = { isVisible = !isVisible }, modifier = Modifier.align(Alignment.Center)) {
+        Button(onClick = { isVisible = !isVisible; }, modifier = Modifier.align(Alignment.Center)) {
             Text("Toggle Panel")
         }
-
         AnimatedVisibility(
             visible = isVisible,
             enter = slideInHorizontally { it }, // Slide in from right
@@ -214,35 +220,41 @@ fun RightSidePanelDemo(placeList: List<SuggPlace> = emptyList(), userAddress: Ad
                     .padding(16.dp)
             ) {
                 Column {
-                    Text("Near By Locations", fontWeight = FontWeight.Bold)
-
-                    Column {
-                        // this will generate the list of places
-                        placeList.forEach { place ->
-                          //  placeCard(place.name, place.rating, place.address, place.latAndLng,userAddress)
-                            //isVisible= toggle.isVis
-                        }
-
-                      //  repeat(10) { Text("Item $it", modifier = Modifier.padding(8.dp)) }
-                        Button(onClick = { isVisible = false }) {
-                            Text("Close")
-                        }
+                    // sort the list by rating
+                    Button(onClick = {}) {
+                        Text("Sort List by Rating")
+                    }
+                    // sort it by diatnc
+                    Button(onClick = {}) {
+                        Text("Sort List by Distance ")
                     }
                 }
             }
         }
 
     }
-    Log.i("Chris"," The current String is ${userAddress.address}")
+
 }
+
 
 @Composable
 fun PlaceListPage(
     placeList: List<SuggPlace>,
     userAddress: Address? = null,
-    onPlaceClick: (SuggPlace) -> Unit = {}
+    onPlaceClick: (SuggPlace) -> Unit = {},
+    onBack: () -> Unit,
+    onCameraMove: () -> Unit
 ) {
     val scrollState = rememberLazyListState()
+
+    Box(
+        modifier = Modifier
+            .clickable { onBack() }
+            .padding(24.dp)
+    ) {
+        Text("← Back", color = Color.Blue)
+    }
+
     LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -254,9 +266,78 @@ fun PlaceListPage(
                 address = place.address,
                 latlng = place.latAndLng,
                 userAddress = userAddress ?: Address(""),
-                onClick = { onPlaceClick(place) }
+                onClick = { onPlaceClick(place) },
+                distance = place.distanceFromLocation
             )
         }
     }
+    onCameraMove()
 }
 
+@Composable
+fun CategoryFilteredList(
+    foodList: List<SuggPlace>,
+    entertainmentList: List<SuggPlace>,
+    gasList: List<SuggPlace>,
+    onPlaceClick: (SuggPlace) -> Unit = {}
+) {
+    var selectedCategory by remember { mutableStateOf("food") }
+    var fullPlaceList by remember { mutableStateOf(foodList.toList()) }
+
+    // Log.d("Chris","The size of the fullPlaceList ${fullPlaceList.size}")
+    Column() {
+
+        Row(
+
+        ) {
+            FilledTonalButton(onClick = {
+                selectedCategory = "food"
+                fullPlaceList = foodList.toList()
+            }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ham),
+                    contentDescription = "Food"
+                )
+            }
+
+            FilledTonalButton(onClick = {
+                selectedCategory = "entertainment"
+                fullPlaceList = entertainmentList.toList()
+            }) {
+                Image(
+                    painter = painterResource(id = R.drawable.games),
+                    contentDescription = "Games"
+                )
+            }
+
+            FilledTonalButton(onClick = {
+                selectedCategory = "gas"
+                fullPlaceList = gasList.toList()
+            }) {
+                Image(
+                    painter = painterResource(id = R.drawable.car2),
+                    contentDescription = "Car"
+                )
+            }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            items(fullPlaceList) { place ->
+                placeCard(
+                    name = place.name,
+                    rating = place.rating,
+                    address = place.address,
+                    latlng = place.latAndLng,
+                    onClick = { onPlaceClick(place) },
+                    distance = place.distanceFromLocation
+
+                )
+            }
+
+        }
+    }
+}
