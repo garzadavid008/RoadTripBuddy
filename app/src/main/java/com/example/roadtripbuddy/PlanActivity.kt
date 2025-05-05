@@ -30,17 +30,18 @@ import androidx.compose.ui.unit.dp
 import com.example.roadtripbuddy.PlanATripDrawer.PlanATripDrawer
 import com.example.roadtripbuddy.TripSelect.TripSelect
 import com.example.roadtripbuddy.TripSelect.TripsViewModel
+import com.tomtom.sdk.location.GeoPoint
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class PlanActivity : AppCompatActivity() {
 
     // We grab the usersLocation from the MainActivity
-    private var usersLocationAddress: String? = null
+    private var usersLocation: GeoPoint? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        usersLocationAddress = intent.getStringExtra("start_location")
+        usersLocation = intent.getParcelableExtra("start_location")
         setContent {
             PlanTripScreen(onBack = {
                 finish() })
@@ -59,11 +60,14 @@ class PlanActivity : AppCompatActivity() {
         val mapReadyState = remember { mutableStateOf(false) }
         var currentTripId by remember { mutableLongStateOf(0) }
 
-        val planMap = remember { PlanMap(
+        val planMap = remember {
+            PlanMap(
             context = context,
             activity = this@PlanActivity,
             mapReadyState = mapReadyState
-        ) }
+             )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,6 +91,8 @@ class PlanActivity : AppCompatActivity() {
                 )
             }
             else if (mapReadyState.value && showBottomDrawer){
+                planMap.defaultCameraPosition(usersLocation)
+
                 PlanATripDrawer(
                     onMapFocus = mapFocus,
                     viewModel = planVM,
