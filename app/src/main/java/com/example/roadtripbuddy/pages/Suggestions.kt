@@ -26,14 +26,20 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -51,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -189,53 +196,13 @@ fun Suggestions(navController: NavController)
 
                 }
             )
-            RightSidePanelDemo(myClass)
+           // RightSidePanelDemo(myClass)^
         }
 
 
 
     }
 }
-
-
-// refactor this later (make each question into a data class, make it so only one button is clicked at a time per question)
-@Composable
-fun RightSidePanelDemo(myClass:SuggestedLocation) {
-    var isVisible by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = { isVisible = !isVisible; }, modifier = Modifier.align(Alignment.Center)) {
-            Text("Toggle Panel")
-        }
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = slideInHorizontally { it }, // Slide in from right
-            exit = slideOutHorizontally { it }, // Slide out to right
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(250.dp)
-                    .fillMaxHeight()
-                    .background(Color.LightGray)
-                    .padding(16.dp)
-            ) {
-                Column {
-                    // sort the list by rating
-                    Button(onClick = {}) {
-                        Text("Sort List by Rating")
-                    }
-                    // sort it by diatnc
-                    Button(onClick = {}) {
-                        Text("Sort List by Distance ")
-                    }
-                }
-            }
-        }
-
-    }
-
-}
-
 
 @Composable
 fun PlaceListPage(
@@ -274,6 +241,76 @@ fun PlaceListPage(
     onCameraMove()
 }
 
+//@Composable
+//fun CategoryFilteredList(
+//    foodList: List<SuggPlace>,
+//    entertainmentList: List<SuggPlace>,
+//    gasList: List<SuggPlace>,
+//    onPlaceClick: (SuggPlace) -> Unit = {}
+//) {
+//    var selectedCategory by remember { mutableStateOf("food") }
+//    var fullPlaceList by remember { mutableStateOf(foodList.toList()) }
+//
+//    // Log.d("Chris","The size of the fullPlaceList ${fullPlaceList.size}")
+//    Column() {
+//
+//        Row(
+//
+//        ) {
+//            FilledTonalButton(onClick = {
+//                selectedCategory = "food"
+//                fullPlaceList = foodList.toList()
+//            }) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.ham),
+//                    contentDescription = "Food"
+//                )
+//            }
+//
+//            FilledTonalButton(onClick = {
+//                selectedCategory = "entertainment"
+//                fullPlaceList = entertainmentList.toList()
+//            }) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.games),
+//                    contentDescription = "Games"
+//                )
+//            }
+//
+//            FilledTonalButton(onClick = {
+//                selectedCategory = "gas"
+//                fullPlaceList = gasList.toList()
+//            }) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.car2),
+//                    contentDescription = "Car"
+//                )
+//            }
+//        }
+//        LazyColumn(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(16.dp),
+//            contentPadding = PaddingValues(16.dp)
+//        ) {
+//            items(fullPlaceList) { place ->
+//                placeCard(
+//                    name = place.name,
+//                    rating = place.rating,
+//                    address = place.address,
+//                    latlng = place.latAndLng,
+//                    onClick = { onPlaceClick(place) },
+//                    distance = place.distanceFromLocation
+//
+//                )
+//            }
+//
+//        }
+//    }
+//}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryFilteredList(
     foodList: List<SuggPlace>,
@@ -284,60 +321,92 @@ fun CategoryFilteredList(
     var selectedCategory by remember { mutableStateOf("food") }
     var fullPlaceList by remember { mutableStateOf(foodList.toList()) }
 
-    // Log.d("Chris","The size of the fullPlaceList ${fullPlaceList.size}")
-    Column() {
+    // Category data holder using drawable resource icons
+    data class Category(
+        val key: String,
+        val label: String,
+        val iconRes: Int,
+        val items: List<SuggPlace>
+    )
+    val categories = listOf(
+        Category("food", "Food", R.drawable.lock, foodList),
+        Category("entertainment", "Entertainment", R.drawable.games, entertainmentList),
+        Category("gas", "Gas", R.drawable.car, gasList)
+    )
 
-        Row(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Nearby Places",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
+        TabRow(
+            selectedTabIndex = categories.indexOfFirst { it.key == selectedCategory },
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-            FilledTonalButton(onClick = {
-                selectedCategory = "food"
-                fullPlaceList = foodList.toList()
-            }) {
-                Image(
-                    painter = painterResource(id = R.drawable.ham),
-                    contentDescription = "Food"
-                )
-            }
-
-            FilledTonalButton(onClick = {
-                selectedCategory = "entertainment"
-                fullPlaceList = entertainmentList.toList()
-            }) {
-                Image(
-                    painter = painterResource(id = R.drawable.games),
-                    contentDescription = "Games"
-                )
-            }
-
-            FilledTonalButton(onClick = {
-                selectedCategory = "gas"
-                fullPlaceList = gasList.toList()
-            }) {
-                Image(
-                    painter = painterResource(id = R.drawable.car2),
-                    contentDescription = "Car"
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = selectedCategory == category.key,
+                    onClick = {
+                        selectedCategory = category.key
+                        fullPlaceList = category.items.toList()
+                    },
+                    text = { Text(category.label) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = category.iconRes),
+                            contentDescription = category.label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentPadding = PaddingValues(16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(fullPlaceList) { place ->
-                placeCard(
-                    name = place.name,
-                    rating = place.rating,
-                    address = place.address,
-                    latlng = place.latAndLng,
-                    onClick = { onPlaceClick(place) },
-                    distance = place.distanceFromLocation
-
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable { onPlaceClick(place) },
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = place.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Rating: %.1f".format(place.rating),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = place.address,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "%.1f km away".format(place.distanceFromLocation),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
-
         }
     }
 }
