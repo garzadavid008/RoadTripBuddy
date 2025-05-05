@@ -17,6 +17,14 @@ fun WaypointItem.toDto() = WaypointDto(
     name = searchResult!!.place.address?.freeformAddress
 )
 
+// 2) New mapper from that DTO → Firestore‐friendly Map
+fun WaypointDto.toFirestoreMap(): Map<String, Any> = mapOf(
+    "type"            to type.type,                   // e.g. "PLACE"
+    "searchResultId"  to searchResultId.id,        // your string ID
+    "location"        to geoPoint,                    // Firestore GeoPoint
+    "name"            to (name ?: "")                 // safe non-null
+)
+
 fun WaypointDto.toSearchResult(): SearchResult {
     val place = Place(
         coordinate = geoPoint,
