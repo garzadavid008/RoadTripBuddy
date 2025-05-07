@@ -7,28 +7,14 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import android.util.Log
-import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
-import com.example.roadtripbuddy.NavigationFragment
-import com.tomtom.sdk.navigation.ui.NavigationUiOptions
-import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
-import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
-import com.tomtom.sdk.routing.options.Itinerary
-import com.tomtom.sdk.routing.options.ItineraryPoint
-import com.tomtom.sdk.routing.options.RoutePlanningOptions
-import com.tomtom.sdk.routing.*
-import com.tomtom.sdk.navigation.RoutePlan
-import com.tomtom.sdk.location.Place
-import com.tomtom.sdk.navigation.online.Configuration
-
-
+import com.tomtom.sdk.navigation.ui.NavigationUiOptions
 
 
 //This is the map that appears in MainActivity. This map acts as a simple GPS navigation
 open class NavigationMap(
-    private val context: Context,
+    val context: Context,
     private val activity: MainActivity,
     val mapReadyState: MutableState<Boolean>,
     private val locationService: LocationService// We intake the instance of the locationService class from the MainActivty
@@ -56,7 +42,6 @@ open class NavigationMap(
                     isInitialCameraPositionSetInit = isInitialCameraPositionSet
                 )
                 locationService.enableUserLocation()
-                setUpMapListeners()
                 routeManager = RouteManager(context = context, apiKey = apiKey)// Initializing an instance of the routeManager class
                 customNavigationFragment = NavigationFragment.newInstance(
                     context,
@@ -71,7 +56,6 @@ open class NavigationMap(
             },
             onMapDispose = {
                 tomTomMap = null
-                removeMapListeners()
             }
         )
     }

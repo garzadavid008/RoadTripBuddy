@@ -98,7 +98,7 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
                 //  builds SearchNearbyRequest builder
                 val request = SearchByTextRequest.builder(location, placeFields)
                     .setMaxResultCount(5)
-                    .setLocationBias(CircularBounds.newInstance(center,600.0))
+                    .setLocationBias(CircularBounds.newInstance(center,100.0))
                     .build()
 
                 // Perform search synchronously using Tasks.await()
@@ -106,12 +106,20 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
 
                 // Convert response to list of Place objects
                 return@withContext response.places.map { place ->
+                    val distMiles =
+                        place.latLng?.let {
+                            place.latLng?.let { it1 ->
+                                calculateDistance(latitude,longitude,
+                                    it.latitude, it1.longitude)
+                            }
+                        }
                     SuggPlace(
                         name = place.name ?: "Unknown",
                         rating = place.rating ?: -1.0,
                         address = place.address ?: "No address found", // if its null
                         latAndLng = place.latLng ?: LatLng(0.0,0.0),
-                        category = place.types?.firstOrNull()?.name ?: "unknown"
+                        category = place.types?.firstOrNull()?.name ?: "unknown",
+                        distanceFromLocation = distMiles!!
                     )
                 }
             } catch (e: Exception) {
