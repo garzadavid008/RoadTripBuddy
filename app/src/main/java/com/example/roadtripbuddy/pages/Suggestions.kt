@@ -26,7 +26,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +66,15 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import android.Manifest
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.rememberCoroutineScope
 
 // this will carry the list of LatLng objects
@@ -206,9 +214,22 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                navigationIcon = {
+                    IconButton(onClick = {navController.navigate("map")}) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF2ebcff),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarColors(
+                    containerColor          = Color(0xFFF5F5F5),      // light-gray background
+                    scrolledContainerColor  = Color(0xFFE0E0E0),      // slightly darker when scrolled
+                    navigationIconContentColor = Color(0xFF2EBCFF),   // cyan arrow tint
+                    titleContentColor          = Color.Black,         // title text
+                    actionIconContentColor     = Color(0xFF2EBCFF)
                 ),
                 title = {
                     Text("Suggested Locations")
@@ -217,14 +238,6 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            TextButton(onClick = {
-                //this will take you back to the map page
-                navController.navigate("map")
-            }, modifier = Modifier
-                .padding(vertical = 16.dp)
-                .align(Alignment.CenterHorizontally)) {
-                Text(text = "Back to Map")
-            }
 
             CategoryFilteredList(
                 foodList = myClass.foodList,
@@ -325,8 +338,14 @@ fun CategoryFilteredList(
 
         TabRow(
             selectedTabIndex = categories.indexOfFirst { it.key == selectedCategory },
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = Color(0xFFdbf3fd),
+            contentColor = Color.Black,
+            indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    Modifier.tabIndicatorOffset(tabPositions[categories.indexOfFirst { it.key == selectedCategory }]),
+                    color = Color(0xFF2ebcff) // Set your desired indicator color here
+                )
+            }
         ) {
             categories.forEachIndexed { index, category ->
                 Tab(
@@ -360,7 +379,13 @@ fun CategoryFilteredList(
                         .padding(vertical = 4.dp)
                         .clickable { onPlaceClick(place) },
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardColors(
+                        containerColor = Color(0xFFdbf3fd),
+                        contentColor = Color.Black,
+                        disabledContentColor = Color.White,
+                        disabledContainerColor = Color.White
+                        )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
