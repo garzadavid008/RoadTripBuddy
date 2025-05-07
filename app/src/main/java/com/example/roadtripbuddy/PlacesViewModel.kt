@@ -2,6 +2,7 @@ package com.example.roadtripbuddy
 
 import android.app.Application
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,6 +31,8 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
     private val _fun = MutableStateFlow<List<SuggPlace>>(emptyList())
     // the ui will grab this
     val entertainment: StateFlow<List<SuggPlace>> get() = _fun
+
+    val selectedPlace = mutableStateOf<SuggPlace?>(null)
 
     fun updateList(category: String, list :List<SuggPlace>){
         when(category)
@@ -68,6 +71,14 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
             Log.i("Chris", "Updating StateFlow with ${result.size} places")
             _restaurants.value = result.toList()
         }
+    }
+
+    fun updateSelectedPlace(newPlace: SuggPlace?){
+        selectedPlace.value = newPlace
+    }
+
+    fun clearPlaces(){
+        _restaurants.value = emptyList()
     }
 
 }

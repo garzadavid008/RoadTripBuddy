@@ -107,10 +107,10 @@ class LocationService(
         onLocationUpdateListener = OnLocationUpdateListener { location ->
             val position = location.position
 
+            map.updateStartLocation(position)
             if (!isInitialCameraPositionSet.value) {
                 map.tomTomMap?.moveCamera(CameraOptions(position, zoom = 15.0))
                 isInitialCameraPositionSet.value = true
-                map.updateStartLocation(position)
                 Log.d("Debug: Location", position.toString())
             }
 
@@ -143,10 +143,9 @@ class LocationService(
             return
         }
 
-        map.routeManager.onRouteRequest(
+        map.onRouteRequest(
             viewModel = viewModel,
-            tomTomMap = map.tomTomMap,
-            searchManager = map.searchManager
+            context = map.context
         )
 
         startLiveTracking()

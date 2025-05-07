@@ -24,6 +24,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -62,6 +66,15 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import android.Manifest
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.rememberCoroutineScope
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
@@ -79,44 +92,60 @@ data class Address ( var address: String)
 data class PanelToggle (var isVis: Boolean)
 //@Preview
 @Composable
-fun placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address(""),onClick:()->Unit, distance:Double )
-{
-    var isVisible by remember { mutableStateOf(true) }
-    // card for suggested place
+fun PlaceRow(
+    name: String,
+    rating: Double,
+    address: String,
+    latlng: LatLng,
+    userAddress: Address = Address(""),
+    onAdd: () -> Unit,
+    distance: Double,
+    onClick: () -> Unit,
+    isSelected: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            // highlight background when selected
+            .background(
+                if (isSelected)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else
+                    Color.Transparent
+            )
+            .clickable(onClick = onClick)
+    ) {
+        Divider(color = Color.LightGray, thickness = 1.dp)
 
-    AnimatedVisibility(visible = isVisible) {
-        OutlinedCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            border = BorderStroke(1.dp, Color.Black),
+        Row(
             modifier = Modifier
-                .wrapContentSize()
-                .size(width = 275.dp, height = 150.dp).padding(10.dp).fillMaxWidth()
-            ,
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilledTonalButton(onClick = {
-                    //toggle.isVis= false
-                    //push the address into the list for the Searchmanager performSearch can use it
+            FilledTonalButton(
+                onClick = {
                     userAddress.address = address
                     listofLATandLong.add(latlng)
-                    // make the button invis
-                    isVisible = false
-                    // trigger the action
-                    onClick()
-                }
-                ) {
-                    Text("+")
-                }
-                // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
-                Column {
-                    Text(name, modifier = Modifier.padding(10.dp))
-                    Text("Distance From Location:$distance Miles", modifier = Modifier.padding(10.dp))
-                    Text("Rating $rating",modifier = Modifier.padding(10.dp))
-                    Text("Address $address",modifier = Modifier.padding(10.dp))
+                    onAdd()
+                },
+                colors = ButtonColors(
+                    containerColor = Color(0xFFdbf3fd), contentColor = Color.Black,
+                    disabledContainerColor = Color.White,
+                    disabledContentColor = Color.White
+                )
+            ) {
+                Text("+")
+            }
 
-                }
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(2.dp))
+                Text("${"%.1f".format(distance)} mi away", style = MaterialTheme.typography.bodySmall)
+                Text("Rating: ${"%.1f".format(rating)}", style = MaterialTheme.typography.bodySmall)
+                Text(address, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
         }
     }
@@ -149,6 +178,8 @@ data class Cords(val lat: Double, val long: Double)
         Cords(0.0,0.0)
     }
 }
+
+
 // since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,9 +220,22 @@ data class Cords(val lat: Double, val long: Double)
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                navigationIcon = {
+                    IconButton(onClick = {navController.navigate("map")}) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF2ebcff),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarColors(
+                    containerColor          = Color(0xFFF5F5F5),      // light-gray background
+                    scrolledContainerColor  = Color(0xFFE0E0E0),      // slightly darker when scrolled
+                    navigationIconContentColor = Color(0xFF2EBCFF),   // cyan arrow tint
+                    titleContentColor          = Color.Black,         // title text
+                    actionIconContentColor     = Color(0xFF2EBCFF)
                 ),
                 title = {
                     Text("Suggested Locations")
@@ -209,6 +253,7 @@ data class Cords(val lat: Double, val long: Double)
                 Text(text = "Back to Map")
             }
                 Text(text = "$cords")
+
             CategoryFilteredList(
                 foodList = myClass.foodList,
                 entertainmentList = myClass.entertainment,
@@ -229,12 +274,14 @@ data class Cords(val lat: Double, val long: Double)
 @Composable
 fun PlaceListPage(
     placeList: List<SuggPlace>,
+    placesViewModel: PlacesViewModel,
     userAddress: Address? = null,
     onPlaceClick: (SuggPlace) -> Unit = {},
     onBack: () -> Unit,
-    onCameraMove: () -> Unit
+    onZoomOnPlace: (SuggPlace) -> Unit,
 ) {
     val scrollState = rememberLazyListState()
+    val selectedPlace by placesViewModel.selectedPlace
 
     Box(
         modifier = Modifier
@@ -244,23 +291,30 @@ fun PlaceListPage(
         Text("← Back", color = Color.Blue)
     }
 
+
     LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         items(placeList) { place ->
-            placeCard(
+            // If place is the selected place, return true
+            Log.d("PlacesListPage", place.distanceFromLocation.toString() )
+            val isSel = place == selectedPlace
+            PlaceRow(
                 name = place.name,
                 rating = place.rating,
                 address = place.address,
                 latlng = place.latAndLng,
                 userAddress = userAddress ?: Address(""),
-                onClick = { onPlaceClick(place) },
-                distance = place.distanceFromLocation
+                onAdd = { onPlaceClick(place) },
+                onClick = {
+                    onZoomOnPlace(place)
+                          },
+                distance = place.distanceFromLocation,
+                isSelected = isSel
             )
         }
     }
-    onCameraMove()
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -299,8 +353,14 @@ fun CategoryFilteredList(
 
         TabRow(
             selectedTabIndex = categories.indexOfFirst { it.key == selectedCategory },
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = Color(0xFFdbf3fd),
+            contentColor = Color.Black,
+            indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    Modifier.tabIndicatorOffset(tabPositions[categories.indexOfFirst { it.key == selectedCategory }]),
+                    color = Color(0xFF2ebcff) // Set your desired indicator color here
+                )
+            }
         ) {
             categories.forEachIndexed { index, category ->
                 Tab(
@@ -334,7 +394,13 @@ fun CategoryFilteredList(
                         .padding(vertical = 4.dp)
                         .clickable { onPlaceClick(place) },
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardColors(
+                        containerColor = Color(0xFFdbf3fd),
+                        contentColor = Color.Black,
+                        disabledContentColor = Color.White,
+                        disabledContainerColor = Color.White
+                        )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(

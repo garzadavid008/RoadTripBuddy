@@ -66,6 +66,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import android.util.Log
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import android.widget.Toast
+import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
+import com.tomtom.sdk.datamanagement.navigationtile.NdsLiveStoreAccess
+import com.tomtom.sdk.map.display.TomTomMapConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -158,15 +165,13 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
         var showBottomDrawer by remember { mutableStateOf(false) }
         var destinationSelected by remember { mutableStateOf(false) }
 
-        var destinationList by rememberSaveable(stateSaver = listSaver(
-            save = { ArrayList(it) },  // Convert to ArrayList for saving
-            restore = { it.toMutableList() }  // Restore as MutableList
-        )) { mutableStateOf(mutableListOf<String>()) }
         val placesClient: PlacesClient = Places.createClient(activity)
         // view model for googles places
-        val viewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
+        val placesViewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
         // val placeList by viewModel.restaurants.collectAsState()
         val userViewModel: UserViewModel = viewModel()
+
+
         NavigationDrawer(
             drawerState = drawerState,
             userViewModel= userViewModel,
@@ -230,25 +235,10 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                     )
                 }
 
-                FloatingActionButton(
-                    onClick = { showBottomDrawer = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(34.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search Navigation",
-                        tint = Color(0xFF2ebcff),
-                        modifier = Modifier.size(34.dp)
-                    )
-                }
-
-
                 if (navigationMap.mapReadyState.value) {
                     SearchDrawer(
                         visible = showBottomDrawer,
-                        placesViewModel = viewModel,
+                        placesViewModel = placesViewModel,
                         viewModel = searchDrawerVM,
                         onDismiss = { showBottomDrawer = false },
                         navMap = navigationMap,
@@ -272,16 +262,6 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                         Text("Start Directions")
                     }
                 }
-
-                AndroidView(
-                    factory = { context: android.content.Context ->
-                        FrameLayout(context).apply { id = R.id.fragment_container_view_tag }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(500.dp) // Adjust height or use dynamic visibility later
-                )
             }
         }
     }

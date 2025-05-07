@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -42,6 +43,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.delay
 
@@ -49,26 +51,20 @@ import kotlinx.coroutines.delay
 @Composable
 fun Autocomplete(
     modifier: Modifier = Modifier,
+    placesViewModel: PlacesViewModel,
     address: String = "",
     resolveAndSuggest: (String, (List<Pair<String, Any?>>) -> Unit) -> Unit,
     onDone: (SearchResult) -> Unit,
     onBack: () -> Unit,
+    isTyping: () -> Unit,
+    findPlaces: (AutocompleteResult, PlacesViewModel) -> Unit
 ) {
     // The results returned by our "autocomplete" AKA resolveAndSuggest method in searchManager, we store
     // them in here
-    var autocompleteSuggestions by rememberSaveable { mutableStateOf<List<Pair<String, Any?>>>(emptyList()) }
+    var autocompleteSuggestions by remember { mutableStateOf<List<Pair<String, Any?>>>(emptyList()) }
     var query by remember { mutableStateOf(address) }
-    val focusManager = LocalFocusManager.current
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { focusManager.clearFocus() }
-        )
         Column(modifier = modifier.fillMaxWidth()){
             Row(
                 modifier = Modifier
@@ -88,15 +84,19 @@ fun Autocomplete(
                     onValueChange = { newQuery ->
                         query = newQuery
                     },
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
+                            if(query.isBlank()||query.isEmpty()){
+                                return@KeyboardActions
+                            }
                             resolveAndSuggest(query){ results ->
                                 val searchResult= results.first().second
                                 if (searchResult is SearchResult){
                                     onDone(searchResult)
-                                } else {
-                                    // PLaces Nearby
+                                } else if (searchResult is AutocompleteResult){
+                                    findPlaces(searchResult, placesViewModel)
                                 }
                             }
                         }
@@ -111,13 +111,18 @@ fun Autocomplete(
                                     val searchResult= results.first().second
                                     if (searchResult is SearchResult){
                                         onDone(searchResult)
-                                    } else {
-                                        // PLaces Nearby
+                                    } else if (searchResult is AutocompleteResult){
+                                        findPlaces(searchResult, placesViewModel)
                                     }
                                 }
                                 true
                             } else {
                                 false
+                            }
+                        }
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused){
+                                isTyping()
                             }
                         }
                 )
@@ -147,7 +152,9 @@ fun Autocomplete(
                                 .clickable {
                                     if (objectResult is SearchResult){
                                         onDone(objectResult)
-                                    } else { }
+                                    } else if (objectResult is AutocompleteResult) {
+                                        findPlaces(objectResult, placesViewModel)
+                                    }
                                 }
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
