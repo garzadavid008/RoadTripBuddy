@@ -1,5 +1,6 @@
 package com.example.roadtripbuddy
 
+import android.util.Log
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -22,11 +23,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlin.math.log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationDrawer(
     drawerState: DrawerState,
+    userViewModel: UserViewModel,
     gesturesStatus: Boolean,
     authState: AuthState,
     navController: NavController,
@@ -50,7 +53,7 @@ fun NavigationDrawer(
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(16.dp)
             ) {
-                DrawerHeader()
+                DrawerHeader(userViewModel,authViewModel)
                 Spacer(modifier = Modifier.height(24.dp))
                 DrawerBody(
                     items = listOf(
@@ -103,16 +106,15 @@ fun NavigationDrawer(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DrawerHeader(userViewModel: UserViewModel = viewModel()) {
-    val vehicles = listOf("Toyota Corolla", "Honda Civic", "Ford Mustang")
-    var primaryVehicle by remember { mutableStateOf(vehicles[0]) }
-    var expanded by remember { mutableStateOf(false) }
+fun DrawerHeader(userViewModel: UserViewModel, authViewModel: IAuthViewModel) {
 
+    // grabbing the users login instance
+    var loginStatus = authViewModel.authState.value
      // grabbing the user
     var userName by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf("") }
     val user = userViewModel.user
-
+    Log.d("Auth", "$loginStatus")
     // boiler plate
     userName = "User name"
     userEmail = "test@gmail.com"
@@ -121,91 +123,47 @@ fun DrawerHeader(userViewModel: UserViewModel = viewModel()) {
         userName = user.name
         userEmail = user.email
     }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
+    if(loginStatus == AuthState.Authenticated)
+    {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(vertical = 32.dp),
+            contentAlignment = Alignment.Center
         ) {
-            //Profile Image + User Info
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
-                // Profile Image
-                Image(
-                    painter = painterResource(id = R.drawable.profile_placeholder),
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // User Info
-                Column {
-                    Text(
-                        text = userName,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = userEmail,
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Vehicles Dropdown
-            Text(
-                text = "Primary Vehicle",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = primaryVehicle,
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                        .clickable { expanded = true },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-                )
-
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                //Profile Image + User Info
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    vehicles.forEach { vehicle ->
-                        DropdownMenuItem(
-                            text = { Text(text = vehicle) },
-                            onClick = {
-                                primaryVehicle = vehicle
-                                expanded = false
-                            }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // User Info
+                    Column {
+                        Text(
+                            text = userName,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = userEmail,
+                            fontSize = 14.sp,
+                            color = Color.Gray
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+
 }
 
 @Composable
