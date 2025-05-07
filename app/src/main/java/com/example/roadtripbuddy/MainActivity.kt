@@ -64,6 +64,8 @@ import kotlinx.coroutines.launch
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.fillMaxWidth
 import android.util.Log
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import android.widget.Toast
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.datamanagement.navigationtile.NdsLiveStoreAccess
@@ -79,7 +81,7 @@ class MainActivity : AppCompatActivity() {
     private val locationService = LocationService(
         activity = this@MainActivity
     )
-
+private lateinit var fusedLocationProviderClient: FusedLocationProviderClient // is this to get the current location of the user
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
@@ -88,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         //creating the places api instance
         Places.initialize(applicationContext, getString(R.string.google_maps_key))
         val placesClient: PlacesClient = Places.createClient(this)
-
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         locationService.requestLocationPermissions()
 
         // Only set content if not running in a test environment
@@ -145,7 +147,7 @@ class MainActivity : AppCompatActivity() {
             composable("about") { AboutScreen(navController) }
             composable("login") { LoginPage(navController, authViewModel) }
             composable("signup") { SignupPage(navController, authViewModel) }
-            composable("suggestion") { Suggestions(navController) }
+            composable("suggestion") { Suggestions(navController,fusedLocationProviderClient) }
         }
     }
 
@@ -167,10 +169,12 @@ class MainActivity : AppCompatActivity() {
         // view model for googles places
         val placesViewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
         // val placeList by viewModel.restaurants.collectAsState()
+        val userViewModel: UserViewModel = viewModel()
 
 
         NavigationDrawer(
             drawerState = drawerState,
+            userViewModel= userViewModel,
             gesturesStatus = gesturesStatus,
             authState = authState.value ?: AuthState.Unauthenticated,
             navController = navController,

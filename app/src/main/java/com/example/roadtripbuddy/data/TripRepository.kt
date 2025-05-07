@@ -2,16 +2,22 @@ package com.example.roadtripbuddy.data
 
 import androidx.datastore.core.DataStore
 import com.example.roadtripbuddy.WaypointItem
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.security.PrivateKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TripsRepository @Inject constructor(
-    private val store: DataStore<Trips>
+    private val store: DataStore<Trips>,
+    private val auth : FirebaseAuth,
+    private val fireStore: FirebaseFirestore
 ) {
     val tripsFlow: Flow<List<Trip>> = store.data.map { it.tripsList }
 
@@ -68,7 +74,7 @@ class TripsRepository @Inject constructor(
         initialDeparture: Long
     ) = withContext(Dispatchers.IO) {
 
-        store.updateData { current ->
+       val updatedState: Trips =  store.updateData { current ->
 
             // ── 1. locate the trip ───────────────────────────────────────────────
             val idx = current.tripsList.indexOfFirst { it.id == tripId }
@@ -90,5 +96,35 @@ class TripsRepository @Inject constructor(
                 .setTrips(idx, updatedTrip)
                 .build()
         }
+        // saving to firestore
+        // grabbing the users id
+        val uid = auth.currentUser?.uid
+
+        val waypointMaps = waypoints
+            .map { it.toDto() }
+            .map { dto -> dto.toFirestoreMap() }
+
+        // grab rebuilt proto to pull out id/name/etc.
+        val updatedTrip: Trip = updatedState
+            .tripsList
+            .first{it.id == tripId}
+
+        val tripMap = mapOf(
+            "id"                to updatedTrip.id,
+            "name"              to updatedTrip.name,
+            "initial_departure" to updatedTrip.initialDeparture,
+            "waypoints"         to waypointMaps
+        )
+
+        if (uid != null) {
+            fireStore
+                .collection("users")
+                .document(uid)
+                .collection("roadtripbuddy_trips")
+                .document(tripId.toString())
+                .set(tripMap)
+                .await()
+        }
+
     }
 }

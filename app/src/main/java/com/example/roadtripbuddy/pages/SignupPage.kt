@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,32 +52,23 @@ fun isPasswordString(password:String) : Boolean
     return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecialChar
 }
 
-// added for tests for vehicle valid,invalid,empty, ect
-fun isValidVehicleType(vehicle: String): Boolean {
-    val validTypes = listOf("SUV", "Sedan", "Truck", "Van", "Hatchback")
-    return vehicle.trim().isNotEmpty() && validTypes.any { it.equals(vehicle.trim(), ignoreCase = true) }
-}
-
-//@Preview
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
-
-    // for the toast
+fun SignupPage(
+    navController: NavController,
+    authViewModel: IAuthViewModel
+) {
     val context = LocalContext.current
-    // var for the user name, using REMEMBER to preserve the state of the variable across compose functions
+    var name by remember { mutableStateOf("") }
+    var vehicle by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    //var repass by remember { mutableStateOf("") }
     var isPasswordValid by remember { mutableStateOf(true) }
-    var name by remember { mutableStateOf("") }
-    var vehicle by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    // holds the auth state
     val authState by authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState) {
-        // Handles all possible AuthState cases, including null initial state
         when (authState) {
             AuthState.Authenticated -> navController.navigate("map") {
                 popUpTo("signup") { inclusive = true }
@@ -85,125 +77,139 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 errorMessage = (authState as AuthState.Error).message
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             }
-            AuthState.Loading, AuthState.Unauthenticated, null -> Unit
+            else -> Unit
         }
     }
-    Box(
+
+    Surface(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.LightGray) // 🔹 Change background color here
-            .padding(20.dp),
-
+            .background(MaterialTheme.colorScheme.background),
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Sign Up", modifier = Modifier.padding(20.dp))
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.name),
-                    contentDescription = "Person Image for signup",
-                    modifier = Modifier.weight(1f,fill=false)
-                )
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("name") },
-                    modifier = Modifier.semantics { testTag = "name_field" }
-                )
-            }
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_car),
-                    contentDescription = "Person Image for signup",
-                    modifier = Modifier.weight(1f,fill=false)
-                )
-                OutlinedTextField(
-                    value = vehicle,
-                    onValueChange = { vehicle = it },
-                    label = { Text("Enter Vehicle Type (eg SUV, Sedan)") },
-                    modifier = Modifier.semantics { testTag = "vehicle_field" }
-                )
-            }
-            Row { // removed the empty '()' that was tied to lambda /now more clean
-                Image(
-                    painter = painterResource(id = R.drawable.person),
-                    contentDescription = "Person Image for signup",
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    modifier = Modifier.semantics { testTag = "email_field" }
-                )
-            }
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.lock),
-                    contentDescription = "Lock Image for signup",
-                    modifier = Modifier.weight(1f,fill=true).size(65.dp)
-                )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        isPasswordValid = isPasswordString(it)
-                    },
-                    label = { Text("Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), // this adds the dots when typing the password
-                    singleLine = true,
-                    isError = !isPasswordValid, // error handling
-                    colors = TextFieldDefaults.colors(),
-                    modifier = Modifier.semantics { testTag = "password_field" }
-                )
-            }
-            // Additions added at 4/19/25
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.lock),
-                    contentDescription = "Lock Image for confirm password",
-                    modifier = Modifier.weight(1f, fill = true).size(65.dp)
-                )
-                // Added 4/19/2025
-                // Add to test password confirmations and to check if confirming password matches confirmed password
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true,
-                    isError = confirmPassword.isNotEmpty() && confirmPassword != password,
-                    colors = TextFieldDefaults.colors(),
-                    modifier = Modifier.semantics { testTag = "confirm_password_field" }
-                )
-            }
-            //Error Message addition 4/19/25
+            Text(
+                text = "Create Account",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            )
+
+            // Name field
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Full Name") },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.name),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "name_field" }
+            )
+            Spacer(Modifier.height(12.dp))
+            // Email field
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email Address") },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.person),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                keyboardOptions = KeyboardOptions.Default,
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "email_field" }
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Password field
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    isPasswordValid = isPasswordString(it)
+                },
+                label = { Text("Password") },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.lock),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                isError = !isPasswordValid,
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "password_field" }
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Confirm password
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm Password") },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.lock),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                isError = confirmPassword.isNotEmpty() && confirmPassword != password,
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "confirm_password_field" }
+            )
+            Spacer(Modifier.height(16.dp))
+
             errorMessage?.let {
                 Text(
                     text = it,
-                    color = Color.Red,
-                    modifier = Modifier.padding(8.dp).semantics { testTag = "error_message" } // .testtag added 4/21/25
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                        .semantics { testTag = "error_message" }
                 )
             }
-            // button
+
+            // Submit button
             Button(
-                onClick =  {
+                onClick = {
                     when {
-                        name.isEmpty() || vehicle.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() -> {
+                        name.isBlank() || vehicle.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
                             errorMessage = "All fields are required"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
                         !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
                             errorMessage = "Invalid email format"
-                            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-                        }
-                        !isValidVehicleType(vehicle) -> {
-                            errorMessage = "Invalid vehicle type"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
                         !isPasswordValid -> {
@@ -214,56 +220,34 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                             errorMessage = "Passwords do not match"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
-                        else -> {
-                            authViewModel.signup(name, email, password, vehicle) // Fixed order to match Signuptests
-                        }
+                        else -> authViewModel.signup(name, email, password, vehicle)
                     }
                 },
                 modifier = Modifier
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .height( 50.dp)
                     .semantics { testTag = "submit_button" },
-                enabled = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    contentColor = Color.Black,
-                    containerColor = Color.Gray
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 10.dp),
-                border = BorderStroke(width = 2.dp, brush = SolidColor(Color.Black)),
-                contentPadding = PaddingValues(
-                    start = 20.dp,
-                    top = 12.dp,
-                    end = 20.dp,
-                    bottom = 12.dp
-                ),
-                interactionSource = remember { MutableInteractionSource() }
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )
             ) {
                 Text(
-                    text = "Submit",
+                    text = "Sign Up",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontStyle = FontStyle.Italic,
-                    fontFamily = FontFamily.Serif
+                    fontWeight = FontWeight.Medium
                 )
             }
-            // if they already have an account
-            TextButton(onClick = {
-                // this will take them to the login page
-                navController.navigate("login")
-            }) {
-                Text(text = "Already have an account, Login!")
-            }
-            // take them back to home
-            TextButton(onClick = {
-                //this will take them back to the map page
-                navController.navigate("map")
-            }) {
-                Text(text = "Back to Map")
-            }
 
+            Spacer(Modifier.height(12.dp))
+
+            TextButton(onClick = { navController.navigate("login") }) {
+                Text("Already have an account? Log in")
+            }
+            TextButton(onClick = { navController.navigate("map") }) {
+                Text("Back to Map")
+            }
         }
     }
-
-    // If need to add anything more do it here
-
 }
