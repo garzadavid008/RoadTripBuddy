@@ -1,5 +1,7 @@
 package com.example.roadtripbuddy.PlanATripDrawer
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,11 +25,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.PlanATripViewModel
-import kotlinx.coroutines.flow.StateFlow
 import java.time.DateTimeException
 import java.time.LocalDateTime
 import java.time.Month
@@ -39,12 +41,21 @@ import java.util.Date
 @Composable
 fun DepartureDateTimeInput(
     onValidTimeAndDate: (LocalDateTime) -> Unit, // when all inputs are valid this function occurs
-    viewModel: PlanATripViewModel
+    viewModel: PlanATripViewModel,
+    onInvalidTimeAndDate: () -> Unit,
+    isTyping: () -> Unit
 ) {
+    var focus by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
     // Sample data for dropdowns
     val months = listOf(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
+    )
+
+    val years = listOf(
+        "2025", "2026", "2027", "2028"
     )
     val periods = listOf("AM", "PM")
 
@@ -57,7 +68,9 @@ fun DepartureDateTimeInput(
     // States for dropdown expanded flags
     var monthExpanded by remember { mutableStateOf(false) }
     var periodExpanded by remember { mutableStateOf(false) }
+    var yearExpanded by remember { mutableStateOf(false) }
 
+    //Queries
     var monthQuery by remember { mutableStateOf(months[dateAndTime.monthValue - 1]) }
     var dayQuery by remember { mutableStateOf(dateAndTime.dayOfMonth.toString()) }
     var yearQuery by remember { mutableStateOf(dateAndTime.year.toString()) }
@@ -100,12 +113,12 @@ fun DepartureDateTimeInput(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Row for the Date inputs: Month, Day, Year
+        // Row for the Date inputs Month, Day, Year
         Row(
             modifier = Modifier.width(300.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Month Dropdown - takes the remaining space.
+            // Month Dropdown
             ExposedDropdownMenuBox(
                 expanded = monthExpanded,
                 onExpandedChange = { monthExpanded = !monthExpanded },
@@ -121,6 +134,13 @@ fun DepartureDateTimeInput(
                         .fillMaxWidth()
                         .menuAnchor(type= MenuAnchorType.PrimaryNotEditable, enabled = true)
                         .requiredHeight(60.dp)
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused){
+                                focus = false
+                            } else if (focusState.isFocused){
+                                focus = true
+                            }
+                        }
                 )
                 ExposedDropdownMenu(
                     expanded = monthExpanded,
@@ -137,7 +157,7 @@ fun DepartureDateTimeInput(
                     }
                 }
             }
-            // Day Input - fixed width.
+            // Day Input
             OutlinedTextField(
                 value = dayQuery,
                 onValueChange = { dayQuery = it.filter { char -> char.isDigit() } },
@@ -147,18 +167,54 @@ fun DepartureDateTimeInput(
                 modifier = Modifier
                     .width(70.dp)
                     .requiredHeight(60.dp)
+                    .onFocusChanged { focusState ->
+                        if(focusState.isFocused){
+                            isTyping()
+                            focus = true
+                        } else if (!focusState.isFocused){
+                            focus = false
+                        }
+                    }
             )
-            // Year Input - fixed width.
-            OutlinedTextField(
-                value = yearQuery,
-                onValueChange = { yearQuery = it.filter { char -> char.isDigit() } },
-                label = { Text("Year") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .width(80.dp)
-                    .requiredHeight(60.dp)
-            )
+            // Year Input
+            ExposedDropdownMenuBox(
+                expanded = yearExpanded,
+                onExpandedChange = { yearExpanded = !yearExpanded},
+                modifier = Modifier.weight(1f)
+            ) {
+                OutlinedTextField(
+                    value = yearQuery,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Year") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = yearExpanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(type= MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .requiredHeight(60.dp)
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused){
+                                focus = false
+                            } else if (focusState.isFocused){
+                                focus = true
+                            }
+                        }
+                )
+                ExposedDropdownMenu(
+                    expanded = yearExpanded,
+                    onDismissRequest = { yearExpanded= false }
+                ) {
+                    years.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                yearQuery = selectionOption
+                                yearExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
         }
         // Row for the Time inputs: Hour, Minute, AM/PM
         Row(
@@ -175,6 +231,14 @@ fun DepartureDateTimeInput(
                 modifier = Modifier
                     .width(70.dp)
                     .requiredHeight(60.dp)
+                    .onFocusChanged { focusState ->
+                        if(focusState.isFocused){
+                            isTyping()
+                            focus = true
+                        } else if (!focusState.isFocused){
+                            focus = false
+                        }
+                    }
             )
             // Minute Input
             OutlinedTextField(
@@ -186,6 +250,14 @@ fun DepartureDateTimeInput(
                 modifier = Modifier
                     .width(70.dp)
                     .requiredHeight(60.dp)
+                    .onFocusChanged { focusState ->
+                        if(focusState.isFocused){
+                            isTyping()
+                            focus = true
+                        } else if (!focusState.isFocused){
+                            focus = false
+                        }
+                    }
             )
             // AM/PM Dropdown
             ExposedDropdownMenuBox(
@@ -203,10 +275,17 @@ fun DepartureDateTimeInput(
                         .width(100.dp)
                         .menuAnchor(type= MenuAnchorType.PrimaryNotEditable, enabled = true)
                         .height(60.dp)
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused){
+                                focus = false
+                            } else if (focusState.isFocused){
+                                focus = true
+                            }
+                        }
                 )
                 ExposedDropdownMenu(
                     expanded = periodExpanded,
-                    onDismissRequest = { periodExpanded = false }
+                    onDismissRequest = { periodExpanded = false },
                 ) {
                     periods.forEach { selectionOption ->
                         DropdownMenuItem(
@@ -221,15 +300,38 @@ fun DepartureDateTimeInput(
             }
         }
     }
+    LaunchedEffect(focus) {
+        if (!focus){
+            Log.d("hello", validDateTime.toString())
+            if(validDateTime == null){
+                Toast
+                    .makeText(
+                        context,
+                        "Invalid date and time",
+                        Toast.LENGTH_LONG
+                    )
+                    .show()
 
-    LaunchedEffect(validDateTime) {
+                onInvalidTimeAndDate()
+                return@LaunchedEffect
+            }
             validDateTime?.let { newDateTime ->
-                onValidTimeAndDate(newDateTime)
+                if (newDateTime.isBefore(LocalDateTime.now())){
+                    Toast
+                        .makeText(
+                            context,
+                            "The date and time you entered is already in the past",
+                            Toast.LENGTH_LONG
+                        )
+                        .show()
+                    onInvalidTimeAndDate()
+                } else {
+                    onValidTimeAndDate(newDateTime)
+                }
             }
         }
-
-
     }
+}
 // Function used here to convert a 12 hour time clock to 24 hour time clock, this is because LocalTimeDate
 // only accepts a 24 hour clock
 fun convert12To24(hour12: Int, period: String): Int {

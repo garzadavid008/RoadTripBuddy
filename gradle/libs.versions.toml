@@ -23,6 +23,7 @@ foundationLayoutAndroid = "1.7.2"
 locationdelegation = "1.1.1"
 foundationAndroid = "1.7.2"
 hilt = "2.51.1"
+runnerVersion = "1.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,7 @@ locationdelegation = { group = "com.google.androidbrowserhelper", name = "locati
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 hilt-android      = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler     = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+androidx-runner = { group = "androidx.test", name = "runner", version.ref = "runnerVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

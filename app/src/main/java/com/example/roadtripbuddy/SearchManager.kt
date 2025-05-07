@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
+import com.tomtom.sdk.location.poi.PoiId
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
@@ -24,11 +25,16 @@ import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
 import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
 import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
 import com.tomtom.sdk.search.common.error.SearchFailure
+import com.tomtom.sdk.search.model.SearchResultType.Companion.Poi
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
 import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.model.result.SearchResult
+import com.tomtom.sdk.search.model.result.SearchResultId
 import com.tomtom.sdk.search.online.OnlineSearch
+import com.tomtom.sdk.search.poidetails.PoiDetailsCallback
+import com.tomtom.sdk.search.poidetails.PoiDetailsOptions
+import com.tomtom.sdk.search.poidetails.PoiDetailsResponse
 import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoder
 import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderCallback
 import com.tomtom.sdk.search.reversegeocoder.ReverseGeocoderOptions
@@ -40,7 +46,8 @@ import java.util.Locale
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 class SearchManager(
@@ -76,6 +83,10 @@ class SearchManager(
     // Updates the start location , and the start location address. Optional callback for the Plan A
     // Trip drawer
     fun updateStartLocation(location: GeoPoint?, onCallback: () -> Unit = {}){
+        if (location == startLocation){
+            return
+        }
+
         startLocation = location
         Log.d("reverseGeocoder", location.toString())
 
@@ -110,44 +121,53 @@ class SearchManager(
     
     fun findPlaces(
         result: AutocompleteResult,
+        location: GeoPoint? = startLocation,
         tomTomMap: TomTomMap?,
         placesViewModel: PlacesViewModel?
     ){
-        val brandName = result.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name.toString()
-        Log.i("Chris"," Brand NAme : $brandName ")
+        val brandName =
+            result.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+        val poiName = result.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+
+        val name = brandName ?: poiName
+        Log.i("Chris"," Brand NAme : $name ")
         // val context = this@SearchManager
         // grabbing the users current position
-        val location = tomTomMap?.currentLocation?.position
-
-        if(location != null)
+        if(location != null && name != null)
         {
 
-            val lat = location.latitude.toDouble()
-            val long = location.longitude.toDouble()
+            val lat = location.latitude
+            val long = location.longitude
+
 
             CoroutineScope(Dispatchers.IO).launch {
-                placesViewModel?.getTextSearch(brandName, lat, long) // Call the function
+                // kick off the text‐search (this updates placesViewModel.restaurants under the hood)
+                placesViewModel?.getTextSearch(name, lat, long)
                 Log.i("Chris", "lat and long :  $lat $long")
-
-                // Switch to Main dispatcher for UI updates
-                withContext(Dispatchers.Main) {
-                    placesViewModel?.restaurants?.collectLatest { placeList ->
-                        Log.i("Chris", "list created : ${placeList.size}")
-
-                        placeList.forEach { places ->
-                            Log.i("Chris", "Name : ${places.name}")
-                            val geoPoint = GeoPoint(places.latAndLng.latitude, places.latAndLng.longitude)
-
-                            val mark = MarkerOptions(
-                                coordinate = geoPoint,
-                                pinImage = ImageFactory.fromResource(R.drawable.map_marker)
-                            )
-                            tomTomMap.addMarker(mark)
-                        }                        }
-
-                }
             }
         }
+    }
+
+    fun toPoi(searchResultId: SearchResultId, onResult: (PoiDetailsResponse?) -> Unit){
+        val poiDetailsOptions =
+            PoiDetailsOptions(
+                poiId = PoiId(searchResultId.id, searchResultId.source),
+                locale = Locale("en", "US"),
+            )
+        searchApi.requestPoiDetails(
+            poiDetailsOptions,
+            object : PoiDetailsCallback {
+                override fun onSuccess(result: PoiDetailsResponse) {
+                    Log.d("POI", result.poiDetails.poi.names.first())
+                    onResult(result)
+                }
+
+                override fun onFailure(failure: SearchFailure) {
+                    Log.d("FAILURE", "request poi details: ${failure.message}")
+                    onResult(null)
+                }
+            },
+        )
     }
 
     // Method to either find, add marker, and zoom into an initial SearchResult, or if the query is
@@ -155,8 +175,6 @@ class SearchManager(
     fun performSearch(
         query: String,
         viewModel: SearchDrawerViewModel?,
-        placesViewModel: PlacesViewModel?,
-        context: BaseMapUtils,
         clearMap: () -> Unit,
         tomTomMap: TomTomMap?,
         planRouteAndGetETA: suspend (RoutePlanningOptions) -> Duration
@@ -181,7 +199,7 @@ class SearchManager(
             // Create marker options if the coordinate is available
             val markerOptions = MarkerOptions(
                 coordinate = locationGeoPoint,
-                pinImage = ImageFactory.fromResource(R.drawable.map_marker)
+                pinImage = ImageFactory.fromResource(R.drawable.map_marker_full)
             )
 
             if (startLocation == null) {
@@ -269,8 +287,7 @@ class SearchManager(
         onResult: (List<Pair<String, Any?>>) -> Unit = {},//An optional function parameter that returns a suggestion list of strings (this is for the search bar suggestions)
         objectResult: (Any?) -> Unit = {} //An optional function parameter that returns an object, either and AutocompleteResult or SearchResult
     ) {
-        if (query.isBlank()) {
-            onResult(emptyList()) // Return empty list for empty queries
+        if (query.isEmpty() || query.isBlank()) {
             return
         }
 
@@ -278,7 +295,7 @@ class SearchManager(
 
         val autocompleteOptions = AutocompleteOptions(
             query = query,
-            position = startLocation ?: GeoPoint(39.8333, 98.5833),
+            position = startLocation ?: null,
             locale = Locale("en", "US")
         )
 
@@ -308,9 +325,11 @@ class SearchManager(
                     // Call fuzzySearchAutocomplete to perform the fuzzy search.
                     fuzzySearchAutocomplete(query) { fuzzyPairs ->
                         fuzzySuggestionsPairs = fuzzyPairs
-                        Log.d("Debug", "fuzzySuggestionsPairs before sorting: $fuzzySuggestionsPairs")
+                        Log.d("Debug", "fuzzySuggestionsPairs before sorting: ${fuzzySuggestionsPairs.map { it.first }}")
 
-                        val combinedResults = (fuzzySuggestionsPairs + autocompletePairs)
+                        val toAdd = if (startLocation != null) autocompletePairs else emptyList()
+
+                        val combinedResults = (fuzzySuggestionsPairs + toAdd)
                             .sortedWith(compareByDescending { pair ->
                                 var score = 0f
                                 if (pair.first.startsWith(query, ignoreCase = true)) score += 0.2f

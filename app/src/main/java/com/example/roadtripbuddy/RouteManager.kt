@@ -4,10 +4,14 @@ import android.content.Context
 import android.util.Log
 //import com.example.roadtripbuddy.SearchDrawer.SearchDrawerViewModel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.tomtom.sdk.annotations.InternalTomTomSdkApi
+import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
+import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
+import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.map.display.polyline.PolylineOptions
@@ -20,6 +24,7 @@ import com.tomtom.sdk.routing.online.OnlineRoutePlanner
 import com.tomtom.sdk.routing.options.Itinerary
 import com.tomtom.sdk.routing.options.ItineraryPoint
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
+import com.tomtom.sdk.routing.options.calculation.AlternativeRoutesOptions
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.routing.route.section.traffic.MagnitudeOfDelay
@@ -28,12 +33,13 @@ import com.tomtom.sdk.vehicle.Vehicle
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.max
 import kotlin.time.Duration
 
 class RouteManager(context: Context, apiKey: String) {
 
     val routePlanner = OnlineRoutePlanner.create(context, apiKey)
-    private var waypointList = mutableListOf<ItineraryPoint>() //For the route constructor, sets up waypoints for route itinerary
+    var waypointList = mutableListOf<ItineraryPoint>() //For the route constructor, sets up waypoints for route itinerary
     private var lastDestination: GeoPoint? = null // For the route constructor, sets up the final destination for route itinerary
     private var route: Route? = null
 
@@ -43,8 +49,7 @@ class RouteManager(context: Context, apiKey: String) {
         tomTomMap: TomTomMap?, // Needs a tomTomMap to draw on
         route: Route, // Needs a route
         viewModel: SearchDrawerViewModel, // Intakes an instance of the TripViewModel in order to update the estimated time of arrival
-        color: Int = RouteOptions.DEFAULT_COLOR, // Optional parameter
-        withDepartureMarker: Boolean = true, // Optional parameter
+        context: Context,
         withZoom: Boolean = true, // Optional parameter
     ) {
 
@@ -63,24 +68,16 @@ class RouteManager(context: Context, apiKey: String) {
             RouteOptions(
                 geometry = route.geometry,
                 destinationMarkerVisible = true,
-                departureMarkerVisible = withDepartureMarker,
+                departureMarkerVisible = true,
                 instructions = instructions,
                 routeOffset = route.routePoints.map { it.routeOffset },
-                color = color,
+                color = RouteOptions.DEFAULT_COLOR,
                 tag = route.id.toString(),
             )
 
-        //Adds a marker for each waypoint
-        for (waypoint in waypointList){
-            val markerOptions = MarkerOptions(
-                coordinate = waypoint.place.coordinate,
-                pinImage = ImageFactory.fromResource(R.drawable.map_marker)
-            )
-
-            tomTomMap?.addMarker(markerOptions)
-        }
-
         tomTomMap?.addRoute(routeOptions)
+
+        showWaypointMarkers(tomTomMap, context)
 
         for (section in route.sections.trafficSections) {
             val color = getTrafficColor(section.magnitudeOfDelay)
@@ -92,11 +89,12 @@ class RouteManager(context: Context, apiKey: String) {
                 tomTomMap?.addPolyline(polylineOptions)
             }
         }
-
         if (withZoom) {
             tomTomMap?.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
         }
+
     }
+
 
     companion object {
         private const val ZOOM_TO_ROUTE_PADDING = 100
@@ -117,7 +115,8 @@ class RouteManager(context: Context, apiKey: String) {
     fun onRouteRequest(
         viewModel: SearchDrawerViewModel,
         tomTomMap: TomTomMap?,
-        searchManager: SearchManager
+        searchManager: SearchManager,
+        context: Context,
     ) {
         val list = viewModel.waypoints.value //Grab the waypoint list from the viewModel
 
@@ -146,7 +145,7 @@ class RouteManager(context: Context, apiKey: String) {
             RoutePlanningOptions(
                 itinerary = itinerary,
                 guidanceOptions = GuidanceOptions(),
-                vehicle = Vehicle.Car(),//This is set to change
+                vehicle = Vehicle.Car()//This is set to change
             )
 
         // callback is a set up for the future, AKA when planRoute is called
@@ -159,11 +158,13 @@ class RouteManager(context: Context, apiKey: String) {
                     drawRoute(
                         tomTomMap = tomTomMap,
                         route = it,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        context = context
                     )
-                    // We update the viewModels ETA
-                    viewModel.updateETA(it.summary.travelTime.toString())
+
                 }
+                // MAKE DRAWROUTES DRAW two other alternative routes
+                viewModel.updateETA(route!!.summary.travelTime.toString())
             }
 
             override fun onFailure(failure: RoutingFailure) {
@@ -224,6 +225,23 @@ class RouteManager(context: Context, apiKey: String) {
             else if (index == list.size - 1){
                 lastDestination = location?.place?.coordinate
             }
+        }
+    }
+
+    fun showWaypointMarkers(tomTomMap: TomTomMap?, context: Context){
+
+        //Adds a marker for each waypoint
+        waypointList.forEachIndexed { index, waypoint ->
+            val name = "ic_marker_${index+1}"
+
+            val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+            val markerOptions = MarkerOptions(
+                coordinate = waypoint.place.coordinate,
+                pinImage = ImageFactory.fromResource(resId)
+            )
+
+            tomTomMap?.addMarker(markerOptions)
+
         }
     }
 }

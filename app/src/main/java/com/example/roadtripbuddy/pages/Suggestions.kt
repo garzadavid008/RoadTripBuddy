@@ -27,8 +27,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -83,51 +85,67 @@ data class Address ( var address: String)
 data class PanelToggle (var isVis: Boolean)
 //@Preview
 @Composable
-fun placeCard(name:String="",rating: Double = 0.0, address:String = "", latlng:LatLng= LatLng(0.0,0.0),userAddress: Address= Address(""),onClick:()->Unit, distance:Double )
-{
-    var isVisible by remember { mutableStateOf(true) }
-    // card for suggested place
+fun PlaceRow(
+    name: String,
+    rating: Double,
+    address: String,
+    latlng: LatLng,
+    userAddress: Address = Address(""),
+    onAdd: () -> Unit,
+    distance: Double,
+    onClick: () -> Unit,
+    isSelected: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            // highlight background when selected
+            .background(
+                if (isSelected)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else
+                    Color.Transparent
+            )
+            .clickable(onClick = onClick)
+    ) {
+        Divider(color = Color.LightGray, thickness = 1.dp)
 
-    AnimatedVisibility(visible = isVisible) {
-        OutlinedCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            border = BorderStroke(1.dp, Color.Black),
+        Row(
             modifier = Modifier
-                .wrapContentSize()
-                .size(width = 275.dp, height = 150.dp).padding(10.dp).fillMaxWidth()
-            ,
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilledTonalButton(onClick = {
-                    //toggle.isVis= false
-                    //push the address into the list for the Searchmanager performSearch can use it
+            FilledTonalButton(
+                onClick = {
                     userAddress.address = address
                     listofLATandLong.add(latlng)
-                    // make the button invis
-                    isVisible = false
-                    // trigger the action
-                    onClick()
-                }
-                ) {
-                    Text("+")
-                }
-                // Image(painter = painterResource(id = R.drawable.filler), contentDescription = "Filler image", modifier = Modifier.size(50.dp))
-                Column {
-                    Text(name, modifier = Modifier.padding(10.dp))
-                    Text("Distance From Location:$distance Miles", modifier = Modifier.padding(10.dp))
-                    Text("Rating $rating",modifier = Modifier.padding(10.dp))
-                    Text("Address $address",modifier = Modifier.padding(10.dp))
+                    onAdd()
+                },
+                colors = ButtonColors(
+                    containerColor = Color(0xFFdbf3fd), contentColor = Color.Black,
+                    disabledContainerColor = Color.White,
+                    disabledContentColor = Color.White
+                )
+            ) {
+                Text("+")
+            }
 
-                }
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(2.dp))
+                Text("${"%.1f".format(distance)} mi away", style = MaterialTheme.typography.bodySmall)
+                Text("Rating: ${"%.1f".format(rating)}", style = MaterialTheme.typography.bodySmall)
+                Text(address, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
         }
+
+        Divider(color = Color.LightGray, thickness = 1.dp)
     }
-
-
-
 }
+
 
 
 
@@ -240,12 +258,14 @@ fun RightSidePanelDemo(myClass:SuggestedLocation) {
 @Composable
 fun PlaceListPage(
     placeList: List<SuggPlace>,
+    placesViewModel: PlacesViewModel,
     userAddress: Address? = null,
     onPlaceClick: (SuggPlace) -> Unit = {},
     onBack: () -> Unit,
-    onCameraMove: () -> Unit
+    onZoomOnPlace: (SuggPlace) -> Unit,
 ) {
     val scrollState = rememberLazyListState()
+    val selectedPlace by placesViewModel.selectedPlace
 
     Box(
         modifier = Modifier
@@ -255,23 +275,30 @@ fun PlaceListPage(
         Text("← Back", color = Color.Blue)
     }
 
+
     LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         items(placeList) { place ->
-            placeCard(
+            // If place is the selected place, return true
+            Log.d("PlacesListPage", place.distanceFromLocation.toString() )
+            val isSel = place == selectedPlace
+            PlaceRow(
                 name = place.name,
                 rating = place.rating,
                 address = place.address,
                 latlng = place.latAndLng,
                 userAddress = userAddress ?: Address(""),
-                onClick = { onPlaceClick(place) },
-                distance = place.distanceFromLocation
+                onAdd = { onPlaceClick(place) },
+                onClick = {
+                    onZoomOnPlace(place)
+                          },
+                distance = place.distanceFromLocation,
+                isSelected = isSel
             )
         }
     }
-    onCameraMove()
 }
 
 @Composable
@@ -327,13 +354,15 @@ fun CategoryFilteredList(
             contentPadding = PaddingValues(16.dp)
         ) {
             items(fullPlaceList) { place ->
-                placeCard(
+                PlaceRow(
                     name = place.name,
                     rating = place.rating,
                     address = place.address,
                     latlng = place.latAndLng,
-                    onClick = { onPlaceClick(place) },
-                    distance = place.distanceFromLocation
+                    onClick = { },
+                    distance = place.distanceFromLocation,
+                    onAdd = {onPlaceClick(place)},
+                    isSelected = false
 
                 )
             }
