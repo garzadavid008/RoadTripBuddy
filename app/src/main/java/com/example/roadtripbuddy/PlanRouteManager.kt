@@ -2,14 +2,14 @@ package com.example.roadtripbuddy
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.core.graphics.blue
-import androidx.core.graphics.luminance
 import androidx.lifecycle.viewModelScope
 import com.tomtom.sdk.annotations.InternalTomTomSdkApi
-import com.tomtom.sdk.common.android.redFloat
+import com.tomtom.sdk.common.UniqueId
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.map.display.TomTomMap
+import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.Marker
 import com.tomtom.sdk.map.display.marker.MarkerClickListener
@@ -34,6 +34,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.roundToInt
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class PlanRouteManager(context: Context, apiKey: String) {
 
@@ -42,6 +43,8 @@ class PlanRouteManager(context: Context, apiKey: String) {
     private var routeClickListener: RouteClickListener? = null
     private var markerClickListener: MarkerClickListener? = null
     private val displayRoutes = mutableMapOf<String, Route >()
+
+    private val markerLocationMap = mutableMapOf<UniqueId, WaypointItem>()
 
 
     private suspend fun planRouteAsync(options: RoutePlanningOptions): Route =
@@ -65,15 +68,15 @@ class PlanRouteManager(context: Context, apiKey: String) {
         }
 
     //As it says, method to output the route on the map
-    @OptIn(InternalTomTomSdkApi::class)
     private fun drawRoutes(
         tomTomMap: TomTomMap?, // Needs a tomTomMap to draw on
         routeList: List<Route>, // Needs a route
         viewModel: PlanATripViewModel, // Intakes an instance of the TripViewModel in order to update the estimated time of arrival
         withZoom: Boolean = true, // Optional parameter
+        context: Context
     ) {
-
         displayRoutes.clear()
+        markerLocationMap.clear()
 
         // Initialing the total of route ETA's to zero
         var routeTotalETA: Duration = Duration.ZERO
@@ -87,48 +90,33 @@ class PlanRouteManager(context: Context, apiKey: String) {
             routeTotalETA = routeTotalETA.plus(route.summary.travelTime)
 
             // This simply makes sure the first point has a start icon and the last point has an end icon
-            val routeOptions = when {
-                routeList.size == 1 -> RouteOptions(
-                    geometry = route.geometry,
-                    departureMarkerVisible = true,
-                    destinationMarkerVisible = true,
-                    routeOffset = route.routePoints.map { it.routeOffset },
-                    color = RouteOptions.DEFAULT_COLOR,
-                    tag = route.id.toString()
-                )
+            val routeOptions = RouteOptions(
+                geometry = route.geometry,
+                routeOffset = route.routePoints.map { it.routeOffset },
+                color = RouteOptions.DEFAULT_COLOR,
+                tag = route.id.toString()
+            )
 
-                index == 0 -> RouteOptions(
-                    geometry = route.geometry,
-                    departureMarkerVisible = true, // first route gets a start marker
-                    routeOffset = route.routePoints.map { it.routeOffset },
-                    color = RouteOptions.DEFAULT_COLOR,
-                    tag = route.id.toString()
-                )
 
-                index == routeList.lastIndex -> RouteOptions(
-                    geometry = route.geometry,
-                    destinationMarkerVisible = true, // last route gets an end marker
-                    departureMarkerVisible = true,
-                    departureMarkerPinImage = ImageFactory.fromResource(R.drawable.map_marker),
-                    routeOffset = route.routePoints.map { it.routeOffset },
-                    color = RouteOptions.DEFAULT_COLOR,
-                    tag = route.id.toString()
-                )
-
-                else -> RouteOptions(
-                    geometry = route.geometry,
-                    departureMarkerVisible = true,
-                    departureMarkerPinImage = ImageFactory.fromResource(R.drawable.map_marker),
-                    routeOffset = route.routePoints.map { it.routeOffset },
-                    color = RouteOptions.DEFAULT_COLOR,
-                    tag = route.id.toString()
-                )
-            }
             val disRoute = tomTomMap?.addRoute(routeOptions)
             Log.d("disRoute grabbed", disRoute.toString())
             if (disRoute != null){
                 displayRoutes[disRoute.id.toString()] = route
             }
+        }
+
+        viewModel.planWaypoints.value.forEachIndexed { index, waypoint ->
+            val name = "ic_marker_${index+1}"
+
+            val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+            val markerOptions = MarkerOptions(
+                coordinate = waypoint.searchResult!!.place.coordinate,
+                pinImage = ImageFactory.fromResource(resId)
+            )
+
+            val marker = tomTomMap?.addMarker(markerOptions)
+
+            markerLocationMap[marker!!.id] = waypoint
         }
 
         viewModel.updateETA(routeTotalETA)
@@ -143,39 +131,21 @@ class PlanRouteManager(context: Context, apiKey: String) {
             true
         }
 
-        markerClickListener = MarkerClickListener { markerClick ->
-
-        }
-
-
-
+        onWaypointClick(viewModel, tomTomMap)
 
         tomTomMap?.addRouteClickListener(routeClickListener!!)
-
-
+        tomTomMap?.addMarkerClickListener(markerClickListener!!)
     }
 
     companion object {
         private const val ZOOM_TO_ROUTE_PADDING = 100
     }
 
-    /*
-    private fun getTrafficColor(magnitude: MagnitudeOfDelay?): Int? {
-        return when (magnitude) {
-            MagnitudeOfDelay.MAJOR -> Color.Red.hashCode()
-            MagnitudeOfDelay.MODERATE -> Color.Yellow.hashCode()
-            MagnitudeOfDelay.MINOR -> Color.Yellow.hashCode()
-            //MagnitudeOfDelay.INDEFINITE -> Color.Black.hashCode()
-            else -> null // Default color when no delay info is available
-        }
-    }
-
-     */
-
     //Calculates a route based on a list of waypoints from the PlanATripViewModel
     fun planOnRouteRequest(
         viewModel: PlanATripViewModel,
-        tomTomMap: TomTomMap?
+        tomTomMap: TomTomMap?,
+        context: Context
     ) {
         viewModel.viewModelScope.launch {
             val waypoints = viewModel.planWaypoints.value
@@ -219,21 +189,12 @@ class PlanRouteManager(context: Context, apiKey: String) {
             } // Take a look at the viewModel for time spent and then output route ballons
 
             // draw once all legs are done
-            drawRoutes(tomTomMap, routes, viewModel)
-        }
-    }
-
-    fun onMarkerClick(
-        marker: Marker,
-        tomTomMap: TomTomMap?,
-        viewModel: PlanATripViewModel
-    ){
-        if (marker.isSelected()){
-            marker.deselect()
-        }
-        else {
-            marker.select()
-            viewModel.setSelectedMarker(marker)
+            drawRoutes(
+                tomTomMap = tomTomMap,
+                routeList = routes,
+                viewModel = viewModel,
+                context = context
+            )
         }
     }
 
@@ -286,6 +247,27 @@ class PlanRouteManager(context: Context, apiKey: String) {
             if (marker != null) {
                 routeMarkers[routeId] = marker
             }
+        }
+    }
+
+    fun onWaypointClick(planATripViewModel: PlanATripViewModel, tomTomMap: TomTomMap?){
+        val selectedLocation by planATripViewModel.selectedWaypoint
+
+        markerClickListener = MarkerClickListener{ marker ->
+            val clickedWaypoint = markerLocationMap[marker.id]
+
+            if(clickedWaypoint != selectedLocation){
+                if (clickedWaypoint != null) {
+                    planATripViewModel.updateSelectedWaypoint(clickedWaypoint)
+
+                    val cameraOptions = CameraOptions(
+                        position = clickedWaypoint.searchResult!!.place.coordinate,
+                        zoom = 15.0
+                    )
+                    tomTomMap?.animateCamera(cameraOptions, 3.seconds)
+                }
+            }
+
         }
     }
 }

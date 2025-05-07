@@ -27,15 +27,17 @@ class PlanATripViewModel : ViewModel() {
     private val _initialDeparture = MutableStateFlow(Date())
     val initialDeparture: StateFlow<Date> = _initialDeparture
 
+    //To keep track of what route leg is being clicked on at the moment
     val selectedRoutePair = mutableStateOf<Pair<Route?, com.tomtom.sdk.routing.route.Route?>?>(null)
 
-    val selectedMarker = mutableStateOf<Marker?>(null)
+    //To keep track of what waypoint is clicked on at the moment
+    val selectedWaypoint = mutableStateOf<WaypointItem?>(null)
 
     fun loadTrip(trip: Trip) {
         updateInitialDeparture(Date(trip.initialDeparture))
 
         val items = trip.waypointsList
-            .map { it.toDomain() }           // the mapper you wrote earlier
+            .map { it.toDomain() }
             .toMutableList()
 
         _planWaypoints.value = items
@@ -62,12 +64,12 @@ class PlanATripViewModel : ViewModel() {
         }
     }
 
-    fun setSelectedRoutePair(routePairs: Pair<Route?, com.tomtom.sdk.routing.route.Route?>?){
-        selectedRoutePair.value = routePairs
+    fun updateSelectedWaypoint(waypoint:WaypointItem?){
+        selectedWaypoint.value = waypoint
     }
 
-    fun setSelectedMarker(marker: Marker?){
-        selectedMarker.value = marker
+    fun setSelectedRoutePair(routePairs: Pair<Route?, com.tomtom.sdk.routing.route.Route?>?){
+        selectedRoutePair.value = routePairs
     }
 
     fun removePlanWaypoint(index: Int){
@@ -108,7 +110,6 @@ class PlanATripViewModel : ViewModel() {
 
     fun updateInitialDeparture(newDate: Date){
         _initialDeparture.value = newDate
-        //updateDepartureTimes()
     }
 
     fun clearPlanWaypoints(){

@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -19,8 +18,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tomtom.sdk.map.display.MapOptions
-import com.tomtom.sdk.map.display.ui.MapView
 import com.tomtom.sdk.map.display.TomTomMap
+import com.tomtom.sdk.map.display.map.OnlineCachePolicy
+import com.tomtom.sdk.map.display.ui.MapView
 
 // Custom Saver for MapView state
 private fun mapViewStateSaver(context: Context, apiKey: String) = Saver<MapView, Bundle>(
@@ -54,7 +54,10 @@ fun TomTomMapComponent(
     val mapView = rememberSaveable(saver = mapViewStateSaver(context, apiKey)) {
         MapView(
             context = context,
-            mapOptions = MapOptions(mapKey = apiKey)
+            mapOptions = MapOptions(mapKey = apiKey, onlineCachePolicy = OnlineCachePolicy.Custom(
+                1_000_144_000L
+            )
+            )
         ).apply { onCreate(Bundle()) }
     }
 

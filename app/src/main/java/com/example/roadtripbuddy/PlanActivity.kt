@@ -27,9 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.PlanATripDrawer.PlanATripDrawer
 import com.example.roadtripbuddy.TripSelect.TripSelect
 import com.example.roadtripbuddy.TripSelect.TripsViewModel
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.net.PlacesClient
 import com.tomtom.sdk.location.GeoPoint
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -41,6 +44,8 @@ class PlanActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Places.initialize(applicationContext, getString(R.string.google_maps_key))
+        val placesClient: PlacesClient = Places.createClient(this)
         usersLocation = intent.getParcelableExtra("start_location")
         setContent {
             PlanTripScreen(onBack = {
@@ -60,12 +65,15 @@ class PlanActivity : AppCompatActivity() {
         val mapReadyState = remember { mutableStateOf(false) }
         var currentTripId by remember { mutableLongStateOf(0) }
 
+        val placesClient: PlacesClient = Places.createClient(context)
+        val placesViewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
+
         val planMap = remember {
             PlanMap(
-            context = context,
-            activity = this@PlanActivity,
-            mapReadyState = mapReadyState
-             )
+                context    = context,
+                activity   = this@PlanActivity,
+                mapReadyState = mapReadyState
+            )
         }
 
         Box(
@@ -73,9 +81,8 @@ class PlanActivity : AppCompatActivity() {
                 .fillMaxSize()
                 .background(Color.Transparent)
         ){
-            Log.d("DEBUG", "mapReadyState.value before map init: ${mapReadyState.value}")
             planMap.PlanMapContent()
-
+            Log.d("DEBUG", "mapReadyState.value before map init: ${mapReadyState.value}")
             if (tripSelectScreen) {
                 TripSelect(
                     onBack = {onBack()},
@@ -90,31 +97,37 @@ class PlanActivity : AppCompatActivity() {
                     viewModel = tripVM
                 )
             }
-            else if (mapReadyState.value && showBottomDrawer){
-                planMap.defaultCameraPosition(usersLocation)
+            else if (showBottomDrawer){
 
-                PlanATripDrawer(
-                    onMapFocus = mapFocus,
-                    viewModel = planVM,
-                    planMap = planMap,
-                    // onBack returns a bool for saving
-                    onBack = { saveBool ->
-                        // if user said yes we call saveTrip
-                        if (saveBool){
-                            // take a snapshot since we clear the waypoints below
-                            val snapshot = planVM.planWaypoints.value.toList()
-                            val initialDeparture = planVM.initialDeparture.value.time
-                            tripVM.saveTrip(currentTripId, snapshot, initialDeparture)
-                        }
-                        planVM.clearPlanWaypoints()
-                        planMap.clearMap()
-                        showBottomDrawer = false
-                        tripSelectScreen = true
-                    }
-                )
+                if (mapReadyState.value){
+                    planMap.defaultCameraPosition(usersLocation)
+
+                    PlanATripDrawer(
+                        onMapFocus = mapFocus,
+                        viewModel = planVM,
+                        planMap = planMap,
+                        // onBack returns a bool for saving
+                        onBack = { saveBool ->
+                            // if user said yes we call saveTrip
+                            if (saveBool){
+                                // take a snapshot since we clear the waypoints below
+                                val snapshot = planVM.planWaypoints.value.toList()
+                                val initialDeparture = planVM.initialDeparture.value.time
+                                tripVM.saveTrip(currentTripId, snapshot, initialDeparture)
+                            }
+                            planVM.clearPlanWaypoints()
+                            planVM.updateSelectedWaypoint(null)
+                            placesViewModel.clearPlaces()
+                            placesViewModel.updateSelectedPlace(null)
+                            planMap.clearMap()
+                            showBottomDrawer = false
+                            tripSelectScreen = true
+                        },
+                        placesViewModel = placesViewModel
+                    )
+                }
+                Log.d("Debug", "PlanActivity onMapFocus: $mapFocus")
             }
-            Log.d("Debug", "PlanActivity onMapFocus: $mapFocus")
-
         }
     }
 
