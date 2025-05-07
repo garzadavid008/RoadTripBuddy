@@ -5,11 +5,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.* // Contains Arrangement, Box, Column, PaddingValues, Row, fillMaxSize, padding, size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.* // Contains Button, ButtonDefaults, OutlinedTextField, Text, TextButton, TextFieldDefaults should contain keyboard options
-import androidx.compose.runtime.* // Contains Composable, Launched Effect, getValue, LiveData.observeAsState, MutableStateof, remember, setvalue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,57 +26,38 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-//import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.roadtripbuddy.AuthState
 import com.example.roadtripbuddy.IAuthViewModel
-//import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
 
-// a function to validate passwords for strength
-fun isPasswordString(password:String) : Boolean
-{
+fun isPasswordString(password: String): Boolean {
     val minLength = 8
-    //checking if there is a UPPER case in the password
-    // .any iterates through the string checking for the condition
-    // it is referencing to it self
-    // returns true if it matches
-    val hasUpper = password.any {it.isUpperCase()}
-    // now checking if it as a lower case
-    val hasLower = password.any{ it.isLowerCase()}
-    // checking if there is a digit in the string
-    val hasDigit = password.any {it.isDigit()}
-    val hasSpecialChar = password.any {"!@#$%".contains(it)}
-    // validate
+    val hasUpper = password.any { it.isUpperCase() }
+    val hasLower = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecialChar = password.any { "!@#$%".contains(it) }
     return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecialChar
 }
 
-// added for tests for vehicle valid,invalid,empty, ect
 fun isValidVehicleType(vehicle: String): Boolean {
     val validTypes = listOf("SUV", "Sedan", "Truck", "Van", "Hatchback")
     return vehicle.trim().isNotEmpty() && validTypes.any { it.equals(vehicle.trim(), ignoreCase = true) }
 }
 
-//@Preview
 @Composable
 fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
-
-    // for the toast
     val context = LocalContext.current
-    // var for the user name, using REMEMBER to preserve the state of the variable across compose functions
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    //var repass by remember { mutableStateOf("") }
     var isPasswordValid by remember { mutableStateOf(true) }
     var name by remember { mutableStateOf("") }
     var vehicle by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    // holds the auth state
+    var errorMessage by remember { mutableStateOf("") }
     val authState by authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState) {
-        // Handles all possible AuthState cases, including null initial state
         when (authState) {
             AuthState.Authenticated -> navController.navigate("map") {
                 popUpTo("signup") { inclusive = true }
@@ -85,15 +66,18 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 errorMessage = (authState as AuthState.Error).message
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             }
+            is AuthState.Success -> {
+                Toast.makeText(context, (authState as AuthState.Success).message, Toast.LENGTH_SHORT).show()
+            }
             AuthState.Loading, AuthState.Unauthenticated, null -> Unit
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.LightGray) // 🔹 Change background color here
+            .background(Color.LightGray)
             .padding(20.dp),
-
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,11 +89,11 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 Image(
                     painter = painterResource(id = R.drawable.name),
                     contentDescription = "Person Image for signup",
-                    modifier = Modifier.weight(1f,fill=false)
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = { name = it; errorMessage = "" },
                     label = { Text("name") },
                     modifier = Modifier.semantics { testTag = "name_field" }
                 )
@@ -118,16 +102,16 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_car),
                     contentDescription = "Person Image for signup",
-                    modifier = Modifier.weight(1f,fill=false)
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 OutlinedTextField(
                     value = vehicle,
-                    onValueChange = { vehicle = it },
+                    onValueChange = { vehicle = it; errorMessage = "" },
                     label = { Text("Enter Vehicle Type (eg SUV, Sedan)") },
                     modifier = Modifier.semantics { testTag = "vehicle_field" }
                 )
             }
-            Row { // removed the empty '()' that was tied to lambda /now more clean
+            Row {
                 Image(
                     painter = painterResource(id = R.drawable.person),
                     contentDescription = "Person Image for signup",
@@ -135,7 +119,7 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 )
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { email = it; errorMessage = "" },
                     label = { Text("Email") },
                     modifier = Modifier.semantics { testTag = "email_field" }
                 )
@@ -144,35 +128,33 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                 Image(
                     painter = painterResource(id = R.drawable.lock),
                     contentDescription = "Lock Image for signup",
-                    modifier = Modifier.weight(1f,fill=true).size(65.dp)
+                    modifier = Modifier.weight(1f, fill = true).size(65.dp)
                 )
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
                         password = it
                         isPasswordValid = isPasswordString(it)
+                        errorMessage = ""
                     },
                     label = { Text("Password") },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), // this adds the dots when typing the password
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
-                    isError = !isPasswordValid, // error handling
+                    isError = !isPasswordValid,
                     colors = TextFieldDefaults.colors(),
                     modifier = Modifier.semantics { testTag = "password_field" }
                 )
             }
-            // Additions added at 4/19/25
             Row {
                 Image(
                     painter = painterResource(id = R.drawable.lock),
                     contentDescription = "Lock Image for confirm password",
                     modifier = Modifier.weight(1f, fill = true).size(65.dp)
                 )
-                // Added 4/19/2025
-                // Add to test password confirmations and to check if confirming password matches confirmed password
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = { confirmPassword = it; errorMessage = "" },
                     label = { Text("Confirm Password") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -182,17 +164,16 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                     modifier = Modifier.semantics { testTag = "confirm_password_field" }
                 )
             }
-            //Error Message addition 4/19/25
-            errorMessage?.let {
+            if (errorMessage.isNotEmpty()) {
                 Text(
-                    text = it,
+                    text = errorMessage,
                     color = Color.Red,
-                    modifier = Modifier.padding(8.dp).semantics { testTag = "error_message" } // .testtag added 4/21/25
+                    modifier = Modifier.padding(8.dp).semantics { testTag = "error_message" },
+                    maxLines = 1
                 )
             }
-            // button
             Button(
-                onClick =  {
+                onClick = {
                     when {
                         name.isEmpty() || vehicle.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() -> {
                             errorMessage = "All fields are required"
@@ -215,7 +196,7 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
                         else -> {
-                            authViewModel.signup(name, email, password, vehicle) // Fixed order to match Signuptests
+                            authViewModel.signup(name, email, password, vehicle)
                         }
                     }
                 },
@@ -246,24 +227,16 @@ fun SignupPage(navController: NavController, authViewModel: IAuthViewModel) {
                     fontFamily = FontFamily.Serif
                 )
             }
-            // if they already have an account
             TextButton(onClick = {
-                // this will take them to the login page
                 navController.navigate("login")
             }) {
                 Text(text = "Already have an account, Login!")
             }
-            // take them back to home
             TextButton(onClick = {
-                //this will take them back to the map page
                 navController.navigate("map")
             }) {
                 Text(text = "Back to Map")
             }
-
         }
     }
-
-    // If need to add anything more do it here
-
 }

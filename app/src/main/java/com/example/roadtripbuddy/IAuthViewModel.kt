@@ -8,6 +8,7 @@ interface IAuthViewModel {
     fun signup(name: String, email: String, password: String, vehicle: String)
     fun signout()
     fun checkAuth()
+    fun resetPassword(email: String) // added reset password 5/5/2025
 }
 /*This is an Interface that will mimic the behaviour of AuthViewModel
 And will serve as a dependency for LoginPageTest, MockAuthViewModel

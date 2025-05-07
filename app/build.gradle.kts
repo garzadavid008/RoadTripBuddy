@@ -114,13 +114,14 @@ dependencies {
 
     // Jetpack Compose
     implementation(platform("androidx.compose:compose-bom:2024.10.00")) // Compose BOM for version management
-    implementation("androidx.activity:activity-compose:1.9.3") // Compose Activity integration
+    implementation("androidx.activity:activity-compose:1.10.1") // Compose Activity integration
     implementation("androidx.compose.ui:ui") // Compose UI core
     implementation("androidx.compose.ui:ui-tooling-preview") // Compose preview tools
     implementation("androidx.compose.material3:material3") // Material3 components for Compose
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecycle support for Compose
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.3") // Compose navigation
+    implementation("androidx.navigation:navigation-compose:2.8.8") // Compose navigation
     implementation(libs.androidx.navigation.fragment.ktx) // Fragment navigation
     implementation(libs.androidx.navigation.ui.ktx) // Navigation UI utilities
 
@@ -153,59 +154,41 @@ dependencies {
     // Other Libraries
     implementation("sh.calvin.reorderable:reorderable:2.4.3") // Reorderable list library
 
-    // Unit Testing
-    testImplementation(libs.junit) // JUnit for unit tests
-    testImplementation("io.mockk:mockk:1.13.13") // MockK for mocking
-    testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
-
-    // LocalLifecycleOwner and LocalViewModelStoreOwner
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7") // adds lifecycle support for Compose
+    // Hilt & Compiler
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    kapt("com.squareup:javapoet:1.13.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Android Instrumentation Testing
     androidTestImplementation(libs.androidx.junit) // Android JUnit extensions
     androidTestImplementation(libs.androidx.espresso.core) // Espresso for UI testing
     androidTestImplementation("androidx.test.ext:junit:1.2.1") // Test extensions for JUnit
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1") // Latest Espresso
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.3") // Navigation testing
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.4") // Compose UI testing
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8") // Navigation testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8") // Compose UI testing
 
     // Debug Tools
     debugImplementation("androidx.compose.ui:ui-tooling") // Compose UI tooling
     debugImplementation("androidx.compose.ui:ui-test-manifest") // Compose test manifest
 
-    // Hilt & Compiler
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-    kapt("com.squareup:javapoet:1.13.0")
+    // Unit Testing
+    testImplementation(libs.junit) // JUnit for unit tests
+    testImplementation("io.mockk:mockk:1.13.13") // MockK for mocking
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
 
-    // Additional integrations & tooling
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // Additional Integrations
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.datastore:datastore:1.1.0")
     implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
     implementation("com.composables:core:1.20.1")
-
-    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.navigation:navigation-compose:2.8.8")
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
     implementation("androidx.compose.material3:material3:1.3.1")
     implementation("com.tomtom.sdk.navigation:navigation:$version")
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
-    implementation("com.google.android.libraries.places:places:3.5.0")
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
 
-    testImplementation("io.mockk:mockk:1.12.0")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.arch.core:core-testing:2.1.0")
 
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.8")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
 }
 
 
