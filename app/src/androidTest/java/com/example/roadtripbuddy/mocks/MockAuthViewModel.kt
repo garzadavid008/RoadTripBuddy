@@ -12,13 +12,14 @@ class MockAuthViewModel(
     private val loginSuccessful: Boolean = true,
     private val signupSuccessful: Boolean = true,
     private val loginError: String? = null,
-    private val signupError: String? = null,
-    private val resetSuccessful: Boolean = true,
-    private val resetError: String? = null
+    private val signupError: String? = null
 ) : IAuthViewModel {
 
     private val _authState = MutableLiveData<AuthState>()
     override val authState: LiveData<AuthState> = _authState
+
+   // private val _isLoading = MutableLiveData(false)
+   // override val isLoading: LiveData<Boolean> = _isLoading
 
     // Email format validation
     private fun isValidEmail(email: String): Boolean {
@@ -79,24 +80,6 @@ class MockAuthViewModel(
                 }
             }
         }
-    // For mock rest password functionality
-    override fun resetPassword(email: String) {
-        _authState.postValue(AuthState.Loading)
-        when {
-            email.isEmpty() -> {
-                _authState.postValue(AuthState.Error("Email cannot be empty for reset"))
-            }
-            !isValidEmail(email) -> {
-                _authState.postValue(AuthState.Error("Invalid email format for reset"))
-            }
-            resetSuccessful -> {
-                _authState.postValue(AuthState.Success("Password reset email sent"))
-            }
-            else -> {
-                _authState.postValue(AuthState.Error(resetError ?: "Failed to send reset email"))
-            }
-        }
-    }
 
         // For mock sign out
         override fun signout() {

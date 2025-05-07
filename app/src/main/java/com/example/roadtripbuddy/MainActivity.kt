@@ -117,22 +117,18 @@ class MainActivity : AppCompatActivity() {
 
         val navController = rememberNavController()
         val authState by authViewModel.authState.observeAsState()
-// re-added to handle authstate redirection
+
+        /*
+        // Redirect to login if unauthenticated
         LaunchedEffect(authState) {
-            when (authState) {
-                AuthState.Authenticated -> {
-                    navController.navigate("map") {
-                        popUpTo("login") { inclusive = true }
-                    }
+            if (authState == AuthState.Unauthenticated) {
+                navController.navigate("login") {
+                    popUpTo("map") { inclusive = true } // clears map screen from back stat to prevent returning to it after logging in
                 }
-                AuthState.Unauthenticated -> {
-                    navController.navigate("login") {
-                        popUpTo("map") { inclusive = true }
-                    }
-                }
-                else -> Unit
             }
         }
+
+         */
 
         NavHost(
             navController = navController,
