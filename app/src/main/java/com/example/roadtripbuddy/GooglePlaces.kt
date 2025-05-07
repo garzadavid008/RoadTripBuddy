@@ -53,7 +53,7 @@ class GooglePlacesRepository(private val placesClient: PlacesClient) {
                 val request = SearchNearbyRequest.builder(circle, placeFields)
                     .setIncludedTypes(includedTypes)
                     // .setExcludedTypes(excludedTypes)
-                    .setMaxResultCount(5)
+                    .setMaxResultCount(15)
                     .build()
 
                 // Perform search synchronously using Tasks.await()

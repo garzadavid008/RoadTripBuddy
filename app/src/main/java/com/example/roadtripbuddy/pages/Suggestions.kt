@@ -63,6 +63,11 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import android.Manifest
 import android.annotation.SuppressLint
 import androidx.compose.runtime.rememberCoroutineScope
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 // this will carry the list of LatLng objects
 val listofLATandLong : MutableList<LatLng> = mutableListOf()
@@ -127,34 +132,31 @@ private fun isPermissionGranted(context: Context,permission:String):Boolean
 }
 data class Cords(val lat: Double, val long: Double)
 @SuppressLint("MissingPermission")
-suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, context: Context): Cords
+ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, context: Context): Cords = withContext(Dispatchers.IO)
 {
-    var latitdue : Double = 0.0
-    var longitude: Double = 0.0
-    // the code will run inside if user gives the location on start
-    if (isPermissionGranted(context,Manifest.permission.ACCESS_FINE_LOCATION))
+    val locationClient  = LocationServices.getFusedLocationProviderClient(context)
+    // if we dont have permissions enabled for current location just return empty cords
+    if (!isPermissionGranted(context,Manifest.permission.ACCESS_FINE_LOCATION))
     {
-        // using getLastLocation to retrieve the current location of the user
-        fusedLocationProviderClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                Log.d("Fused","$location")
-                if (location != null) {
-                    latitdue = location.latitude
-                    longitude = location.longitude
-                }
-            }
+        return@withContext Cords(0.0,0.0)
     }
-  return Cords(latitdue,longitude)
+    val result = locationClient.lastLocation.await()
+    if(result!= null)
+    {
+        Cords(result.latitude,result.longitude)
+    }
+    else{
+        Cords(0.0,0.0)
+    }
 }
-
 // since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
  fun Suggestions(navController: NavController, fusedLocationProviderClient: FusedLocationProviderClient)
 {
-
      val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var cords by remember { mutableStateOf(Cords(0.0,0.0)) }
 
     // call the places view model
     // placeList will contain all suggested places
@@ -170,18 +172,20 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
     FunincludedTypes.add("convention_center")
     FunincludedTypes.add("movie_theater")
     FunincludedTypes.add("park")
-
-
-
     val myClass = remember  { SuggestedLocation(viewModel) }
     LaunchedEffect(Unit) {
-        myClass.setUpList(26.243629, -98.245079, includedTypes, "food")
-        myClass.setUpList(26.243629, -98.245079, FunincludedTypes, "fun")
-        myClass.setUpList(26.243629, -98.245079, GasincludedTypes, "gas")
-        Log.d("Chris","The size of list is ${myClass.foodList} ")
-        Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
-        Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
+        scope.launch(Dispatchers.IO){
+            cords = getCords(fusedLocationProviderClient,context)
+            Log.d("Cords", "$cords")
+            myClass.setUpList(cords.lat, cords.long, includedTypes, "food")
+            myClass.setUpList(cords.lat,cords.long , FunincludedTypes, "fun")
+            myClass.setUpList(cords.lat,cords.long, GasincludedTypes, "gas")
+            Log.d("Chris","The size of list is ${myClass.foodList} ")
+            Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
+            Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
+        }
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -204,7 +208,7 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
                 .align(Alignment.CenterHorizontally)) {
                 Text(text = "Back to Map")
             }
-
+                Text(text = "$cords")
             CategoryFilteredList(
                 foodList = myClass.foodList,
                 entertainmentList = myClass.entertainment,
