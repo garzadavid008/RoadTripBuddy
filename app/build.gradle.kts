@@ -136,6 +136,7 @@ dependencies {
     implementation("com.tomtom.sdk.location:provider-map-matched:$version") // Map-matched location
     implementation("com.tomtom.sdk.location:provider-simulation:$version") // Simulated location
     implementation("com.tomtom.sdk.maps:map-display:$version") // Map display
+    implementation("com.tomtom.sdk.maps:data-provider:$version")
     implementation("com.tomtom.sdk.datamanagement:navigation-tile-store:$version") // Navigation tile store
     implementation("com.tomtom.sdk.routing:route-planner-online:$version") // Route planner
     implementation("com.tomtom.sdk.search:search-online:$version") // Search API
@@ -143,7 +144,6 @@ dependencies {
     implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2") // Online reverse geocoding
     implementation("com.tomtom.sdk.maps.visualization:navigation:$version") // Navigation visualization
     implementation("com.tomtom.sdk.navigation:ui:1.23.2") // Navigation UI
-
     // Google APIs
     implementation("com.google.android.libraries.places:places:3.5.0") // Google Places API
     implementation("com.google.android.gms:play-services-maps:19.0.0") // Google Maps
@@ -152,7 +152,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14") // OkHttp for network requests
 
     // Other Libraries
-    implementation("sh.calvin.reorderable:reorderable:2.4.3") // Reorderable list library
+    implementation("sh.calvin.reorderable:reorderable:2.4.3")
+    implementation(libs.androidx.runner) // Reorderable list library
 
     // Hilt & Compiler
     implementation(libs.hilt.android)

@@ -1,11 +1,11 @@
 package com.example.roadtripbuddy.PlanATripDrawer
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
@@ -44,9 +43,9 @@ import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.PlanATripViewModel
-import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.PlanMap
 import com.example.roadtripbuddy.WaypointItem
-import com.tomtom.sdk.search.model.result.SearchResult
+import com.tomtom.sdk.search.model.SearchResultType
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.ZoneId
@@ -57,7 +56,9 @@ fun PlanATripWaypoints(
     viewModel: PlanATripViewModel = viewModel(),
     onRoute: (PlanATripViewModel) -> Unit,
     onPlanWaypointEdit: (Pair<Int, WaypointItem>) -> Unit,
-    onPlanWaypointAdd: () -> Unit
+    onPlanWaypointAdd: () -> Unit,
+    planMap: PlanMap,
+    isTyping: () -> Unit
 ) {
     val waypoints by viewModel.planWaypoints.collectAsState()
 
@@ -67,6 +68,8 @@ fun PlanATripWaypoints(
     val view = LocalView.current
 
     val lazyListState = rememberLazyListState()
+
+    var routeFlag by remember { mutableStateOf(false) }
 
     // Function to update the route and trigger onRoute when there is at least one waypoint and departAt is not null
     fun updateRoute() {
@@ -98,19 +101,12 @@ fun PlanATripWaypoints(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .size(width = 40.dp, height = 4.dp)
-                    .background(color = Color.LightGray, shape = RoundedCornerShape(50))
-                    .align(Alignment.CenterHorizontally)
-            )
             //Spacer(modifier = Modifier.height(2.dp))
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
                 Text("Plan A Trip", style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 // Plan Route button
-                if(waypoints.size > 1){
+                if( routeFlag && waypoints.size > 1){
                     Button(
                         onClick = {
                             updateRoute()
@@ -145,15 +141,18 @@ fun PlanATripWaypoints(
                     Log.d("Valid Time and Date", newDateTime.toString())
                     val departAt = Date.from(newDateTime.atZone(ZoneId.systemDefault()).toInstant())
                     viewModel.updateInitialDeparture(departAt)
-                }
+                    routeFlag = true
+                },
+                onInvalidTimeAndDate = {routeFlag = false},
+                isTyping = {isTyping()}
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth()){
                 Text("Waypoints:")
-                Spacer(modifier = Modifier.width(144.dp))
-                Text("Hour:")
-                Spacer(modifier = Modifier.width(32.dp))
+                Spacer(modifier = Modifier.width(163.dp))
+                Text("Hr:")
+                Spacer(modifier = Modifier.width(25.dp))
                 Text("Min:")
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -161,14 +160,42 @@ fun PlanATripWaypoints(
             LazyColumn(modifier = Modifier.fillMaxWidth(), state = lazyListState) {
                 itemsIndexed(waypoints, key = { _, waypoint -> waypoint.hashCode() }) { index, waypoint ->
                     ReorderableItem(reorderableLazyListState, key = waypoint.hashCode() ) { isDragging ->
-                        val address by remember { mutableStateOf(waypoint.searchResult?.place?.address?.freeformAddress!!) }
+                        var address by remember { mutableStateOf(waypoint.searchResult?.place?.address?.freeformAddress!!) }
                         var hour by remember { mutableStateOf(waypoint.hour.toString()) } // assuming waypoint.hour exists
                         var minute by remember { mutableStateOf(waypoint.minute.toString()) } // assuming waypoint.minute exists
+
+                        LaunchedEffect(waypoint.searchResult) {
+                            if (waypoint.searchResult?.type == SearchResultType.Poi) {
+                                planMap.searchManager.toPoi(waypoint.searchResult!!.searchResultId) { poiResult ->
+                                    // safely grab first POI name
+                                    val poiName = poiResult
+                                        ?.poiDetails
+                                        ?.poi
+                                        ?.names
+                                        ?.firstOrNull()
+                                        .orEmpty()
+
+                                    // 3) update your state – Compose will recompose and show the new name
+                                    if (poiName.isNotBlank()) {
+                                        address = poiName
+                                    }
+                                }
+                            }
+                        }
+
+                        val label =
+                            // take the code point of 'A', add index, then turn back into a Char
+                            ( 'A'.code + index ).toChar().toString()
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
                             if (index != 0){
                                 PlanWaypointTextField(// Custom text field
                                     address = address,
@@ -188,11 +215,22 @@ fun PlanATripWaypoints(
                                     },
                                     minute = minute,
                                     onMinuteChange = { newMinute ->
+                                        Log.d("NewMinute logged", newMinute)
                                         // If the text field is empty, make it zero. Else, initialize as normal
-                                        minute = if (newMinute == "") {
-                                            "0"
+                                        if (newMinute == "") {
+                                            minute = "0"
                                         } else {
-                                            newMinute
+                                            val minInt = newMinute.toInt()
+                                            if (minInt >= 60) {
+                                                val extraHours = minInt / 60
+                                                val newMinutes = minInt % 60
+
+                                                val hrInt = hour.toIntOrNull() ?: 0
+                                                hour = (hrInt + extraHours).toString()
+                                                minute = newMinutes.toString()
+                                            } else {
+                                                minute = newMinute
+                                            }
                                         }
                                         viewModel.updateTimeSpent(
                                             index = index,
@@ -203,8 +241,9 @@ fun PlanATripWaypoints(
                                     onAddressClick = {
                                         onPlanWaypointEdit(Pair(index, waypoint))
                                     },
-                                    onFocus = {},
-                                    modifier = Modifier.draggableHandle(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .draggableHandle(
                                         onDragStarted = {
                                             ViewCompat.performHapticFeedback(
                                                 view,
@@ -218,10 +257,12 @@ fun PlanATripWaypoints(
                                             )
                                         },
                                     ),
+
+                                    isTyping = {isTyping()}
                                 )
                             } else {
                                 PlanWaypointTextField(// Custom text field
-                                    address = address!!,
+                                    address = address,
                                     hour = "",
                                     onHourChange = {},
                                     minute = "",
@@ -229,8 +270,9 @@ fun PlanATripWaypoints(
                                     onAddressClick = {
                                         onPlanWaypointEdit(Pair(index, waypoint))
                                     },
-                                    onFocus = {},
-                                    modifier = Modifier.draggableHandle(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .draggableHandle(
                                         onDragStarted = {
                                             ViewCompat.performHapticFeedback(
                                                 view,
@@ -244,22 +286,27 @@ fun PlanATripWaypoints(
                                             )
                                         },
                                     ),
-                                    ifFirstLocation = true
+                                    ifFirstLocation = true,
+                                    isTyping = {isTyping()}
                                 )
                             }
 
                             //REMOVE WAYPOINT BUTTON
-                            if (waypoints.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .width(30.dp) // Wider fixed space at end
+                                    .padding(start = 4.dp), // Extra space from the text field
+                                contentAlignment = Alignment.CenterEnd // Push icon to far right inside the box
+                            ) {
                                 IconButton(
-                                    onClick = {
-                                        viewModel.removePlanWaypoint(index)
-                                    },
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    onClick = { viewModel.removePlanWaypoint(index) },
+                                    modifier = Modifier.size(24.dp), // Smaller touch target
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = "Remove Waypoint",
-                                        tint = Color.Gray
+                                        tint = Color.Gray,
+                                        modifier = Modifier.size(16.dp) // Smaller icon
                                     )
                                 }
                             }
@@ -269,7 +316,7 @@ fun PlanATripWaypoints(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 // If waypointFlag is true and if waypoint size doesn't exceed 20
-                if (waypoints.size < 20) { //Limiting the amount of waypoints user can add for now, change it for testing
+                if (waypoints.size < 27) { //Limiting the amount of waypoints user can add for now, change it for testing
                     item {
                         Button( //ADD WAYPOINT BUTTON
                             onClick = {
@@ -295,5 +342,6 @@ fun PlanATripWaypoints(
             }
         }
     }
+
 }
 

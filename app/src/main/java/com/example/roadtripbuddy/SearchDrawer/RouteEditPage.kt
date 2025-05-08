@@ -43,6 +43,7 @@ import androidx.core.view.ViewCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.SearchManager
+import com.tomtom.sdk.search.model.SearchResultType
 import com.tomtom.sdk.search.model.result.SearchResult
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -114,35 +115,58 @@ fun RouteEditPage(
             Text("Edit Route", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Start Location:")
-            OutlinedTextField(
-                value = searchManager.startLocationAddress, // Users location address from the searchManager
-                onValueChange = {},
-                label = { Text("Start") },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text("Waypoints:")
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.fillMaxWidth(), state = lazyListState) {
                 itemsIndexed(waypoints, key = { _, waypoint -> waypoint.hashCode() }) { index, waypoint ->
                     ReorderableItem(reorderableLazyListState, key = waypoint.hashCode() ) { isDragging ->
-                        val address by remember { mutableStateOf(waypoint?.place?.address?.freeformAddress!!) }
+                        var address by remember { mutableStateOf(waypoint?.place?.address?.freeformAddress!!) }
+
+                        LaunchedEffect(waypoint) {
+                            if (waypoint?.type == SearchResultType.Poi) {
+                                searchManager.toPoi(waypoint.searchResultId) { poiResult ->
+                                    // safely grab first POI name
+                                    val poiName = poiResult
+                                        ?.poiDetails
+                                        ?.poi
+                                        ?.names
+                                        ?.firstOrNull()
+                                        .orEmpty()
+
+                                    // 3) update your state – Compose will recompose and show the new name
+                                    if (poiName.isNotBlank()) {
+                                        address = poiName
+                                    }
+                                }
+                            }
+                        }
+
+                        val label = if (index < waypoints.lastIndex) {
+                            // take the code‐point of 'A', add index, then turn back into a Char
+                            ( 'A'.code + index ).toChar().toString()
+                        } else {
+                            "🏁"
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+
                             WaypointTextField(
                                 address = address,
                                 onClick = {
                                     onWaypointEdit(Pair(index, waypoint!!))
-                                    Log.d("DEBUG", "I HAVE BEEN CLICKED")
                                           },
-                                modifier = Modifier.draggableHandle(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .draggableHandle(
                                     onDragStarted = {
                                         ViewCompat.performHapticFeedback(
                                             view,
