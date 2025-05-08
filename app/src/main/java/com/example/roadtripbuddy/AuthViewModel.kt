@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import android.util.Patterns
 import android.util.Log // this was added for logging
 
 // added constructor to accept FirebaseAuth with a default value
@@ -16,7 +17,6 @@ class AuthViewModel(
 ) : ViewModel(), IAuthViewModel {
 
     // creating the fire base methods
-    //private val auth : FirebaseAuth = FirebaseAuth.getInstance()// reposition
     // var to hold the authState
     // this is private and has a _ because this will be hidden from the UI for security
     private val _authState = MutableLiveData<AuthState>()
@@ -44,7 +44,6 @@ class AuthViewModel(
         }
     }
 
-
     override fun login(email:String,password:String)
     {
         //We must first check if the email or passwords strings are empty
@@ -65,6 +64,26 @@ class AuthViewModel(
                 {
                     // firebase couldn't log them in. so provide the error
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong.Try again")
+                }
+            }
+    }
+
+    override fun resetPassword(email: String) {
+        if (email.isEmpty()) {
+            _authState.value = AuthState.Error("Email cannot be empty for reset")
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _authState.value = AuthState.Error("Invalid email format for reset")
+            return
+        }
+        _authState.value = AuthState.Loading
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    _authState.value = AuthState.Success("Password reset email sent")
+                } else {
+                    _authState.value = AuthState.Error(task.exception?.message ?: "Failed to send reset email")
                 }
             }
     }
@@ -119,12 +138,12 @@ class AuthViewModel(
 }
 
 // a class to handle the authenticated state of the user. if they are login or not
-sealed class AuthState
-{
-    object  Authenticated : AuthState()
-    object Unauthenticated: AuthState()
-    object  Loading : AuthState() // when the user is loading .
-    data class Error(val message:String) : AuthState()
+sealed class AuthState {
+    object Authenticated : AuthState()
+    object Unauthenticated : AuthState()
+    object Loading : AuthState()
+    data class Error(val message: String) : AuthState()
+    data class Success(val message: String) : AuthState()
 }
 // Sealed sub-objects can be converted to 'data object'
 // changes done should ensure IAuthViewModel is implemented,

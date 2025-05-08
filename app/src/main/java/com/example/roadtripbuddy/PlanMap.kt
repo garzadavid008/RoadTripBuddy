@@ -51,7 +51,7 @@ class PlanMap(
         planRouteManager.planOnRouteRequest(
             viewModel = viewModel,
             tomTomMap = tomTomMap,
-            )
+        )
     }
 
     fun onRouteLegClick(route: Route,viewModel: PlanATripViewModel){
