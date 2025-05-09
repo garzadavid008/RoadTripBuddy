@@ -5,7 +5,7 @@ import androidx.lifecycle.LiveData
 interface IAuthViewModel {
     val authState: LiveData<AuthState>
     fun login(email: String, password: String)
-    fun signup(name: String, email: String, password: String, vehicle: String)
+    fun signup(name: String, email: String, password: String)
     fun signout()
     fun checkAuth()
     fun resetPassword(email: String) // added reset password 5/5/2025

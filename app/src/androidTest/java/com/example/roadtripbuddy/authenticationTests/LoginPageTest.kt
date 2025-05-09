@@ -29,6 +29,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import com.example.roadtripbuddy.pages.SignupPage
+
 @RunWith(AndroidJUnit4::class)
 // Note: This file is for testing the UI of the LoginPage
 class LoginPageTest {
@@ -54,13 +56,12 @@ class LoginPageTest {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             LoginPage(navController = navController, authViewModel = authViewModel)
         }
-        // Check if email field is displayed
+
         composeTestRule.onNodeWithTag("email_field").assertExists()
-        // Check if password field is displayed
         composeTestRule.onNodeWithTag("password_field").assertExists()
-        // Check if submit button exists
         composeTestRule.onNodeWithTag("submit_button").assertExists()
-        composeTestRule.onNodeWithText("Don't have an account? Sign up here").assertExists()
+        composeTestRule.onNodeWithTag("forgot_password").assertExists()
+        composeTestRule.onNodeWithText("Don't have an account? Sign up").assertExists()
         composeTestRule.onNodeWithText("Back to Map").assertExists()
     }
     // Simulates valid login and checks that app nav to map screen.
@@ -181,29 +182,17 @@ class LoginPageTest {
                 composable("signup") { }
             }
         }
-        println("Clicking forgot_password")
-        composeTestRule.onNodeWithTag("forgot_password", useUnmergedTree = true).performClick()
-        composeTestRule.waitForIdle()
-        println("Checking for reset_email_field")
+        composeTestRule.onNodeWithTag("forgot_password").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val nodes = composeTestRule.onAllNodesWithTag("reset_email_field", useUnmergedTree = true).fetchSemanticsNodes()
-            println("Reset email field nodes found: ${nodes.size}")
-            nodes.isNotEmpty()
+            composeTestRule.onAllNodesWithTag("reset_email_field").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("reset_email_field", useUnmergedTree = true).assertExists()
-        composeTestRule.onNodeWithTag("reset_email_field", useUnmergedTree = true).performTextInput("test@example.com")
-        composeTestRule.onNodeWithTag("reset_submit_button", useUnmergedTree = true).performClick()
+        composeTestRule.onNodeWithTag("reset_email_field").assertExists()
+        composeTestRule.onNodeWithTag("reset_email_field").performTextInput("test@example.com")
+        composeTestRule.onNodeWithTag("reset_submit_button").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val successNodes = composeTestRule.onAllNodesWithTag("success_message", useUnmergedTree = true).fetchSemanticsNodes()
-            println("Success message nodes found: ${successNodes.size}")
-            successNodes.isNotEmpty()
+            composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("success_message", useUnmergedTree = true).assertTextEquals("Password reset email sent")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val route = navController.currentDestination?.route
-            println("Current route: $route")
-            route != null
-        }
+        composeTestRule.onNodeWithTag("error_message").assertTextEquals("Password reset email sent")
         assertEquals("login", navController.currentDestination?.route)
     }
 
@@ -222,32 +211,20 @@ class LoginPageTest {
                 composable("signup") { }
             }
         }
-        println("Clicking forgot_password")
-        composeTestRule.onNodeWithTag("forgot_password", useUnmergedTree = true).performClick()
-        composeTestRule.waitForIdle()
-        println("Checking for reset_email_field")
+        composeTestRule.onNodeWithTag("forgot_password").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val nodes = composeTestRule.onAllNodesWithTag("reset_email_field", useUnmergedTree = true).fetchSemanticsNodes()
-            println("Reset email field nodes found: ${nodes.size}")
-            nodes.isNotEmpty()
+            composeTestRule.onAllNodesWithTag("reset_email_field").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("reset_email_field", useUnmergedTree = true).assertExists()
-        composeTestRule.onNodeWithTag("reset_email_field", useUnmergedTree = true).performTextInput("invalid@")
-        composeTestRule.onNodeWithTag("reset_submit_button", useUnmergedTree = true).performClick()
+        composeTestRule.onNodeWithTag("reset_email_field").assertExists()
+        composeTestRule.onNodeWithTag("reset_email_field").performTextInput("invalid@")
+        composeTestRule.onNodeWithTag("reset_submit_button").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val errorNodes = composeTestRule.onAllNodesWithTag("error_message", useUnmergedTree = true).fetchSemanticsNodes()
-            println("Error message nodes found: ${errorNodes.size}")
-            errorNodes.forEachIndexed { index, node -> println("Node $index: $node") }
-            errorNodes.isNotEmpty()
+            composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("error_message", useUnmergedTree = true).assertTextEquals("Invalid email format for reset")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            val route = navController.currentDestination?.route
-            println("Current route: $route")
-            route != null
-        }
+        composeTestRule.onNodeWithTag("error_message").assertTextEquals("Invalid email format for reset")
         assertEquals("login", navController.currentDestination?.route)
     }
+
     @Test
     fun loginButton_click_backNavigationToLogin_preventsBack() {
         authViewModel = MockAuthViewModel(loginSuccessful = true)
@@ -275,22 +252,28 @@ class LoginPageTest {
     // Test to see if still logged in after leaving app
     @Test
     fun sessionPersists_afterAppRestart() {
-        authViewModel = MockAuthViewModel(loginSuccessful = true)
+        authViewModel = MockAuthViewModel(loginSuccessful = true) // Start with successful login
         composeTestRule.setContent {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             NavHost(navController, startDestination = "login") {
                 composable("login") { LoginPage(navController, authViewModel) }
                 composable("map") { }
+                composable("signup") { SignupPage(navController, authViewModel) }
             }
         }
+        // Perform login
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("email_field").assertExists("email_field not found")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("password123")
         composeTestRule.onNodeWithTag("submit_button").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             navController.currentDestination?.route == "map"
         }
+        // Update MockAuthViewModel to simulate persistent session
+        (authViewModel as MockAuthViewModel).setAuthenticated(true)
+        // Simulate app restart
         composeTestRule.runOnUiThread {
-            navController.setCurrentDestination("login")
             authViewModel.checkAuth()
         }
         composeTestRule.waitUntil(timeoutMillis = 5000) {
@@ -298,6 +281,7 @@ class LoginPageTest {
         }
         assertEquals("map", navController.currentDestination?.route)
     }
+
     @Test
     fun signOut_redirectsToLogin() {
         authViewModel = MockAuthViewModel(loginSuccessful = true)

@@ -1,6 +1,6 @@
 package com.example.roadtripbuddy
 
-//import jaandroid.util.Log // package does not exist (In my end anyways)
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,22 +11,21 @@ import android.util.Patterns
 import android.util.Log // this was added for logging
 
 // added constructor to accept FirebaseAuth with a default value
-// fixes to many arguments error in AuthViewModel(firebaseAuth) in AuthViewModelTest hopefully
+
 class AuthViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel(), IAuthViewModel {
 
     // creating the fire base methods
     // var to hold the authState
-    // this is private and has a _ because this will be hidden from the UI for security
     private val _authState = MutableLiveData<AuthState>()
-    // this will be used when speaking with the UI
     override val authState: LiveData<AuthState> = _authState
 
     init {
         // everytime we launch an activity it will launch this
         checkAuth()
     }
+
 
     // a function to check if we are logged in in or not, Note Override modifier was added
     // to ensure AuthViewModel detects and implements IAuthViewModel otherwise IAuthViewModel members are "hidden".
@@ -89,42 +88,33 @@ class AuthViewModel(
     }
 
     // function for the sign up
-    override fun signup(name: String, email: String, password: String, vehicle: String) // changed to match the order of IAuthModel
-    {
-        //We must first check if the email or passwords strings are empty
-        if(email.isEmpty() || password.isEmpty())
-        {
-            _authState.value = AuthState.Error("Email or Password cannot be empty")
-            return// added to return that its empty for clarity
+    override fun signup(name: String, email: String, password: String) {
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            _authState.value = AuthState.Error("All fields are required")
+            return
         }
-        // set the state of the user to loading whenever they are in the login page
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _authState.value = AuthState.Error("Invalid email format")
+            return
+        }
         _authState.value = AuthState.Loading
-        auth.createUserWithEmailAndPassword(email,password)
+        auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful)
-                {
-                    // the user was created !
+                if (task.isSuccessful) {
                     _authState.value = AuthState.Authenticated
-                    // creating the instance of db
                     val db = Firebase.firestore
-                    // calling the user collection
                     val userCollection = db.collection("users")
-                    // create User obj
-                    val user = User(name,email,vehicle)
-                    val fireBaseUser = auth.currentUser
-                    val userId = fireBaseUser?.uid!!
-                    // adding to the db with their specific auth iD
-                    userCollection.document(userId).set(user.toMap()).addOnSuccessListener {
-                        Log.d("Firestore", "User document added successfully!")
-                    }
+                    val user = User(name, email)
+                    val userId = auth.currentUser?.uid!!
+                    userCollection.document(userId).set(user.toMap())
+                        .addOnSuccessListener {
+                            Log.d("Firestore", "User document added successfully!")
+                        }
                         .addOnFailureListener { e ->
                             Log.w("Firestore", "Error adding user document", e)
                         }
-
-                }else
-                {
-                    // firebase couldn't log them in. so provide the error
-                    _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong.Try again")
+                } else {
+                    _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong. Try again")
                 }
             }
     }
