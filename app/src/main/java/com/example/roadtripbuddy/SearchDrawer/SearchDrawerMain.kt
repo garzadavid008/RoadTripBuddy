@@ -1,6 +1,7 @@
 package com.example.roadtripbuddy.SearchDrawer
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
@@ -32,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.composables.core.BottomSheet
@@ -44,7 +47,11 @@ import com.example.roadtripbuddy.NavigationMap
 import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.example.roadtripbuddy.SearchManager
+import com.example.roadtripbuddy.SuggPlace
 import com.example.roadtripbuddy.pages.PlaceListPage
+import com.tomtom.sdk.search.model.SearchResultType
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.model.result.SearchResult
 
 
@@ -59,15 +66,18 @@ fun SearchDrawer(
     visible: Boolean, // added parameter to control visibility
     onDismiss: () -> Unit,
     searchManager: SearchManager,
-    onStartTrip: () -> Unit
+    onStartTrip: () -> Unit,
+    ifSuggestionPlace: SuggPlace? = null,
 ) {
+    val context = LocalContext.current
     var showDetails by rememberSaveable { mutableStateOf(false) } // Boolean for the LocationDetailsPage, if true it displays said compose
     var showRoutePage by rememberSaveable { mutableStateOf(false) }//Boolean for the RouteEditPage, if true it displays said compose
-    var selectedLocation by rememberSaveable { mutableStateOf<SearchResult?>(null) }//Keeps track of users initial search that's inputted in LocationDetailsPage, needed for RouteEditPage
     var isPageReady = rememberSaveable { mutableStateOf(false) }
     val routeFlag  = rememberSaveable { mutableStateOf(false) }
     var ifAutocomplete by remember { mutableStateOf(false) }
     var waypointPair by remember { mutableStateOf<Pair<Int,SearchResult?>?>(null) } // For the autocomplete composable page,
+    var searchPage by rememberSaveable { mutableStateOf(false) }
+    var emptyPage by rememberSaveable { mutableStateOf(false) }
     //we store an index and a waypoint from said index from the RouteEditPage in here in order to send it to the autocomplete page
 
     val focusManager =  LocalFocusManager.current
@@ -77,6 +87,22 @@ fun SearchDrawer(
     var showWaypointSuggestions by rememberSaveable { mutableStateOf(false) }
     val places by placesViewModel.restaurants.collectAsState()
 
+    var category by remember { mutableStateOf("") }
+
+    val selectedLocation by viewModel.selectedLocation
+
+    fun resetDrawer(){
+        showDetails = false
+        showRoutePage = false
+        ifAutocomplete = false
+        showSuggestions = false
+        showWaypointSuggestions = false
+        viewModel.updateSelectedLocation(null)
+        viewModel.clearWaypoints()
+        navMap.clearMap()
+        navMap.removeMarkers(placesViewModel)
+        placesViewModel.updateSelectedPlace(null)
+    }
 
     val selectedPlace = places.firstOrNull()
 
@@ -112,12 +138,42 @@ fun SearchDrawer(
     }
 
     LaunchedEffect(sheetState.currentDetent) {
+        if (!searchPage && sheetState.currentDetent == peek){
+            emptyPage = true
+        } else{
+            emptyPage = false
+        }
         if(sheetState.currentDetent != FullyExpanded){
             focusManager.clearFocus()
             isFocused = false
         }
     }
 
+    LaunchedEffect(ifSuggestionPlace) {
+        if (ifSuggestionPlace != null){
+            resetDrawer()
+            Log.d("ifSuggestionPlace", ifSuggestionPlace.name)
+            navMap.resolveAndSuggest(
+                query = ifSuggestionPlace.name + " " + ifSuggestionPlace.address,
+                isPoi = setOf(SearchResultType.Poi),
+                onResult = { searchResult ->
+                    if (searchResult.isNotEmpty()){
+                        viewModel.updateSelectedLocation(searchResult.first().second as SearchResult)
+                        navMap.performSearch(ifSuggestionPlace.address, viewModel)
+                        showDetails = true
+                    } else {
+                        Toast
+                            .makeText(
+                                context,
+                                "Location Failure",
+                                Toast.LENGTH_LONG
+                            )
+                            .show()
+                    }
+                }
+            )
+        }
+    }
 
     BottomSheet(
         state = sheetState,
@@ -128,7 +184,6 @@ fun SearchDrawer(
             .widthIn(max = 640.dp)
             .fillMaxWidth()
             .padding(
-                // make sure the sheet is not behind nav bars on landscape
                 WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
                     .asPaddingValues()
             )
@@ -157,26 +212,39 @@ fun SearchDrawer(
                         .background(color = Color.LightGray, shape = RoundedCornerShape(50))
                         .align(Alignment.CenterHorizontally)
                 )
-
+                if (emptyPage){
+                    emptyPage()
+                }
                 if (showDetails) {
-                    LocationDetailsPage(
-                        location = selectedLocation!!,
-                        viewModel = viewModel,
-                        place = selectedPlace,
-                        isRouteReady = isPageReady,
-                        onBack = {
-                            showDetails = false
-                            navMap.clearMap()
-                            viewModel.updateETA("")
-                            isPageReady = mutableStateOf(false)
-                        },
-                        onRouteClick = { // User clicks route button, takes them to RoutEditPage
-                            showDetails = false
-                            showRoutePage = true
-                            viewModel.initializeWaypoints(selectedLocation!!)
-                        },
-                        navMap = navMap
-                    )
+                    if (selectedLocation != null){
+                        searchPage = false
+                        LocationDetailsPage(
+                            location = selectedLocation!!,
+                            viewModel = viewModel,
+                            place = selectedPlace,
+                            isRouteReady = isPageReady,
+                            onBack = {
+                                showDetails = false
+                                navMap.clearMap()
+                                viewModel.updateETA("")
+                                isPageReady = mutableStateOf(false)
+                            },
+                            onRouteClick = { // User clicks route button, takes them to RoutEditPage
+                                showDetails = false
+                                showRoutePage = true
+                                viewModel.initializeWaypoints(selectedLocation!!)
+                            },
+                            navMap = navMap
+                        )
+                    } else {
+                        Toast
+                            .makeText(
+                                context,
+                                "Location Not Available",
+                                Toast.LENGTH_LONG
+                            )
+                            .show()
+                    }
 
                 } else if (showRoutePage) {
                     navMap.nearbyMarkerClickListener?.let { navMap.removeMarkerClickListener(it) }
@@ -217,6 +285,7 @@ fun SearchDrawer(
                         }
                     )
                 } else if (showSuggestions) {
+                    searchPage = false
                     // Only once, zoom on the nearby places markers
                     LaunchedEffect(places) {
                         if (places.isNotEmpty()) {
@@ -236,14 +305,26 @@ fun SearchDrawer(
                         onPlaceClick = { selectedPlace ->
                             navMap.removeMarkers(placesViewModel)
                             navMap.clearMap()
-                            navMap.resolveAndSuggest(selectedPlace.name + " " + selectedPlace.address, onResult = { result ->
-                                selectedLocation = result.first().second as SearchResult
-                                navMap.performSearch(selectedPlace.address, viewModel)
-                                showSuggestions = false
-                                showDetails = true
-                            })
-                            sheetState.jumpTo(half)
-                            placesViewModel.updateSelectedPlace(null)
+                            navMap.resolveAndSuggest(
+                                query = selectedPlace.name + " " + selectedPlace.address,
+                                isPoi = setOf(SearchResultType.Poi),
+                                onResult = { searchResult ->
+                                    if (searchResult.isNotEmpty()){
+                                        viewModel.updateSelectedLocation(searchResult.first().second as SearchResult)
+                                        navMap.performSearch(selectedPlace.address, viewModel)
+                                        showDetails = true
+                                        showSuggestions = false
+                                    } else {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "Location Failure",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    }
+                                }
+                            )
                         },
                         onBack = {
                             showSuggestions = false
@@ -254,7 +335,8 @@ fun SearchDrawer(
                         onZoomOnPlace = { suggPlace ->
                             // zoom into the singular marker
                             navMap.zoomOnNearbyMarker(suggPlace, placesViewModel)
-                        }
+                        },
+                        category = category
                     )
                 } else if (showWaypointSuggestions) {
                     // Only once, zoom on the nearby places markers
@@ -277,18 +359,36 @@ fun SearchDrawer(
                         onPlaceClick = { selectedPlace ->
                             navMap.removeMarkers(placesViewModel)
                             navMap.clearMap()
-                            navMap.resolveAndSuggest(selectedPlace.name + " " + selectedPlace.address, onResult = { result ->
-                                selectedLocation = result.first().second as SearchResult
-                                if (waypointPair?.second == null) {
-                                    viewModel.addWaypoint(selectedLocation!!)
-                                } else { // else were updating a waypoint
-                                    viewModel.updateWaypoint(
-                                        index = waypointPair!!.first,
-                                        newValue = selectedLocation!!
-                                    )
-                                }
-                                showWaypointSuggestions = false
-                                showRoutePage = true
+                            navMap.resolveAndSuggest(
+                                query = selectedPlace.name + " " + selectedPlace.address,
+                                isPoi = setOf(SearchResultType.Poi),
+                                onResult = { searchResult ->
+                                    if (searchResult.isNotEmpty()){
+                                        viewModel.updateSelectedLocation(searchResult.first().second as SearchResult)
+                                        if (waypointPair?.second == null) {
+                                            viewModel.addWaypoint(selectedLocation!!){
+                                                Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } else { // else were updating a waypoint
+                                            viewModel.updateWaypoint(
+                                                index = waypointPair!!.first,
+                                                newValue = selectedLocation!!
+                                            ){
+                                                Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                        ifAutocomplete = false
+                                        showWaypointSuggestions = false
+                                        showRoutePage = true
+                                    }else {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "Location Failure",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    }
                             })
                             if (sheetState.currentDetent != half) {
                                 sheetState.jumpTo(half)
@@ -306,7 +406,8 @@ fun SearchDrawer(
                         onZoomOnPlace = { suggPlace ->
                             // zoom into the singular marker
                             navMap.zoomOnNearbyMarker(suggPlace, placesViewModel)
-                        }
+                        },
+                        category = category
                     )
                 } else if (ifAutocomplete) {
                     Autocomplete(
@@ -317,12 +418,16 @@ fun SearchDrawer(
                         onDone = { searchResult ->
                             // If the waypointPair.second (AKA the searchResult) is null, were adding so we call addWaypoint
                             if (waypointPair?.second == null) {
-                                viewModel.addWaypoint(searchResult)
+                                viewModel.addWaypoint(searchResult){
+                                    Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                }
                             } else { // else were updating a waypoint
                                 viewModel.updateWaypoint(
                                     index = waypointPair!!.first,
                                     newValue = searchResult
-                                )
+                                ){
+                                    Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                }
                             }
                             ifAutocomplete = false
                             showRoutePage = true
@@ -338,33 +443,46 @@ fun SearchDrawer(
                         placesViewModel = placesViewModel,
                         findPlaces = { autocompleteResult, placesViewModel ->
                             navMap.findPlaces(result = autocompleteResult, placesViewModel = placesViewModel)
-
+                            val brandName =
+                                autocompleteResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                            val poiName = autocompleteResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                            category = (brandName ?: poiName).toString()
                         }
                     )
                 } else {
+                    searchPage = true
                     SearchDrawerAutocomplete(
                         navMap = navMap,
                         placesViewModel = placesViewModel,
                         searchDrawerViewModel = viewModel,
                         onDone = { searchResult ->
-                            selectedLocation = searchResult
+                            viewModel.updateSelectedLocation(searchResult)
                             /*
                             placesViewModel.getTextSearch(
                                 searchResult.place.address?.freeformAddress!!,
                                 searchResult.place.coordinate.latitude,
                                 searchResult.place.coordinate.longitude
                             )
-
                              */
                             sheetState.jumpTo(half)
                             showDetails = true
                         },
-                        isTyping = { isFocused = true}
+                        isTyping = { isFocused = true},
+                        category = { result ->
+                            category = result
+                        }
                     )
                 }
 
             }
         }
+    }
+}
+
+@Composable
+fun emptyPage(){
+    Box(Modifier.fillMaxSize()){
+
     }
 }
 

@@ -25,14 +25,16 @@ fun RouteLegInfo(
 ) {
     val routingRoute = selectedRoutePair?.second
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-
-        // ← Back text
-        IconButton(onClick = onBack) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)
+    ) {
+        // ← Back button
+        IconButton(onClick = { onBack() }) {
             Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back"
-
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color(0xFF2ebcff)
             )
         }
 
@@ -53,23 +55,32 @@ fun RouteLegInfo(
         val formattedDepartTime = dateFormatter.format(routingRoute.summary.departureTime)
         val formattedArriveTime = dateFormatter.format(routingRoute.summary.arrivalTime)
 
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Selected Route", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Selected Route", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(12.dp))
 
-                Text("Distance: $roundedMiles mi")
-                Text("Estimated Time: $travelTimeMinutes minutes")
-                Text("Depart from: ${routingRoute.routeStops.first().place.address?.freeformAddress}")
-                Text("Depart at: $formattedDepartTime")
-                Text("Arrive at: ${routingRoute.routeStops.last().place.address?.freeformAddress}")
-                Text("Arrive at: $formattedArriveTime")
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            InfoRow(label = "Distance", value = "$roundedMiles mi")
+            InfoRow(label = "Estimated Time", value = "$travelTimeMinutes minutes")
+            InfoRow(label = "Depart From", value = routingRoute.routeStops.first().place.address?.freeformAddress.orEmpty())
+            InfoRow(label = "Depart At", value = formattedDepartTime)
+            InfoRow(label = "Arrive At", value = routingRoute.routeStops.last().place.address?.freeformAddress.orEmpty())
+            InfoRow(label = "Arrive By", value = formattedArriveTime)
         }
     }
 }
 
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(100.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+}

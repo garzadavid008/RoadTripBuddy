@@ -179,7 +179,11 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
 // since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
- fun Suggestions(navController: NavController, fusedLocationProviderClient: FusedLocationProviderClient)
+ fun Suggestions(
+    navController: NavController,
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    onPlaceClick: (SuggPlace) -> Unit,
+ )
 {
 
      val scope = rememberCoroutineScope()
@@ -215,7 +219,7 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = {navController.navigate("map")}) {
+                    IconButton(onClick = {navController.popBackStack()}) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
@@ -244,21 +248,19 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
                 entertainmentList = myClass.entertainment,
                 gasList = myClass.gasAndService,
                 onPlaceClick = { selectedPlace ->
-                    // handle click
-
+                    onPlaceClick(selectedPlace)
+                    navController.popBackStack()
                 }
             )
            // RightSidePanelDemo(myClass)^
         }
-
-
-
     }
 }
 
 @Composable
 fun PlaceListPage(
     placeList: List<SuggPlace>,
+    category: String,
     placesViewModel: PlacesViewModel,
     userAddress: Address? = null,
     onPlaceClick: (SuggPlace) -> Unit = {},
@@ -268,14 +270,24 @@ fun PlaceListPage(
     val scrollState = rememberLazyListState()
     val selectedPlace by placesViewModel.selectedPlace
 
-    Box(
-        modifier = Modifier
-            .clickable { onBack() }
-            .padding(24.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("← Back", color = Color.Blue)
+        IconButton(onClick = { onBack() }) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color(0xFF2ebcff),
+                modifier = Modifier.size(30.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp)) // adds spacing between icon and text
+        Text(
+            text = "$category, nearby",
+            style = MaterialTheme.typography.titleLarge
+        )
     }
-
 
     LazyColumn(
         state = scrollState,

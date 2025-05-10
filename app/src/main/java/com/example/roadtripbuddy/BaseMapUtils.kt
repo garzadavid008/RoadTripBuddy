@@ -4,18 +4,14 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import com.tomtom.sdk.common.UniqueId
-import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
-import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
-import com.tomtom.sdk.map.display.gesture.MapLongClickListener
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.Marker
 import com.tomtom.sdk.map.display.marker.MarkerClickListener
 import com.tomtom.sdk.map.display.marker.MarkerOptions
-import com.tomtom.sdk.navigation.TomTomNavigation
-import com.tomtom.sdk.navigation.ui.NavigationFragment
+import com.tomtom.sdk.search.model.SearchResultType
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlin.time.Duration.Companion.seconds
@@ -34,7 +30,7 @@ open class BaseMapUtils{
     //Nearby Markers variables
     var nearbyMarkerClickListener: MarkerClickListener? = null
     private val nearbySelectedMap = mutableMapOf<UniqueId, SuggPlace>()
-    private val allMarkers = mutableListOf<Marker>()
+    val allMarkers = mutableListOf<Marker>()
 
     //SEARCH FUNCTIONALITY(SearchManager methods)///////////////////////////////////////////////////
 
@@ -74,9 +70,15 @@ open class BaseMapUtils{
         )
     }
 
-    fun resolveAndSuggest(query: String, onResult: (List<Pair<String, Any?>>) -> Unit = {}, objectResult: (Any?) -> Unit = {} ){
+    fun resolveAndSuggest(
+        query: String,
+        isPoi: Set<SearchResultType> = emptySet(),
+        onResult: (List<Pair<String, Any?>>) -> Unit = {},
+        objectResult: (Any?) -> Unit = {}
+    ){
         searchManager.resolveAndSuggest(
             query = query,
+            isPoi = isPoi,
             onResult = onResult,
             objectResult = objectResult
         )
@@ -114,29 +116,6 @@ open class BaseMapUtils{
         }
 
     }
-
-    //At the moment all this does is add a marker, nothing else
-    private val mapLongClickListener =
-        MapLongClickListener { geoPoint ->
-            val markerOptions =  MarkerOptions(
-                coordinate = geoPoint,
-                pinImage = ImageFactory.fromResource(R.drawable.map_marker_full),
-            )
-            tomTomMap?.addMarker(markerOptions)
-            usersMarkerLocation = geoPoint
-            true
-        }
-
-    /*
-    fun setUpMapListeners() {
-        tomTomMap?.addMapLongClickListener(mapLongClickListener)
-    }
-
-    fun removeMapListeners() {
-        tomTomMap?.removeMapLongClickListener(mapLongClickListener)
-    }
-
-     */
 
     fun defaultCameraPosition(startLocation: GeoPoint?){
         var defaultCameraPosition = CameraOptions()
@@ -213,6 +192,10 @@ open class BaseMapUtils{
     private fun onNearbyMarkerClick(placesViewModel: PlacesViewModel){
         val selectedPlace by placesViewModel.selectedPlace
 
+        if (nearbyMarkerClickListener != null) {
+            tomTomMap?.removeMarkerClickListener(nearbyMarkerClickListener!!)
+        }
+
         nearbyMarkerClickListener = MarkerClickListener { marker ->
             val clickedPlace = nearbySelectedMap[marker.id]
 
@@ -269,10 +252,14 @@ open class BaseMapUtils{
     }
 
     fun removeMarkers(viewModel: PlacesViewModel){
-        tomTomMap?.removeMarkerClickListener(nearbyMarkerClickListener!!)
-        tomTomMap?.removeMarkers("nearby")
-        allMarkers.clear()
-        viewModel.clearPlaces()
+        if(nearbyMarkerClickListener != null){
+            tomTomMap?.removeMarkerClickListener(nearbyMarkerClickListener!!)
+        }
+        if (allMarkers.isNotEmpty()){
+            tomTomMap?.removeMarkers("nearby")
+            allMarkers.clear()
+            viewModel.clearPlaces()
+        }
     }
 
 
