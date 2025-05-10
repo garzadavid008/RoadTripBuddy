@@ -1,6 +1,16 @@
 package com.example.roadtripbuddy.permissionsTests
 
 class LocationPermissionTest {
+
+    // use GrantPermissionRule if applicable and mock LocationService.kt
+    /* @Test
+     fun locationPermission_promptDisplayed_whenNotGranted() {
+         composeTestRule.setContent {
+             MapComponent()
+         }
+         composeTestRule.onNodeWithTag("permission_rationale").assertExists()
+     }
+     */
 }
 
 /*This Tests:

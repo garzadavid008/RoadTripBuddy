@@ -116,11 +116,11 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
         val mapReadyState = remember { mutableStateOf(false) }
         val navigationMap = remember {
             NavigationMap(
-            context = context,
-            activity = this@MainActivity,
-            locationService = locationService,
-            mapReadyState = mapReadyState
-        )
+                context = context,
+                activity = this@MainActivity,
+                locationService = locationService,
+                mapReadyState = mapReadyState
+            )
         }
 
         var suggestionPlace = remember { mutableStateOf<SuggPlace?>(null) }

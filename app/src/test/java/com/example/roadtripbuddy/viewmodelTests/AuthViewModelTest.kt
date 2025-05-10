@@ -113,7 +113,7 @@ class AuthViewModelTest {
         every { firebaseAuth.currentUser } returns mockUser
 
         // Act
-        authViewModel.signup("John Doe", "test@example.com", "password123", "SUV")
+        authViewModel.signup("John Doe", "test@example.com", "password123")
 
         // Assert
         verifySequence {
@@ -138,7 +138,7 @@ class AuthViewModelTest {
     @Test
     fun `signup with empty email or password sets Error state`() {
         // Act
-        authViewModel.signup("John Doe", "", "password", "SUV")
+        authViewModel.signup("John Doe", "", "password",)
 
         // Assert
         verify { authStateObserver.onChanged(AuthState.Error("Email or Password cannot be empty")) }
