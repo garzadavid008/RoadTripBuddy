@@ -2,6 +2,7 @@ package com.example.roadtripbuddy.PlanATripDrawer
 
 import android.annotation.SuppressLint
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,6 +55,9 @@ import com.example.roadtripbuddy.SearchDrawer.LocationDetails
 import com.example.roadtripbuddy.SearchDrawer.LocationDetailsPage
 import com.example.roadtripbuddy.WaypointItem
 import com.example.roadtripbuddy.pages.PlaceListPage
+import com.tomtom.sdk.search.model.SearchResultType
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.model.result.SearchResult
 
 //Compose for the Search/Route page
@@ -66,6 +71,7 @@ fun PlanATripDrawer(
     planMap: PlanMap,
     onBack: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
     Log.d("Debug", "PlanDrawer onMapFocus: $onMapFocus")
 
     val peek = SheetDetent(identifier = "peek") { containerHeight, sheetHeight ->
@@ -89,14 +95,19 @@ fun PlanATripDrawer(
     var showWaypointSuggestions by remember { mutableStateOf(false) }
     var saveDialog by remember { mutableStateOf(false) }
     var locationDetails by remember { mutableStateOf(false) }
+    var emptyPage by remember { mutableStateOf(false) }
+    var waypointPage by remember { mutableStateOf(true) }
 
     val focusManager =  LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
 
     val places by placesViewModel.restaurants.collectAsState()
+    val selectedPlace by placesViewModel.selectedPlace
     val waypoints by viewModel.planWaypoints.collectAsState()
     val initialDeparture by viewModel.initialDeparture.collectAsState()
     val selectedWaypoint by viewModel.selectedWaypoint
+
+    var category by remember { mutableStateOf("") }
 
     //Snapshot of the waypoint list
     val initialWaypoints = remember { waypoints.toList() }
@@ -109,7 +120,7 @@ fun PlanATripDrawer(
 
     LaunchedEffect(places) {
         Log.d("Chris", "places updated: ${places.size}")
-        if (places.isNotEmpty() && places.size>1) {
+        if ((places.isNotEmpty() && places.size>1) ) {
             Log.d("Chris", "places updatedAA: ${places.size}")
             showWaypointSuggestions = true
             sheetState.jumpTo(half)
@@ -118,20 +129,37 @@ fun PlanATripDrawer(
 
     // If selectedRoutePair sees changes
     LaunchedEffect(selectedRoutePair) {
-        if(selectedRoutePair != null){
+        if(selectedRoutePair != null && (waypointPage || routeLegInfo)){
+            sheetState.jumpTo(half)
             // show route info page if a route has been clicked on
             routeLegInfo = true
         }
         // if we detect a change in the selectedRoutePair and its null, click off the routeLegInfo page
         else {
+            if (selectedRoutePair != null){
+                planMap.onRouteLegClick(
+                    route = selectedRoutePair?.first!!,
+                    viewModel = viewModel
+                )
+            }
             routeLegInfo = false
         }
     }
 
+
+    LaunchedEffect(selectedPlace) {
+        if (selectedPlace != null){
+            sheetState.jumpTo(half)
+        }
+    }
+
     LaunchedEffect(selectedWaypoint) {
-        if (selectedWaypoint != null){
+        if (selectedWaypoint != null && waypointPage){
             locationDetails = true
             sheetState.jumpTo(half)
+        }
+        else{
+            viewModel.updateSelectedWaypoint(null)
         }
     }
 
@@ -143,6 +171,12 @@ fun PlanATripDrawer(
     }
 
     LaunchedEffect(sheetState.currentDetent) {
+       if (sheetState.currentDetent == peek){
+            emptyPage = true
+        } else{
+            emptyPage = false
+        }
+
         if(sheetState.currentDetent != FullyExpanded){
             focusManager.clearFocus()
             isFocused = false
@@ -158,6 +192,7 @@ fun PlanATripDrawer(
         IconButton(
             onClick = {
                 saveDialog = true
+                planMap.removeMarkers(placesViewModel)
             },
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -225,7 +260,11 @@ fun PlanATripDrawer(
                         .background(color = Color.LightGray, shape = RoundedCornerShape(50))
                         .align(Alignment.CenterHorizontally)
                 )
+                if (emptyPage){
+                    emptyPage()
+                }
                 if (ifAutocomplete) {
+                    waypointPage = false
                     Autocomplete(
                         resolveAndSuggest = { query, onResult ->
                             planMap.resolveAndSuggest(query = query, onResult = onResult)
@@ -235,12 +274,16 @@ fun PlanATripDrawer(
                         onDone = { searchResult ->
                             // If the planWaypointPair.second (AKA the searchResult) is null, were adding so we call addWaypoint
                             if (planWaypointPair?.second == null) {
-                                viewModel.addPlanWaypoint(searchResult)
+                                viewModel.addPlanWaypoint(searchResult){
+                                    Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                }
                             } else { // else were updating a waypoints location
-                                viewModel.updateSearchResult(
+                                viewModel.updatePlanWaypoint(
                                     index = planWaypointPair!!.first,
                                     newSearchResult = searchResult
-                                )
+                                ){
+                                    Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                }
                             }
                             ifAutocomplete = false
                             routeFlag.value =
@@ -250,16 +293,16 @@ fun PlanATripDrawer(
                             ifAutocomplete = false
                         },
                         isTyping = {isFocused = true},
-                        findPlaces = { autcompleteResult, placesViewModel ->
+                        findPlaces = { autocompleteResult, placesViewModel ->
                             planMap.findPlaces(
-                                result = autcompleteResult,
+                                result = autocompleteResult,
                                 placesViewModel = placesViewModel
                             )
                         },
                         placesViewModel = placesViewModel
                     )
-                } else if (routeLegInfo) {
-                    sheetState.currentDetent = half
+                }else if (routeLegInfo) {
+                    waypointPage = false
                     RouteLegInfo(
                         selectedRoutePair = selectedRoutePair,
                         onBack = {
@@ -271,6 +314,7 @@ fun PlanATripDrawer(
                         }
                     )
                 } else if (showWaypointSuggestions) {
+                    waypointPage = false
                     // Only once, zoom on the nearby places markers
                     LaunchedEffect(places) {
                         if (places.isNotEmpty()) {
@@ -289,16 +333,30 @@ fun PlanATripDrawer(
                         placeList = places,
                         onPlaceClick = { selectedPlace ->
                             planMap.resolveAndSuggest(
-                                selectedPlace.name + " " + selectedPlace.address,
+                                query = selectedPlace.name + " " + selectedPlace.address,
+                                isPoi = setOf(SearchResultType.Poi),
                                 onResult = { result ->
-                                    viewModel.addPlanWaypoint(result.first().second as SearchResult)
+                                    if (result.isNotEmpty()){
+                                        viewModel.addPlanWaypoint(result.first().second as SearchResult){
+                                            Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                        }
+                                        showWaypointSuggestions = false
+                                        locationDetails = false
+                                        planMap.removeMarkers(viewModel = placesViewModel)
+                                        sheetState.jumpTo(half)
+                                        placesViewModel.updateSelectedPlace(null)
+                                        viewModel.updateSelectedWaypoint(null)
+                                    }else {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "Location Failure",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    }
                                 })
-                            showWaypointSuggestions = false
-                            locationDetails = false
-                            sheetState.jumpTo(half)
-                            planMap.removeMarkers(placesViewModel)
-                            placesViewModel.updateSelectedPlace(null)
-                            viewModel.updateSelectedWaypoint(null)
+
                         },
                         onBack = {
                             showWaypointSuggestions = false
@@ -309,9 +367,11 @@ fun PlanATripDrawer(
                         onZoomOnPlace = { suggPlace ->
                             // zoom into the singular marker
                             planMap.zoomOnNearbyMarker(suggPlace, placesViewModel)
-                        }
+                        },
+                        category = category
                     )
                 } else if (locationDetails) {
+                    waypointPage = false
                     LocationDetails(
                         placesViewModel = placesViewModel,
                         location = selectedWaypoint?.searchResult!!,
@@ -323,12 +383,17 @@ fun PlanATripDrawer(
                         brandsAndPOIOnly = { query, location, onResult ->
                             planMap.brandsAndPOIOnly(query, location, onResult)
                         },
-                        isTyping = {isFocused = true}
+                        isTyping = {isFocused = true},
+                        categoryReturn = {result ->
+                            category = result
+                        }
                     )
                 } else {
+                    waypointPage = true
                     PlanATripWaypoints(
                         viewModel = viewModel,
                         onRoute = { viewModel ->
+                            sheetState.jumpTo(peek)
                             planMap.clearMap()
                             planMap.planOnRouteRequest(viewModel)
                         },
@@ -375,3 +440,11 @@ fun SaveConfirmDialog(
         }
     )
 }
+
+@Composable
+fun emptyPage(){
+    Box(Modifier.fillMaxSize()){
+
+    }
+}
+

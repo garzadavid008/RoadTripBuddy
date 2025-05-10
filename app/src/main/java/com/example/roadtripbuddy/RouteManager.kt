@@ -67,8 +67,6 @@ class RouteManager(context: Context, apiKey: String) {
         val routeOptions =
             RouteOptions(
                 geometry = route.geometry,
-                destinationMarkerVisible = true,
-                departureMarkerVisible = true,
                 instructions = instructions,
                 routeOffset = route.routePoints.map { it.routeOffset },
                 color = RouteOptions.DEFAULT_COLOR,
@@ -228,7 +226,9 @@ class RouteManager(context: Context, apiKey: String) {
         }
     }
 
-    fun showWaypointMarkers(tomTomMap: TomTomMap?, context: Context){
+    private fun showWaypointMarkers(tomTomMap: TomTomMap?, context: Context){
+
+
 
         //Adds a marker for each waypoint
         waypointList.forEachIndexed { index, waypoint ->
@@ -241,7 +241,18 @@ class RouteManager(context: Context, apiKey: String) {
             )
 
             tomTomMap?.addMarker(markerOptions)
+        }
 
+        lastDestination?.let {
+            val name = "ic_marker_${waypointList.size+1}"
+
+            val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+            val markerOptions = MarkerOptions(
+                coordinate = it,
+                pinImage = ImageFactory.fromResource(resId)
+            )
+
+            tomTomMap?.addMarker(markerOptions)
         }
     }
 }

@@ -43,8 +43,24 @@ class PlanATripViewModel : ViewModel() {
         _planWaypoints.value = items
     }
 
-    fun updateSearchResult(index: Int, newSearchResult: SearchResult) {
-        _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
+    fun updatePlanWaypoint(
+        index: Int,
+        newSearchResult: SearchResult,
+        onDuplicate: (() -> Unit)? = null
+    ) {
+        val current = _planWaypoints.value
+
+        // Check for duplicate by ID, ignoring the current index
+        val isDuplicate = current.withIndex().any { (i, item) ->
+            i != index && item.searchResult?.searchResultId?.id == newSearchResult.searchResultId.id
+        }
+
+        if (isDuplicate) {
+            onDuplicate?.invoke()
+            return
+        }
+
+        _planWaypoints.value = current.toMutableList().apply {
             if (index in indices) {
                 this[index] = this[index].copy(
                     searchResult = newSearchResult
@@ -91,9 +107,19 @@ class PlanATripViewModel : ViewModel() {
         }
     }
 
-    fun addPlanWaypoint(searchResult: SearchResult) {
-        _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
-            add(WaypointItem(searchResult = searchResult, hour= 0, minute = 0))
+    fun addPlanWaypoint(
+        searchResult: SearchResult,
+        onDuplicate: (() -> Unit)? = null
+    ) {
+        val current = _planWaypoints.value
+        val alreadyExists = current.any { it.searchResult?.searchResultId?.id == searchResult.searchResultId.id }
+
+        if (!alreadyExists) {
+            _planWaypoints.value = current.toMutableList().apply {
+                add(WaypointItem(searchResult = searchResult, hour = 0, minute = 0))
+            }
+        } else {
+            onDuplicate?.invoke()
         }
     }
 

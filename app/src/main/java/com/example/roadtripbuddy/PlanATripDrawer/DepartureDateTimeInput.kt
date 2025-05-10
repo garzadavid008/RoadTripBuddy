@@ -14,9 +14,12 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -26,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -109,10 +113,17 @@ fun DepartureDateTimeInput(
         }
     }
 
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+
+        if (showError){
+            Text(errorMessage, color = MaterialTheme.colorScheme.error)
+        }
         // Row for the Date inputs Month, Day, Year
         Row(
             modifier = Modifier.width(300.dp),
@@ -128,6 +139,7 @@ fun DepartureDateTimeInput(
                     value = monthQuery,
                     onValueChange = { },
                     readOnly = true,
+                    isError = showError,
                     label = { Text("Month") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = monthExpanded) },
                     modifier = Modifier
@@ -160,9 +172,15 @@ fun DepartureDateTimeInput(
             // Day Input
             OutlinedTextField(
                 value = dayQuery,
-                onValueChange = { dayQuery = it.filter { char -> char.isDigit() } },
+                onValueChange = {
+                    val digitsOnly = it.filter { char -> char.isDigit() }
+                    if (digitsOnly.length <= 2) {
+                        dayQuery = digitsOnly
+                    }
+                },
                 label = { Text("Day") },
                 singleLine = true,
+                isError = showError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier
                     .width(70.dp)
@@ -186,6 +204,7 @@ fun DepartureDateTimeInput(
                     value = yearQuery,
                     onValueChange = { },
                     readOnly = true,
+                    isError = showError,
                     label = { Text("Year") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = yearExpanded) },
                     modifier = Modifier
@@ -221,44 +240,58 @@ fun DepartureDateTimeInput(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Hour Input - fixed width
+            // Hour Input
             OutlinedTextField(
                 value = hourQuery,
-                onValueChange = { hourQuery = it.filter { char -> char.isDigit() } },
+                onValueChange = {
+                    val digitsOnly = it.filter { char -> char.isDigit() }
+                    if (digitsOnly.length <= 2 && (digitsOnly.isEmpty() || digitsOnly.toInt() in 1..12)) {
+                        hourQuery = digitsOnly
+                    }
+                },
                 label = { Text("Hour") },
                 singleLine = true,
+                isError = showError,
                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                 modifier = Modifier
                     .width(70.dp)
                     .requiredHeight(60.dp)
                     .onFocusChanged { focusState ->
-                        if(focusState.isFocused){
+                        if (focusState.isFocused) {
                             isTyping()
                             focus = true
-                        } else if (!focusState.isFocused){
+                        } else {
                             focus = false
                         }
                     }
             )
-            // Minute Input
+
+// Minute Input
             OutlinedTextField(
                 value = minuteQuery,
-                onValueChange = { minuteQuery = it.filter { char -> char.isDigit() } },
+                onValueChange = {
+                    val digitsOnly = it.filter { char -> char.isDigit() }
+                    if (digitsOnly.length <= 2 && (digitsOnly.isEmpty() || digitsOnly.toInt() in 0..59)) {
+                        minuteQuery = digitsOnly
+                    }
+                },
                 label = { Text("Min") },
                 singleLine = true,
+                isError = showError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier
                     .width(70.dp)
                     .requiredHeight(60.dp)
                     .onFocusChanged { focusState ->
-                        if(focusState.isFocused){
+                        if (focusState.isFocused) {
                             isTyping()
                             focus = true
-                        } else if (!focusState.isFocused){
+                        } else {
                             focus = false
                         }
                     }
             )
+
             // AM/PM Dropdown
             ExposedDropdownMenuBox(
                 expanded = periodExpanded,
@@ -269,6 +302,7 @@ fun DepartureDateTimeInput(
                     value = period,
                     onValueChange = { },
                     readOnly = true,
+                    isError = showError,
                     label = { Text("AM/PM") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = periodExpanded) },
                     modifier = Modifier
@@ -301,36 +335,28 @@ fun DepartureDateTimeInput(
         }
     }
     LaunchedEffect(focus) {
-        if (!focus){
-            Log.d("hello", validDateTime.toString())
-            if(validDateTime == null){
-                Toast
-                    .makeText(
-                        context,
-                        "Invalid date and time",
-                        Toast.LENGTH_LONG
-                    )
-                    .show()
-
+        if (!focus) {
+            if (validDateTime == null) {
+                errorMessage = "Invalid date and time"
+                showError = true
                 onInvalidTimeAndDate()
                 return@LaunchedEffect
             }
+
             validDateTime?.let { newDateTime ->
-                if (newDateTime.isBefore(LocalDateTime.now())){
-                    Toast
-                        .makeText(
-                            context,
-                            "The date and time you entered is already in the past",
-                            Toast.LENGTH_LONG
-                        )
-                        .show()
+                if (newDateTime.isBefore(LocalDateTime.now())) {
+                    errorMessage = "The date and time you entered is already in the past"
+                    showError = true
                     onInvalidTimeAndDate()
                 } else {
+                    showError = false
+                    errorMessage = ""
                     onValidTimeAndDate(newDateTime)
                 }
             }
         }
     }
+
 }
 // Function used here to convert a 12 hour time clock to 24 hour time clock, this is because LocalTimeDate
 // only accepts a 24 hour clock

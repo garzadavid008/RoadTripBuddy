@@ -63,7 +63,6 @@ class PlanRouteManager(context: Context, apiKey: String) {
                 override fun onRoutePlanned(route: Route) = Unit
             })
             cont.invokeOnCancellation {
-                // Optionally cancel the SDK request if supported
             }
         }
 
@@ -78,11 +77,10 @@ class PlanRouteManager(context: Context, apiKey: String) {
         displayRoutes.clear()
         markerLocationMap.clear()
 
+        removeMapClickListeners(tomTomMap)
+
         // Initialing the total of route ETA's to zero
         var routeTotalETA: Duration = Duration.ZERO
-
-        routeClickListener?.let { tomTomMap?.removeRouteClickListener(it) }
-        markerClickListener?.let { tomTomMap?.removeMarkerClickListener(it) }
 
         routeList.forEachIndexed { index, route ->
 
@@ -269,5 +267,10 @@ class PlanRouteManager(context: Context, apiKey: String) {
             }
 
         }
+    }
+
+    fun removeMapClickListeners(tomTomMap: TomTomMap?){
+        routeClickListener?.let { tomTomMap?.removeRouteClickListener(it) }
+        markerClickListener?.let { tomTomMap?.removeMarkerClickListener(it) }
     }
 }

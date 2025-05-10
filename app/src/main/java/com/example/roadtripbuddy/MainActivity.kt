@@ -77,7 +77,6 @@ import kotlinx.coroutines.Dispatchers
 
 class MainActivity : AppCompatActivity() {
     private val authViewModel: IAuthViewModel by viewModels<AuthViewModel>()
-    val userViewModel: UserViewModel by viewModels()
     private val locationService = LocationService(
         activity = this@MainActivity
     )
@@ -124,36 +123,37 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
         )
         }
 
+        var suggestionPlace = remember { mutableStateOf<SuggPlace?>(null) }
+
         val navController = rememberNavController()
         val authState by authViewModel.authState.observeAsState()
-
-        /*
-        // Redirect to login if unauthenticated
-        LaunchedEffect(authState) {
-            if (authState == AuthState.Unauthenticated) {
-                navController.navigate("login") {
-                    popUpTo("map") { inclusive = true } // clears map screen from back stat to prevent returning to it after logging in
-                }
-            }
-        }
-
-         */
 
         NavHost(
             navController = navController,
             startDestination = "map"
         ) {
-            composable("map") { MapScreen(navController, navigationMap) }
+            composable("map") { MapScreen(navController, navigationMap, suggestionPlace) }
             composable("about") { AboutScreen(navController) }
             composable("login") { LoginPage(navController, authViewModel) }
             composable("signup") { SignupPage(navController, authViewModel) }
-            composable("suggestion") { Suggestions(navController,fusedLocationProviderClient) }
+            composable("suggestion") {
+                Suggestions(
+                    navController = navController,
+                    fusedLocationProviderClient = fusedLocationProviderClient,
+                    onPlaceClick = {suggPlace ->
+                        suggestionPlace.value = suggPlace
+                    }
+                ) }
         }
     }
 
     @SuppressLint("ContextCastToActivity", "UnrememberedMutableState", "MutableCollectionMutableState")
     @Composable
-    fun MapScreen(navController: NavController, navigationMap: NavigationMap) {
+    fun MapScreen(
+        navController: NavController,
+        navigationMap: NavigationMap,
+        suggestionPlace: MutableState<SuggPlace?>
+    ) {
         val authState = authViewModel.authState.observeAsState()
         val searchDrawerVM: SearchDrawerViewModel by viewModels()
         val activity = LocalContext.current as MainActivity
@@ -206,7 +206,13 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                     }
 
                     "logout" -> authViewModel.signout() // sign out
-                    "suggest" -> navController.navigate("suggestion")
+                    "suggest" -> navController.navigate("suggestion"){
+                        popUpTo("map") {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             }
         ) {
@@ -243,7 +249,8 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                         onDismiss = { showBottomDrawer = false },
                         navMap = navigationMap,
                         searchManager = navigationMap.searchManager,
-                        onStartTrip = { locationService.createRouteAndStart(searchDrawerVM) }
+                        onStartTrip = { locationService.createRouteAndStart(searchDrawerVM) },
+                        ifSuggestionPlace = suggestionPlace.value
                     )
                 }
 
@@ -274,9 +281,12 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
         Scaffold(
             topBar = {
                 TopAppBar(
-                    colors = topAppBarColors(
-                        containerColor = Color.Transparent, // Makes the top bar invisible
-                        titleContentColor = Color.Transparent, // Hides the title text
+                    colors = TopAppBarColors(
+                        containerColor          = Color(0xFFF5F5F5),      // light-gray background
+                        scrolledContainerColor  = Color(0xFFE0E0E0),      // slightly darker when scrolled
+                        navigationIconContentColor = Color(0xFF2EBCFF),   // cyan arrow tint
+                        titleContentColor          = Color.Black,         // title text
+                        actionIconContentColor     = Color(0xFF2EBCFF)
                     ),
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -287,15 +297,11 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = "Back",
+                                tint = Color(0xFF2ebcff)
                             )
                         }
-                    },
-                    modifier = Modifier.background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.White, Color.Gray.copy(alpha = 0.3f))
-                        )
-                    )
+                    }
                 )
             }
         ) { innerPadding ->

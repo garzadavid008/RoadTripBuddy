@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -87,6 +89,7 @@ fun RouteEditPage(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Background clickable area to clear focus
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,6 +98,8 @@ fun RouteEditPage(
                     interactionSource = remember { MutableInteractionSource() }
                 ) { focusManager.clearFocus() }
         )
+
+        // ETA in top-right corner
         Text(
             text = eta,
             style = MaterialTheme.typography.bodyLarge,
@@ -102,20 +107,41 @@ fun RouteEditPage(
                 .align(Alignment.TopEnd)
                 .padding(16.dp)
         )
+
+        // Foreground content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Box(modifier = Modifier.clickable { onBack() }) {
-                Text("\u2190 Back", color = Color.Blue)
+            // Back button with spacing
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { onBack() }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF2ebcff),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                Text(
+                    text = "Edit Route",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Edit Route", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Waypoints:")
+            // Section label
+            Text(
+                text = "Waypoints:",
+                style = MaterialTheme.typography.titleMedium
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.fillMaxWidth(), state = lazyListState) {
@@ -142,12 +168,9 @@ fun RouteEditPage(
                             }
                         }
 
-                        val label = if (index < waypoints.lastIndex) {
-                            // take the code‐point of 'A', add index, then turn back into a Char
+                        val label =
+                            // take the code point of 'A', add index, then turn back into a Char
                             ( 'A'.code + index ).toChar().toString()
-                        } else {
-                            "🏁"
-                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -204,7 +227,7 @@ fun RouteEditPage(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                if (waypoints.size < 20) { //Limiting the amount of waypoints user can add for now, change it for testing
+                if (waypoints.size < 28) {
                     item {
                         Button( //ADD WAYPOINT BUTTON
                             onClick = { onWaypointAdd() },

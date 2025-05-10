@@ -3,6 +3,7 @@ package com.example.roadtripbuddy.PlanATripDrawer
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -61,6 +62,7 @@ fun PlanATripWaypoints(
     isTyping: () -> Unit
 ) {
     val waypoints by viewModel.planWaypoints.collectAsState()
+    val eta by viewModel.ETA.collectAsState()
 
     // We store the waypoints to see if the user made any changes, if yes we prompt them to save
     val focusManager = LocalFocusManager.current
@@ -88,53 +90,64 @@ fun PlanATripWaypoints(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Clickable background to clear focus
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { focusManager.clearFocus() }
+                ) {
+                    focusManager.clearFocus()
+                }
         )
+
+        // Main content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            //Spacer(modifier = Modifier.height(2.dp))
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
-                Text("Plan A Trip", style = MaterialTheme.typography.headlineMedium)
+            // Header with title and PlanRoute button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Plan A Trip",
+                    style = MaterialTheme.typography.headlineMedium
+                )
                 Spacer(modifier = Modifier.weight(1f))
-                // Plan Route button
-                if( routeFlag && waypoints.size > 1){
-                    Button(
-                        onClick = {
-                            updateRoute()
-                        },
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6ACFFF),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("PlanRoute")
-                    }
-                } else {
-                    Button(
-                        onClick = {},
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Gray,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("PlanRoute")
-                    }
+                Button(
+                    onClick = {if (routeFlag && waypoints.size > 1) updateRoute()},
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (routeFlag && waypoints.size > 1) Color(0xFF6ACFFF) else Color.Gray,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("PlanRoute")
                 }
-
             }
-            // Composable function for input date and time, and returns a callback with either a null
-            // or a valid LocalDateTime and then converts said LocalDateTime into a Date and stores it into the view models initialDeparture
+
+            if (eta.isNotBlank()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "Total Trip Time: $eta",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Date/time input
             DepartureDateTimeInput(
                 viewModel = viewModel,
                 onValidTimeAndDate = { newDateTime ->
@@ -143,11 +156,13 @@ fun PlanATripWaypoints(
                     viewModel.updateInitialDeparture(departAt)
                     routeFlag = true
                 },
-                onInvalidTimeAndDate = {routeFlag = false},
-                isTyping = {isTyping()}
+                onInvalidTimeAndDate = { routeFlag = false },
+                isTyping = { isTyping() }
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Waypoints header row
             Row(modifier = Modifier.fillMaxWidth()){
                 Text("Waypoints:")
                 Spacer(modifier = Modifier.width(163.dp))
@@ -155,6 +170,7 @@ fun PlanATripWaypoints(
                 Spacer(modifier = Modifier.width(25.dp))
                 Text("Min:")
             }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(modifier = Modifier.fillMaxWidth(), state = lazyListState) {
