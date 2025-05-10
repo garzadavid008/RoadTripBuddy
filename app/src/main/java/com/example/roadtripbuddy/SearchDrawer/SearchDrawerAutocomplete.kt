@@ -38,9 +38,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
-
-
-
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +49,8 @@ fun SearchDrawerAutocomplete(
     placesViewModel: PlacesViewModel,
     searchDrawerViewModel: SearchDrawerViewModel,
     onDone: (SearchResult) -> Unit,
-    isTyping: () -> Unit
+    isTyping: () -> Unit,
+    category: (String) -> Unit
 ) {
     var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
     var autocompleteSuggestions by remember { mutableStateOf<List<Pair<String, Any?>>>(emptyList()) } // List of dynamic autocomplete results
@@ -79,6 +79,10 @@ fun SearchDrawerAutocomplete(
                                 result = searchResult,
                                 placesViewModel = placesViewModel
                             )
+                            val brandName =
+                                searchResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                            val poiName = searchResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                            category((brandName ?: poiName).toString())
                         }
                     })
                 },
@@ -102,6 +106,12 @@ fun SearchDrawerAutocomplete(
                         isTyping()
                     }
                 }
+            )
+
+            Divider(
+                thickness = 0.5.dp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 16.dp)
             )
 
             LaunchedEffect(query) { //Pulsing the API call for autocomplete
@@ -140,10 +150,13 @@ fun SearchDrawerAutocomplete(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(shape)
-                                    .background(Color(0xFF2EBCFF), shape)
                                     .clickable {
                                         if (objectResult is AutocompleteResult) {
                                             navMap.findPlaces(objectResult, placesViewModel)
+                                            val brandName =
+                                                objectResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                                            val poiName = objectResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                                            category((brandName ?: poiName).toString())
                                         } else {
                                             query = suggestion
                                             expanded = false
@@ -154,7 +167,7 @@ fun SearchDrawerAutocomplete(
                             ) {
                                 Text(
                                     text = suggestion,
-                                    color = Color.White,
+                                    color = Color.Black,
                                     style = MaterialTheme.typography.bodyLarge,
                                     maxLines = 1,
                                     modifier = Modifier
@@ -166,7 +179,7 @@ fun SearchDrawerAutocomplete(
                             if (index < autocompleteSuggestions.lastIndex) {
                                 Divider(
                                     thickness = 0.5.dp,
-                                    color = Color.White,
+                                    color = Color.Gray,
                                     modifier = Modifier.padding(start = 16.dp)
                                 )
                             }

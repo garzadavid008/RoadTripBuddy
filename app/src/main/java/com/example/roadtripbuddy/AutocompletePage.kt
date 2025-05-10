@@ -53,6 +53,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.draw.shadow
 
@@ -81,11 +82,11 @@ fun Autocomplete(
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = { onBack() }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Back"
-
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF2ebcff)
                     )
                 }
                 OutlinedTextField(
@@ -174,7 +175,6 @@ fun Autocomplete(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(shape)
-                                    .background(Color(0xFF2EBCFF), shape)
                                     .clickable {
                                         if (objectResult is SearchResult) {
                                             onDone(objectResult)
@@ -187,7 +187,7 @@ fun Autocomplete(
                                 Text(
                                     text = suggestion,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White,
+                                    color = Color.Black,
                                     maxLines = 1,
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -198,7 +198,7 @@ fun Autocomplete(
                             if (index < autocompleteSuggestions.lastIndex) {
                                 Divider(
                                     thickness = 1.dp,
-                                    color = Color.White,
+                                    color = Color.Gray,
                                     modifier = Modifier.padding(start = 16.dp)
                                 )
                             }

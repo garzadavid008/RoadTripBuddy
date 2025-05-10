@@ -1,7 +1,9 @@
 package com.example.roadtripbuddy
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.tomtom.sdk.search.common.error.SearchFailure
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,14 +18,33 @@ class SearchDrawerViewModel : ViewModel() {
     private val _ETA = MutableStateFlow("")
     val ETA: StateFlow<String> = _ETA
 
+    val selectedLocation = mutableStateOf<SearchResult?>(null)
+
     fun initializeWaypoints(initialDestination: SearchResult) {
         if (_waypoints.value.isEmpty()) {
             _waypoints.value = mutableListOf(initialDestination)
         }
     }
 
-    fun updateWaypoint(index: Int, newValue: SearchResult) {
-        _waypoints.value = _waypoints.value.toMutableList().apply {
+    fun updateSelectedLocation(location: SearchResult?){
+        selectedLocation.value = location
+    }
+
+    fun updateWaypoint(index: Int, newValue: SearchResult, onDuplicate: (() -> Unit)? = null) {
+        val current = _waypoints.value
+
+        // Check if the new value already exists at a different index
+        val isDuplicate = current.withIndex().any { (i, item) ->
+            i != index && item?.searchResultId?.id == newValue.searchResultId.id
+        }
+
+
+        if (isDuplicate) {
+            onDuplicate?.invoke()
+            return
+        }
+
+        _waypoints.value = current.toMutableList().apply {
             if (index in indices) {
                 this[index] = newValue
             }
@@ -43,9 +64,14 @@ class SearchDrawerViewModel : ViewModel() {
         }
     }
 
-    fun addWaypoint(value: SearchResult) {
-        _waypoints.value = _waypoints.value.toMutableList().apply {
-            add(value)
+    fun addWaypoint(value: SearchResult, onDuplicate: (() -> Unit)? = null) {
+        val current = _waypoints.value
+        val alreadyExists = current.any { it?.searchResultId?.id == value.searchResultId.id }
+
+        if (!alreadyExists) {
+            _waypoints.value = current.toMutableList().apply { add(value) }
+        } else {
+            onDuplicate?.invoke()
         }
     }
 

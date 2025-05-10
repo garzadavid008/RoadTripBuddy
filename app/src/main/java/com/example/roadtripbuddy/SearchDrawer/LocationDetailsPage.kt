@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,9 +52,9 @@ fun LocationDetailsPage(
         mutableStateOf(location.place.address?.freeformAddress.orEmpty())
     }
 
-    // 2) whenever the location changes, if it's a POI fire off your lookup
     LaunchedEffect(location) {
-        Log.d("locationDetailsPage", "location passed")
+        Log.d("locationDetailsPage", location.type.toString())
+        Log.d("locationDetailsPage", SearchResultType.Poi.toString())
         if (location.type == SearchResultType.Poi) {
             Log.d("locationDetailsPage", "location is POI")
             navMap.searchManager.toPoi(location.searchResultId) { poiResult ->
@@ -61,7 +66,6 @@ fun LocationDetailsPage(
                     ?.firstOrNull()
                     .orEmpty()
 
-                // 3) update your state – Compose will recompose and show the new name
                 if (poiName.isNotBlank()) {
                     locationName = poiName
                     isPoi = true
@@ -80,15 +84,14 @@ fun LocationDetailsPage(
                 .padding(24.dp)
         ) {
             // Back button
-            Box(
-                modifier = Modifier
-                    .clickable { onBack() }
-                    .padding(bottom = 16.dp)
-            ) {
-                Text("← Back", color = Color.Blue)
+            IconButton(onClick = {onBack()}) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color(0xFF2ebcff),
+                    modifier = Modifier.size(30.dp)
+                )
             }
-
-
             // Location details
             Text(locationName, style = MaterialTheme.typography.headlineSmall)
             if(isPoi){
