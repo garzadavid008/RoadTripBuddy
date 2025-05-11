@@ -139,6 +139,7 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
             composable("suggestion") {
                 Suggestions(
                     navController = navController,
+                    location = navigationMap.searchManager.startLocation,
                     fusedLocationProviderClient = fusedLocationProviderClient,
                     onPlaceClick = {suggPlace ->
                         suggestionPlace.value = suggPlace

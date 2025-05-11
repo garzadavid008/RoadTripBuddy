@@ -76,6 +76,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.rememberCoroutineScope
+import com.tomtom.sdk.location.GeoPoint
 
 // this will carry the list of LatLng objects
 val listofLATandLong : MutableList<LatLng> = mutableListOf()
@@ -181,6 +182,7 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
 @Composable
  fun Suggestions(
     navController: NavController,
+    location: GeoPoint?,
     fusedLocationProviderClient: FusedLocationProviderClient,
     onPlaceClick: (SuggPlace) -> Unit,
  )
@@ -208,12 +210,14 @@ suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, c
 
     val myClass = remember  { SuggestedLocation(viewModel) }
     LaunchedEffect(Unit) {
-        myClass.setUpList(26.243629, -98.245079, includedTypes, "food")
-        myClass.setUpList(26.243629, -98.245079, FunincludedTypes, "fun")
-        myClass.setUpList(26.243629, -98.245079, GasincludedTypes, "gas")
-        Log.d("Chris","The size of list is ${myClass.foodList} ")
-        Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
-        Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
+        if(location != null){
+            myClass.setUpList(location.latitude, location.longitude, includedTypes, "food")
+            myClass.setUpList(location.latitude, location.longitude, FunincludedTypes, "fun")
+            myClass.setUpList(location.latitude, location.longitude, GasincludedTypes, "gas")
+            Log.d("Chris","The size of list is ${myClass.foodList} ")
+            Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
+            Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
+        }
     }
     Scaffold(
         topBar = {
