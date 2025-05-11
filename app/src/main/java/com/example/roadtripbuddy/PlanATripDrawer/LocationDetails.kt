@@ -199,7 +199,7 @@ fun LocationDetails(
                             autocompleteSuggestions = emptyList()
                         }
                     }
-                    
+
                     if (autocompleteSuggestions.isNotEmpty()) {
                         Log.d("Autocomplete suggestions", autocompleteSuggestions.toString())
                         LazyColumn(

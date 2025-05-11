@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +86,7 @@ fun SearchDrawer(
 
     var showSuggestions by rememberSaveable { mutableStateOf(false) }
     var showWaypointSuggestions by rememberSaveable { mutableStateOf(false) }
-    val places by placesViewModel.restaurants.collectAsState()
+    val places by placesViewModel.places.collectAsState()
 
     var category by remember { mutableStateOf("") }
 
@@ -263,7 +264,8 @@ fun SearchDrawer(
                         onStartTrip = {
                             onDismiss()            //  hides the drawer
                             showRoutePage = false  // hides RouteEditPage's view
-                            sheetState.jumpTo(Hidden)
+                            routeFlag.value = false
+                            sheetState.jumpTo(peek)
                             onStartTrip() // calls navigationMap.startTrip() from the parent
                         },
                         searchManager = searchManager,
