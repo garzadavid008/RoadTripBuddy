@@ -83,7 +83,7 @@ fun NavigationDrawer(
                         ),
                         MenuItems(
                             id = "suggest",
-                            title = "Suggest",
+                            title = "Suggestions",
                             contentDescription = "Go to Settings"
                         ),
                         MenuItems(
@@ -142,13 +142,13 @@ fun DrawerHeader(userViewModel: UserViewModel, authViewModel: IAuthViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp),
+                .padding(vertical = 15.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    //.padding(16.dp)
             ) {
                 //Profile Image + User Info
                 Row(
@@ -173,7 +173,6 @@ fun DrawerHeader(userViewModel: UserViewModel, authViewModel: IAuthViewModel) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
