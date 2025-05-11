@@ -53,6 +53,25 @@ fun NavigationDrawer(
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(16.dp)
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp, top = 7.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.mipmap.ic_launcher), // Use the launcher icon
+                        contentDescription = "App Icon",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(end = 8.dp),
+                        tint = Color.Unspecified
+                    )
+                    Text(
+                        text = "Road Trip Buddy",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
                 DrawerHeader(userViewModel,authViewModel)
                 Spacer(modifier = Modifier.height(24.dp))
                 DrawerBody(
@@ -170,6 +189,7 @@ fun DrawerBody(
 ) {
     LazyColumn(modifier) {
         items(items) { item ->
+            Divider(Modifier.fillMaxWidth(), color = Color.Gray)
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -184,4 +204,5 @@ fun DrawerBody(
             }
         }
     }
+    Divider(Modifier.fillMaxWidth(), color = Color.Gray)
 }
