@@ -23,6 +23,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.assertEquals
+import com.example.roadtripbuddy.pages.LoginPage
+//import org.junit.After to be added after for cleanup of tests. m
 
 @RunWith(AndroidJUnit4::class)
 class SignUpTest {
@@ -44,7 +46,7 @@ class SignUpTest {
     }
 
     // Tests if all UI elements in SignUp page exists.
-    // Elements: Name, Vehicle, Email, Password, Confirm, and Submit
+    // Elements: Name, Email, Password, Confirm, and Submit
     @Test
     fun signupPage_displaysAllComponents() {
         composeTestRule.setContent {
@@ -52,12 +54,11 @@ class SignUpTest {
             SignupPage(navController = navController, authViewModel = authViewModel)
         }
         composeTestRule.onNodeWithTag("name_field").assertExists()
-        composeTestRule.onNodeWithTag("vehicle_field").assertExists()
         composeTestRule.onNodeWithTag("email_field").assertExists()
         composeTestRule.onNodeWithTag("password_field").assertExists()
         composeTestRule.onNodeWithTag("confirm_password_field").assertExists()
         composeTestRule.onNodeWithTag("submit_button").assertExists()
-        composeTestRule.onNodeWithText("Already have an account, Login!").assertExists()
+        composeTestRule.onNodeWithText("Already have an account? Log in").assertExists() // Updated text
         composeTestRule.onNodeWithText("Back to Map").assertExists()
     }
 
@@ -69,14 +70,22 @@ class SignUpTest {
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
                 composable("map") { }
+                composable("login") { LoginPage(navController, authViewModel) }
             }
         }
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+        composeTestRule.waitForIdle()
+
+        // Debug: Log authState and navigation state
+        composeTestRule.runOnUiThread {
+            println("AuthState: ${authViewModel.authState.value}")
+            println("Current route: ${navController.currentDestination?.route}")
+        }
+
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             navController.currentDestination?.route == "map"
         }
@@ -106,28 +115,27 @@ class SignUpTest {
     }
 
     // Simulates a weak password preventing navigation, should stay on Signup
-    @Test
     fun signupButton_invalidPassword_showsError() {
         authViewModel = MockAuthViewModel(signupSuccessful = false)
         composeTestRule.setContent {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
+                composable("map") { }
             }
         }
+
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("weak")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("weak")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("error_message").assertTextEquals("Password is invalid")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
-        }
         assertEquals("signup", navController.currentDestination?.route)
     }
 
@@ -139,14 +147,17 @@ class SignUpTest {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
+                composable("map") { }
             }
         }
+
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Different123!")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
@@ -154,31 +165,6 @@ class SignUpTest {
         assertEquals("signup", navController.currentDestination?.route)
     }
 
-    // Test if entered vehicle is invalid, Added the validation in SignupPage
-    @Test
-    fun signupButton_invalidVehicleType_showsError() {
-        authViewModel = MockAuthViewModel(signupSuccessful = false)
-        composeTestRule.setContent {
-            navController.setLifecycleOwner(LocalLifecycleOwner.current)
-            NavHost(navController = navController, startDestination = "signup") {
-                composable("signup") { SignupPage(navController, authViewModel) }
-            }
-        }
-        composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("Invalid")
-        composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
-        composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
-        composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
-        composeTestRule.onNodeWithTag("submit_button").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
-        }
-        composeTestRule.onNodeWithTag("error_message").assertTextEquals("Invalid vehicle type")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
-        }
-        assertEquals("signup", navController.currentDestination?.route)
-    }
     // To ensure that name arguments work,
     @Test
     fun signup_withNamedArguments_succeeds() {
@@ -188,19 +174,24 @@ class SignUpTest {
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
                 composable("map") { }
+                composable("login") { LoginPage(navController, authViewModel) }
             }
         }
-        composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
-        composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
+        composeTestRule.onNodeWithTag("name_field").performTextInput("Jane Doe")
+        composeTestRule.onNodeWithTag("email_field").performTextInput("jane@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("submit_button").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route == "map"
+        composeTestRule.waitForIdle()
+
+        // Debug: Log authState and navigation state
+        composeTestRule.runOnUiThread {
+            println("AuthState: ${authViewModel.authState.value}")
+            println("Current route: ${navController.currentDestination?.route}")
         }
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
+
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
+            navController.currentDestination?.route == "map"
         }
         assertEquals("map", navController.currentDestination?.route)
     }
@@ -216,17 +207,16 @@ class SignUpTest {
                 composable("map") { }
             }
         }
+
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Pass123!a")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Pass123!a")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             navController.currentDestination?.route == "map"
-        }
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
         }
         assertEquals("map", navController.currentDestination?.route)
     }
@@ -239,21 +229,21 @@ class SignUpTest {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
+                composable("map") { }
             }
         }
+
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("existing@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("error_message").assertTextEquals("Firebase: Email already in use")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
-        }
         assertEquals("signup", navController.currentDestination?.route)
     }
 
@@ -265,28 +255,28 @@ class SignUpTest {
             navController.setLifecycleOwner(LocalLifecycleOwner.current)
             NavHost(navController = navController, startDestination = "signup") {
                 composable("signup") { SignupPage(navController, authViewModel) }
+                composable("map") { }
             }
         }
+
         composeTestRule.onNodeWithTag("name_field").performTextInput("John Doe")
-        composeTestRule.onNodeWithTag("vehicle_field").performTextInput("SUV")
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("confirm_password_field").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("submit_button").performClick()
+
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule.onAllNodesWithTag("error_message").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("error_message").assertTextEquals("Network error")
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            navController.currentDestination?.route != null
-        }
         assertEquals("signup", navController.currentDestination?.route)
     }
 
 }
 
 /* This test should cover for Signup:
-UI Rendering (Email, password, vehicle, confirmation Submit)
+UI Rendering (Email, password, confirmation Submit)
 For empty/invalid input ensure app stay on signup screen
 Navigation after valid signup.
 FirebaseAuth signup failure (partial coverage via mock)

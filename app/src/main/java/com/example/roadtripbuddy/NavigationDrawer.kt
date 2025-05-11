@@ -68,11 +68,6 @@ fun NavigationDrawer(
                             contentDescription = "Go to Settings"
                         ),
                         MenuItems(
-                            id = "settings",
-                            title = "Settings",
-                            contentDescription = "Go to Settings"
-                        ),
-                        MenuItems(
                             id = "about",
                             title = "About",
                             contentDescription = "Go to About page"

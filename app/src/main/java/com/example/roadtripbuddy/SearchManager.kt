@@ -8,6 +8,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
+import com.tomtom.sdk.location.poi.CategoryId
+import com.tomtom.sdk.location.poi.Poi
+import com.tomtom.sdk.location.poi.PoiCategory
 import com.tomtom.sdk.location.poi.PoiId
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
@@ -25,6 +28,7 @@ import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
 import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
 import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
 import com.tomtom.sdk.search.common.error.SearchFailure
+import com.tomtom.sdk.search.model.SearchResultType
 import com.tomtom.sdk.search.model.SearchResultType.Companion.Poi
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
@@ -241,7 +245,8 @@ class SearchManager(
     // {["Los Angeles", SearchResult object], ["Los Altos", SearchResult object],......}
     private fun fuzzySearchAutocomplete(
         query: String,
-        onResult: (List<Pair<String, SearchResult?>>) -> Unit = {}
+        onResult: (List<Pair<String, SearchResult?>>) -> Unit = {},
+        isPoi: Set<SearchResultType> = emptySet()
     ) {
 
         if (query.isBlank()) {
@@ -252,7 +257,8 @@ class SearchManager(
         val searchOptions = SearchOptions(
             query = query,
             locale = Locale("en", "US"),
-            geoBias = startLocation
+            geoBias = startLocation,
+            resultTypes = isPoi
         )
 
         searchApi.search(
@@ -284,6 +290,7 @@ class SearchManager(
     // under search bars, ObjectResult is for the performSearch method.
     fun resolveAndSuggest(
         query: String,
+        isPoi: Set<SearchResultType> = emptySet(),
         onResult: (List<Pair<String, Any?>>) -> Unit = {},//An optional function parameter that returns a suggestion list of strings (this is for the search bar suggestions)
         objectResult: (Any?) -> Unit = {} //An optional function parameter that returns an object, either and AutocompleteResult or SearchResult
     ) {
@@ -323,11 +330,17 @@ class SearchManager(
 
 
                     // Call fuzzySearchAutocomplete to perform the fuzzy search.
-                    fuzzySearchAutocomplete(query) { fuzzyPairs ->
+                    fuzzySearchAutocomplete(query = query, isPoi = isPoi, onResult = {fuzzyPairs ->
                         fuzzySuggestionsPairs = fuzzyPairs
                         Log.d("Debug", "fuzzySuggestionsPairs before sorting: ${fuzzySuggestionsPairs.map { it.first }}")
 
-                        val toAdd = if (startLocation != null) autocompletePairs else emptyList()
+                        Log.d("startLocation", startLocation.toString())
+
+                        val toAdd =
+                            if (startLocation == null || isPoi.isNotEmpty())
+                                emptyList()
+                            else
+                               autocompletePairs
 
                         val combinedResults = (fuzzySuggestionsPairs + toAdd)
                             .sortedWith(compareByDescending { pair ->
@@ -336,9 +349,11 @@ class SearchManager(
                                 score
                             })
 
+
+
                         objectResult(combinedResults.firstOrNull()?.second)
                         onResult(combinedResults)
-                    }
+                    })
                 }
 
                 override fun onFailure(failure: SearchFailure) {

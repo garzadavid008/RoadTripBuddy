@@ -46,6 +46,16 @@ import androidx.compose.ui.text.input.ImeAction
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Divider
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.draw.shadow
 
 
 @Composable
@@ -65,18 +75,18 @@ fun Autocomplete(
     var query by remember { mutableStateOf(address) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = modifier.fillMaxWidth()){
+        Column(modifier = modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = { onBack() }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Back"
-
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF2ebcff)
                     )
                 }
                 OutlinedTextField(
@@ -88,14 +98,14 @@ fun Autocomplete(
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if(query.isBlank()||query.isEmpty()){
+                            if (query.isBlank() || query.isEmpty()) {
                                 return@KeyboardActions
                             }
-                            resolveAndSuggest(query){ results ->
-                                val searchResult= results.first().second
-                                if (searchResult is SearchResult){
+                            resolveAndSuggest(query) { results ->
+                                val searchResult = results.first().second
+                                if (searchResult is SearchResult) {
                                     onDone(searchResult)
-                                } else if (searchResult is AutocompleteResult){
+                                } else if (searchResult is AutocompleteResult) {
                                     findPlaces(searchResult, placesViewModel)
                                 }
                             }
@@ -107,11 +117,11 @@ fun Autocomplete(
                         .padding(start = 8.dp)
                         .onKeyEvent { keyEvent -> // For testing basically, makes the Enter button on our keyboards commit a waypoint[index] change
                             if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
-                                resolveAndSuggest(query){ results ->
-                                    val searchResult= results.first().second
-                                    if (searchResult is SearchResult){
+                                resolveAndSuggest(query) { results ->
+                                    val searchResult = results.first().second
+                                    if (searchResult is SearchResult) {
                                         onDone(searchResult)
-                                    } else if (searchResult is AutocompleteResult){
+                                    } else if (searchResult is AutocompleteResult) {
                                         findPlaces(searchResult, placesViewModel)
                                     }
                                 }
@@ -121,50 +131,82 @@ fun Autocomplete(
                             }
                         }
                         .onFocusChanged { focusState ->
-                            if (focusState.isFocused){
+                            if (focusState.isFocused) {
                                 isTyping()
                             }
                         }
                 )
             }
 
-            LaunchedEffect(query) { //Pulsing the API call for autocomplete
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LaunchedEffect(query) {
                 if (query.isNotEmpty()) {
                     delay(300)
                     resolveAndSuggest(query) { initSuggestions ->
-                        autocompleteSuggestions= initSuggestions.distinct()
+                        autocompleteSuggestions = initSuggestions.distinct()
                     }
                 } else {
                     autocompleteSuggestions = emptyList()
                 }
             }
 
-            if (autocompleteSuggestions.isNotEmpty()){
+            if (autocompleteSuggestions.isNotEmpty()) {
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) {
-                    items(items = autocompleteSuggestions) { suggestionPair ->
+                    itemsIndexed(autocompleteSuggestions) { index, suggestionPair ->
                         val (suggestion, objectResult) = suggestionPair
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (objectResult is SearchResult){
-                                        onDone(objectResult)
-                                    } else if (objectResult is AutocompleteResult) {
-                                        findPlaces(objectResult, placesViewModel)
+
+                        val shape = when (index) {
+                            0 -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                            autocompleteSuggestions.lastIndex -> RoundedCornerShape(
+                                bottomStart = 12.dp,
+                                bottomEnd = 12.dp
+                            )
+
+                            else -> RoundedCornerShape(0.dp)
+                        }
+
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(shape)
+                                    .clickable {
+                                        if (objectResult is SearchResult) {
+                                            onDone(objectResult)
+                                        } else if (objectResult is AutocompleteResult) {
+                                            findPlaces(objectResult, placesViewModel)
+                                        }
                                     }
-                                }
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = suggestion, style = MaterialTheme.typography.bodyLarge)
+
+                            ) {
+                                Text(
+                                    text = suggestion,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.Black,
+                                    maxLines = 1,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                )
+                            }
+
+                            if (index < autocompleteSuggestions.lastIndex) {
+                                Divider(
+                                    thickness = 1.dp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     }
-
 }
+

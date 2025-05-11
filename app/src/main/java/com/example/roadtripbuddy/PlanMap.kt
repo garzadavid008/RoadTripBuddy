@@ -79,6 +79,7 @@ class PlanMap(
         )
     }
 
+
     // For Search Nearby on plan a trip
     fun brandsAndPOIOnly(
         query: String,

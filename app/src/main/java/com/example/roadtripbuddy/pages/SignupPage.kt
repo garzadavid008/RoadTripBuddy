@@ -204,7 +204,7 @@ fun SignupPage(
             Button(
                 onClick = {
                     when {
-                        name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
+                        name.isBlank() || vehicle.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
                             errorMessage = "All fields are required"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }

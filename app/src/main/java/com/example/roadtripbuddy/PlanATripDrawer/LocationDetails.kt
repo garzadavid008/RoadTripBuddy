@@ -50,6 +50,8 @@ import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.search.common.error.SearchFailure
 import com.tomtom.sdk.search.model.SearchResultType
 import com.tomtom.sdk.search.model.result.AutocompleteResult
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.delay
 
@@ -61,7 +63,8 @@ fun LocationDetails(
     onBack: () -> Unit,
     planMap: PlanMap,
     brandsAndPOIOnly: (String, SearchResult, (List<Pair<String, AutocompleteResult>>) -> Unit) -> Unit,
-    isTyping: () -> Unit
+    isTyping: () -> Unit,
+    categoryReturn: (String) -> Unit
     ) {
 
     var address by remember { mutableStateOf(location.place.address?.freeformAddress) }
@@ -77,7 +80,6 @@ fun LocationDetails(
                     ?.firstOrNull()
                     .orEmpty()
 
-                // 3) update your state – Compose will recompose and show the new name
                 if (poiName.isNotBlank()) {
                     address = poiName
                 }
@@ -91,11 +93,11 @@ fun LocationDetails(
             .padding(24.dp)
     ) {
         // Back button
-        IconButton(onClick = onBack) {
+        IconButton(onClick = { onBack() }) {
             Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back"
-
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color(0xFF2ebcff)
             )
         }
         // Location details
@@ -182,6 +184,10 @@ fun LocationDetails(
                             .fillMaxWidth()
                             .clickable {
                                 planMap.findPlaces(objectResult, location = location.place.coordinate, placesViewModel = placesViewModel)
+                                val brandName =
+                                    objectResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                                val poiName = objectResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                                categoryReturn((brandName ?: poiName).toString())
                             }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically

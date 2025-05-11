@@ -76,11 +76,6 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.rememberCoroutineScope
-import com.google.android.gms.location.LocationServices
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 
 // this will carry the list of LatLng objects
 val listofLATandLong : MutableList<LatLng> = mutableListOf()
@@ -148,10 +143,9 @@ fun PlaceRow(
                 Text(address, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
         }
+
+        Divider(color = Color.LightGray, thickness = 1.dp)
     }
-
-
-
 }
 
 // function to check if location permission is granted for error handling
@@ -161,33 +155,35 @@ private fun isPermissionGranted(context: Context,permission:String):Boolean
 }
 data class Cords(val lat: Double, val long: Double)
 @SuppressLint("MissingPermission")
- suspend fun getCords(context: Context): Cords = withContext(Dispatchers.IO)
+suspend fun getCords(fusedLocationProviderClient: FusedLocationProviderClient, context: Context): Cords
 {
-    val locationClient  = LocationServices.getFusedLocationProviderClient(context)
-    // if we dont have permissions enabled for current location just return empty cords
-    if (!isPermissionGranted(context,Manifest.permission.ACCESS_FINE_LOCATION))
+    var latitdue : Double = 0.0
+    var longitude: Double = 0.0
+    // the code will run inside if user gives the location on start
+    if (isPermissionGranted(context,Manifest.permission.ACCESS_FINE_LOCATION))
     {
-        return@withContext Cords(0.0,0.0)
+        // using getLastLocation to retrieve the current location of the user
+        fusedLocationProviderClient.lastLocation
+            .addOnSuccessListener { location: Location? ->
+                Log.d("Fused","$location")
+                if (location != null) {
+                    latitdue = location.latitude
+                    longitude = location.longitude
+                }
+            }
     }
-    val result = locationClient.lastLocation.await()
-    if(result!= null)
-    {
-        Cords(result.latitude,result.longitude)
-    }
-    else{
-        Cords(0.0,0.0)
-    }
+  return Cords(latitdue,longitude)
 }
 
 
 // since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
- fun Suggestions(navController: NavController?, fusedLocationProviderClient: FusedLocationProviderClient?)
+ fun Suggestions(navController: NavController, fusedLocationProviderClient: FusedLocationProviderClient)
 {
+
      val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var cords by remember { mutableStateOf(Cords(0.0,0.0)) }
 
     // call the places view model
     // placeList will contain all suggested places
@@ -203,25 +199,23 @@ data class Cords(val lat: Double, val long: Double)
     FunincludedTypes.add("convention_center")
     FunincludedTypes.add("movie_theater")
     FunincludedTypes.add("park")
+
+
+
     val myClass = remember  { SuggestedLocation(viewModel) }
     LaunchedEffect(Unit) {
-        scope.launch(Dispatchers.IO){
-            cords = getCords(context)
-            Log.d("Cords", "$cords")
-            myClass.setUpList(cords.lat, cords.long, includedTypes, "food")
-            myClass.setUpList(cords.lat,cords.long , FunincludedTypes, "fun")
-            myClass.setUpList(cords.lat,cords.long, GasincludedTypes, "gas")
-            Log.d("Chris","The size of list is ${myClass.foodList} ")
-            Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
-            Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
-        }
+        myClass.setUpList(26.243629, -98.245079, includedTypes, "food")
+        myClass.setUpList(26.243629, -98.245079, FunincludedTypes, "fun")
+        myClass.setUpList(26.243629, -98.245079, GasincludedTypes, "gas")
+        Log.d("Chris","The size of list is ${myClass.foodList} ")
+        Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
+        Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = {navController?.navigate("map")}) {
+                    IconButton(onClick = {navController.navigate("map")}) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
@@ -244,7 +238,7 @@ data class Cords(val lat: Double, val long: Double)
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-                Text(text = "$cords")
+
             CategoryFilteredList(
                 foodList = myClass.foodList,
                 entertainmentList = myClass.entertainment,

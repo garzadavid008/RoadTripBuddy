@@ -45,6 +45,8 @@ fun LoginPage(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
     val authState by authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState) {
@@ -55,6 +57,11 @@ fun LoginPage(
             is AuthState.Error -> {
                 errorMessage = (authState as AuthState.Error).message
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+            is AuthState.Success -> {
+                errorMessage = (authState as AuthState.Success).message
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                showResetDialog = false
             }
             else -> Unit
         }
@@ -121,6 +128,21 @@ fun LoginPage(
             )
             Spacer(Modifier.height(16.dp))
 
+            // Forgot Password button
+            TextButton(
+                onClick = { showResetDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "forgot_password" }
+            ) {
+                Text(
+                    text = "Forgot Password?",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
             // Error message
             errorMessage?.let {
                 Text(
@@ -169,7 +191,9 @@ fun LoginPage(
 
             TextButton(
                 onClick = { navController.navigate("signup") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { testTag = "signup_button" }
             ) {
                 Text(
                     text = "Don't have an account? Sign up",
@@ -188,7 +212,47 @@ fun LoginPage(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            // Reset Password Dialog
+            if (showResetDialog) {
+                AlertDialog(
+                    onDismissRequest = { showResetDialog = false },
+                    title = { Text("Reset Password") },
+                    text = {
+                        Column {
+                            OutlinedTextField(
+                                value = resetEmail,
+                                onValueChange = { resetEmail = it },
+                                label = { Text("Email Address") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { testTag = "reset_email_field" }
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                authViewModel.resetPassword(resetEmail)
+                            },
+                            modifier = Modifier.semantics { testTag = "reset_submit_button" }
+                        ) {
+                            Text("Send Reset Email")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showResetDialog = false },
+                            modifier = Modifier.semantics { testTag = "reset_cancel_button" }
+                        ) {
+                            Text("Cancel")
+                        }
+                    },
+                    modifier = Modifier.semantics { testTag = "reset_dialog" }
+                )
+            }
         }
     }
 }
+
 

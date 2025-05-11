@@ -33,6 +33,14 @@ import com.example.roadtripbuddy.SearchDrawerViewModel
 import com.tomtom.sdk.search.model.result.AutocompleteResult
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,13 +49,14 @@ fun SearchDrawerAutocomplete(
     placesViewModel: PlacesViewModel,
     searchDrawerViewModel: SearchDrawerViewModel,
     onDone: (SearchResult) -> Unit,
-    isTyping: () -> Unit
-){
+    isTyping: () -> Unit,
+    category: (String) -> Unit
+) {
     var query by rememberSaveable { mutableStateOf("") } // Keeps track of the users search query
     var autocompleteSuggestions by remember { mutableStateOf<List<Pair<String, Any?>>>(emptyList()) } // List of dynamic autocomplete results
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize()){
+    Box(Modifier.fillMaxSize()) {
 
         Column(
             modifier = Modifier
@@ -62,7 +71,7 @@ fun SearchDrawerAutocomplete(
                 onSearch = { searchQuery ->
                     navMap.resolveAndSuggest(query = searchQuery, onResult = { results ->
                         val (address, searchResult) = results.first()
-                        if (searchResult is SearchResult){
+                        if (searchResult is SearchResult) {
                             navMap.performSearch(address, searchDrawerViewModel)
                             onDone(searchResult)
                         } else if (searchResult is AutocompleteResult) {
@@ -70,26 +79,46 @@ fun SearchDrawerAutocomplete(
                                 result = searchResult,
                                 placesViewModel = placesViewModel
                             )
+                            val brandName =
+                                searchResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                            val poiName = searchResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                            category((brandName ?: poiName).toString())
                         }
                     })
                 },
                 expanded = expanded,
                 onExpandedChange = { expanded = it },
                 placeholder = { Text("Search Location") },
-                leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
-                trailingIcon = { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null
+                    )
+                },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = null
+                    )
+                },
                 modifier = Modifier.onFocusChanged { focusState ->
-                    if(focusState.isFocused){
+                    if (focusState.isFocused) {
                         isTyping()
                     }
                 }
             )
 
+            Divider(
+                thickness = 0.5.dp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+
             LaunchedEffect(query) { //Pulsing the API call for autocomplete
                 if (query.isNotEmpty()) {
                     delay(300)
-                    navMap.resolveAndSuggest(query = query, onResult = {initSuggestions ->
-                        autocompleteSuggestions= initSuggestions.distinct()
+                    navMap.resolveAndSuggest(query = query, onResult = { initSuggestions ->
+                        autocompleteSuggestions = initSuggestions.distinct()
                     })
                 } else {
                     autocompleteSuggestions = emptyList()
@@ -103,31 +132,61 @@ fun SearchDrawerAutocomplete(
                         .padding(top = 8.dp)
                         .background(Color.White)
                 ) {
-                    items(items = autocompleteSuggestions) { suggestionPair ->
+                    itemsIndexed(autocompleteSuggestions) { index, suggestionPair ->
                         val (suggestion, objectResult) = suggestionPair
-                        Text(
-                            text = suggestion,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (objectResult is AutocompleteResult) {
-                                        navMap.findPlaces(
-                                            result = objectResult,
-                                            placesViewModel = placesViewModel
-                                        )
-                                    } else{
-                                        query = suggestion
-                                        expanded = false
-                                        navMap.performSearch(query, searchDrawerViewModel)
-                                        onDone(objectResult as SearchResult)
+
+                        val shape = when (index) {
+                            0 -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                            autocompleteSuggestions.lastIndex -> RoundedCornerShape(
+                                bottomStart = 12.dp,
+                                bottomEnd = 12.dp
+                            )
+
+                            else -> RoundedCornerShape(0.dp)
+                        }
+
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(shape)
+                                    .clickable {
+                                        if (objectResult is AutocompleteResult) {
+                                            navMap.findPlaces(objectResult, placesViewModel)
+                                            val brandName =
+                                                objectResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
+                                            val poiName = objectResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
+                                            category((brandName ?: poiName).toString())
+                                        } else {
+                                            query = suggestion
+                                            expanded = false
+                                            navMap.performSearch(query, searchDrawerViewModel)
+                                            onDone(objectResult as SearchResult)
+                                        }
                                     }
-                                }
-                                .padding(8.dp)
-                        )
+                            ) {
+                                Text(
+                                    text = suggestion,
+                                    color = Color.Black,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                )
+                            }
+
+                            if (index < autocompleteSuggestions.lastIndex) {
+                                Divider(
+                                    thickness = 0.5.dp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
 }
