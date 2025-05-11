@@ -48,6 +48,8 @@ import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.PlanATripDrawer.NearbySuggestions
 import com.example.roadtripbuddy.PlanMap
 import com.example.roadtripbuddy.SuggPlace
+import com.example.roadtripbuddy.pages.PlanATripSuggest
+import com.example.roadtripbuddy.pages.Suggestions
 import com.tomtom.sdk.location.ExperimentalPoiInPlaceApi
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.search.common.error.SearchFailure
@@ -137,6 +139,7 @@ fun LocationDetails(
                         onPlaceClick(suggPlace)
                     }
                 )
+
             } else {
                 var autocompleteSuggestions by remember {
                     mutableStateOf<List<Pair<String, AutocompleteResult>>>(

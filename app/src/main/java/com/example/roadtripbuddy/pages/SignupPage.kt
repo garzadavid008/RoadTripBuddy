@@ -34,11 +34,14 @@ import com.example.roadtripbuddy.IAuthViewModel
 //import com.example.roadtripbuddy.AuthViewModel
 import com.example.roadtripbuddy.R
 
-// Password validation
+// a function to validate passwords for strength
 fun isPasswordString(password:String) : Boolean
 {
     val minLength = 8
     //checking if there is a UPPER case in the password
+    // .any iterates through the string checking for the condition
+    // it is referencing to it self
+    // returns true if it matches
     val hasUpper = password.any {it.isUpperCase()}
     // now checking if it as a lower case
     val hasLower = password.any{ it.isLowerCase()}
@@ -46,10 +49,8 @@ fun isPasswordString(password:String) : Boolean
     val hasDigit = password.any {it.isDigit()}
     val hasSpecialChar = password.any {"!@#$%".contains(it)}
     // validate
-
     return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecialChar
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,20 +60,18 @@ fun SignupPage(
 ) {
     val context = LocalContext.current
     var name by remember { mutableStateOf("") }
+    var vehicle by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isPasswordValid by remember { mutableStateOf(true) }
-    var isVehicleValid by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val authState by authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState) {
         when (authState) {
-            AuthState.Authenticated -> {
-                navController.navigate("map") {
-                    popUpTo("signup") { inclusive = true }
-                }
+            AuthState.Authenticated -> navController.navigate("map") {
+                popUpTo("signup") { inclusive = true }
             }
             is AuthState.Error -> {
                 errorMessage = (authState as AuthState.Error).message
@@ -122,7 +121,6 @@ fun SignupPage(
                     .semantics { testTag = "name_field" }
             )
             Spacer(Modifier.height(12.dp))
-
             // Email field
             OutlinedTextField(
                 value = email,
@@ -206,7 +204,7 @@ fun SignupPage(
             Button(
                 onClick = {
                     when {
-                        name.isBlank()  || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
+                        name.isBlank() || vehicle.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
                             errorMessage = "All fields are required"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
@@ -222,7 +220,7 @@ fun SignupPage(
                             errorMessage = "Passwords do not match"
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         }
-                        else -> authViewModel.signup(name, email, password)
+                        else -> authViewModel.signup(name, email, password, vehicle)
                     }
                 },
                 modifier = Modifier
