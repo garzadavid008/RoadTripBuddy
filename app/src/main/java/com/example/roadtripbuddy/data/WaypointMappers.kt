@@ -5,7 +5,9 @@ import com.google.gson.Gson
 import com.tomtom.sdk.location.Address
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.location.Place
+import com.tomtom.sdk.search.model.SearchResultType
 import com.tomtom.sdk.search.model.result.SearchResult
+import com.tomtom.sdk.search.model.result.SearchResultId
 import java.util.Date
 
 private val gson by lazy { Gson() }
@@ -24,6 +26,7 @@ fun WaypointDto.toFirestoreMap(): Map<String, Any> = mapOf(
     "location"        to geoPoint,                    // Firestore GeoPoint
     "name"            to (name ?: "")                 // safe non-null
 )
+
 
 fun WaypointDto.toSearchResult(): SearchResult {
     val place = Place(
@@ -54,3 +57,4 @@ fun Waypoint.toDomain(): WaypointItem {
         minute       = minute
     )
 }
+

@@ -43,6 +43,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.PlanMap
+import com.example.roadtripbuddy.pages.PlanATripSuggest
+import com.example.roadtripbuddy.pages.Suggestions
 import com.tomtom.sdk.location.ExperimentalPoiInPlaceApi
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.search.common.error.SearchFailure
@@ -152,6 +154,8 @@ fun LocationDetails(
                         }
                     }
             )
+            // do this when i have david tomorrow
+          //  PlanATripSuggest(location.place.coordinate.latitude,location.place.coordinate.longitude)
         }
 
         LaunchedEffect(query) { //Pulsing the API call for autocomplete

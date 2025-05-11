@@ -1,191 +1,63 @@
 package com.example.roadtripbuddy.pages
 
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.roadtripbuddy.PlacesViewModel
 import com.example.roadtripbuddy.PlacesViewModelFactory
 import com.example.roadtripbuddy.R
 import com.example.roadtripbuddy.SuggPlace
 import com.example.roadtripbuddy.SuggestedLocation
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
-import android.Manifest
-import android.annotation.SuppressLint
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CardColors
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.TopAppBarColors
-import androidx.compose.runtime.rememberCoroutineScope
-import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 
-// this will carry the list of LatLng objects
-val listofLATandLong : MutableList<LatLng> = mutableListOf()
-
-// this function will have a button that when clicked it will push geo codes into a list so we can use that for the map
-
-
-data class Address ( var address: String)
-data class PanelToggle (var isVis: Boolean)
-//@Preview
-@Composable
-fun PlaceRow(
-    name: String,
-    rating: Double,
-    address: String,
-    latlng: LatLng,
-    userAddress: Address = Address(""),
-    onAdd: () -> Unit,
-    distance: Double,
-    onClick: () -> Unit,
-    isSelected: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            // highlight background when selected
-            .background(
-                if (isSelected)
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                else
-                    Color.Transparent
-            )
-            .clickable(onClick = onClick)
-    ) {
-        Divider(color = Color.LightGray, thickness = 1.dp)
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FilledTonalButton(
-                onClick = {
-                    userAddress.address = address
-                    listofLATandLong.add(latlng)
-                    onAdd()
-                },
-                colors = ButtonColors(
-                    containerColor = Color(0xFFdbf3fd), contentColor = Color.Black,
-                    disabledContainerColor = Color.White,
-                    disabledContentColor = Color.White
-                )
-            ) {
-                Text("+")
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, style = MaterialTheme.typography.bodyLarge)
-                Spacer(Modifier.height(2.dp))
-                Text("${"%.1f".format(distance)} mi away", style = MaterialTheme.typography.bodySmall)
-                Text("Rating: ${"%.1f".format(rating)}", style = MaterialTheme.typography.bodySmall)
-                Text(address, style = MaterialTheme.typography.bodySmall, maxLines = 1)
-            }
-        }
-    }
-
-
-
-}
-
-// function to check if location permission is granted for error handling
-private fun isPermissionGranted(context: Context,permission:String):Boolean
-{
-    return ContextCompat.checkSelfPermission(context,permission)== PackageManager.PERMISSION_GRANTED
-}
-data class Cords(val lat: Double, val long: Double)
-@SuppressLint("MissingPermission")
- suspend fun getCords(context: Context): Cords = withContext(Dispatchers.IO)
-{
-    val locationClient  = LocationServices.getFusedLocationProviderClient(context)
-    // if we dont have permissions enabled for current location just return empty cords
-    if (!isPermissionGranted(context,Manifest.permission.ACCESS_FINE_LOCATION))
-    {
-        return@withContext Cords(0.0,0.0)
-    }
-    val result = locationClient.lastLocation.await()
-    if(result!= null)
-    {
-        Cords(result.latitude,result.longitude)
-    }
-    else{
-        Cords(0.0,0.0)
-    }
-}
-
-
-// since we're not sure how long the number of suggested places is going to be, we can use LazyColumns
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
- fun Suggestions(navController: NavController?, fusedLocationProviderClient: FusedLocationProviderClient?)
+fun PlanATripSuggest(lat:Double,long: Double)
 {
-     val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var cords by remember { mutableStateOf(Cords(0.0,0.0)) }
 
@@ -206,30 +78,14 @@ data class Cords(val lat: Double, val long: Double)
     val myClass = remember  { SuggestedLocation(viewModel) }
     LaunchedEffect(Unit) {
         scope.launch(Dispatchers.IO){
-            cords = getCords(context)
-            Log.d("Cords", "$cords")
-            myClass.setUpList(cords.lat, cords.long, includedTypes, "food")
-            myClass.setUpList(cords.lat,cords.long , FunincludedTypes, "fun")
-            myClass.setUpList(cords.lat,cords.long, GasincludedTypes, "gas")
-            Log.d("Chris","The size of list is ${myClass.foodList} ")
-            Log.d("Chris","The size of viewModel ${viewModel.restaurants.value.size}")
-            Log.d("Chris","Size of gas list ${myClass.gasAndService.size} and size of fun list ${myClass.entertainment}")
+            myClass.setUpList(lat,long, includedTypes, "food")
+            myClass.setUpList(lat,long, FunincludedTypes, "fun")
+            myClass.setUpList(lat,long, GasincludedTypes, "gas")
         }
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = {navController?.navigate("map")}) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF2ebcff),
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                },
                 colors = TopAppBarColors(
                     containerColor          = Color(0xFFF5F5F5),      // light-gray background
                     scrolledContainerColor  = Color(0xFFE0E0E0),      // slightly darker when scrolled
@@ -244,72 +100,19 @@ data class Cords(val lat: Double, val long: Double)
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-                Text(text = "$cords")
-            CategoryFilteredList(
+            Text(text = "$cords")
+            TripFilteredList(
                 foodList = myClass.foodList,
                 entertainmentList = myClass.entertainment,
                 gasList = myClass.gasAndService,
                 onPlaceClick = { selectedPlace ->
-                    // handle click
-
                 }
             )
-           // RightSidePanelDemo(myClass)^
-        }
-
-
-
-    }
-}
-
-@Composable
-fun PlaceListPage(
-    placeList: List<SuggPlace>,
-    placesViewModel: PlacesViewModel,
-    userAddress: Address? = null,
-    onPlaceClick: (SuggPlace) -> Unit = {},
-    onBack: () -> Unit,
-    onZoomOnPlace: (SuggPlace) -> Unit,
-) {
-    val scrollState = rememberLazyListState()
-    val selectedPlace by placesViewModel.selectedPlace
-
-    Box(
-        modifier = Modifier
-            .clickable { onBack() }
-            .padding(24.dp)
-    ) {
-        Text("← Back", color = Color.Blue)
-    }
-
-
-    LazyColumn(
-        state = scrollState,
-        modifier = Modifier.fillMaxSize().padding(16.dp)
-    ) {
-        items(placeList) { place ->
-            // If place is the selected place, return true
-            Log.d("PlacesListPage", place.distanceFromLocation.toString() )
-            val isSel = place == selectedPlace
-            PlaceRow(
-                name = place.name,
-                rating = place.rating,
-                address = place.address,
-                latlng = place.latAndLng,
-                userAddress = userAddress ?: Address(""),
-                onAdd = { onPlaceClick(place) },
-                onClick = {
-                    onZoomOnPlace(place)
-                          },
-                distance = place.distanceFromLocation,
-                isSelected = isSel
-            )
         }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryFilteredList(
+fun TripFilteredList(
     foodList: List<SuggPlace>,
     entertainmentList: List<SuggPlace>,
     gasList: List<SuggPlace>,
@@ -391,7 +194,7 @@ fun CategoryFilteredList(
                         contentColor = Color.Black,
                         disabledContentColor = Color.White,
                         disabledContainerColor = Color.White
-                        )
+                    )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(

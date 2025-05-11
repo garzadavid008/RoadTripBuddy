@@ -1,20 +1,27 @@
 package com.example.roadtripbuddy
-
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.roadtripbuddy.data.Trip
+import com.example.roadtripbuddy.data.TripsRepository
 import com.example.roadtripbuddy.data.toDomain
 import com.tomtom.sdk.map.display.marker.Marker
 import com.tomtom.sdk.map.display.route.Route
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
-
-class PlanATripViewModel : ViewModel() {
+@HiltViewModel
+class PlanATripViewModel @Inject constructor(
+    private val repository: TripsRepository
+) : ViewModel() {
 
     // Holds the list of waypoints AND predicted time spent at said waypoints for Plan A Trip
     private val _planWaypoints = MutableStateFlow(mutableListOf<WaypointItem>())
@@ -42,6 +49,13 @@ class PlanATripViewModel : ViewModel() {
 
         _planWaypoints.value = items
     }
+
+    fun loadTripById(tripId: Long) = viewModelScope.launch {
+        repository.loadTripFromFirestore(tripId)?.let { tripProto ->
+            loadTrip(tripProto)
+        }
+    }
+
 
     fun updateSearchResult(index: Int, newSearchResult: SearchResult) {
         _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
