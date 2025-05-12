@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun NewTripDialog(
     onDone: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    nameError: Boolean
 ) {
     var name   by remember { mutableStateOf("") }
 
@@ -49,9 +50,13 @@ fun NewTripDialog(
                 .padding(24.dp)
         ) {
             Column(Modifier.padding(24.dp)) {
+                if (nameError){
+                    Text("Name is already used", color = MaterialTheme.colorScheme.error)
+                }
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
+                    isError = nameError,
                     label = { Text("Trip name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

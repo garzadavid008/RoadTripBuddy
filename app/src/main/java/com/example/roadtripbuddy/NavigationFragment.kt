@@ -133,6 +133,8 @@ class NavigationFragment(
         locationService.getTomTomMap()?.clear()
         locationService.resetUserLiveMarker()
 
+        locationService.stopLiveTracking()
+
         isNavigationRunning = false
     }
 

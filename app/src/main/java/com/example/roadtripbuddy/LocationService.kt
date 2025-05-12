@@ -163,6 +163,10 @@ class LocationService(
         userLiveMarker = null
     }
 
+    fun stopLiveTracking() {
+        locationProvider.removeOnLocationUpdateListener(onLocationUpdateListener)
+    }
+
 }
 
 

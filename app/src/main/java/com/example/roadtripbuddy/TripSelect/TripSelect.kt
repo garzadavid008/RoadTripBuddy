@@ -148,15 +148,25 @@ fun TripSelect(
             }
 
             if (showDialog) {
+                var nameError by remember { mutableStateOf(false) }
                 NewTripDialog(
                     onDone = { name ->
-                        coroutineScope.launch {
-                            val newId = viewModel.addTrip(name)   // suspend ← waits for id
-                            showDialog = false
-                            onOpenTrip(newId)                  // navigate to the new trip
+                        if (trips.any { it.name.equals(name, ignoreCase = true) }) {
+                            nameError = true
+                        } else {
+                            coroutineScope.launch {
+                                val newId = viewModel.addTrip(name)
+                                showDialog = false
+                                nameError = false
+                                onOpenTrip(newId)
+                            }
                         }
                     },
-                    onDismiss = { showDialog = false }
+                    onDismiss = {
+                        showDialog = false
+                        nameError = false
+                    },
+                    nameError = nameError // You'll need to pass this into the dialog and show an error UI
                 )
             }
         }

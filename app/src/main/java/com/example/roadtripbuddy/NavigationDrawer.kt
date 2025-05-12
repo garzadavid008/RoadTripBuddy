@@ -128,7 +128,6 @@ fun DrawerHeader(userViewModel: UserViewModel, authViewModel: IAuthViewModel) {
     var userName by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf("") }
     val user = userViewModel.user
-    Log.d("Auth", "$loginStatus")
     // boiler plate
     userName = "User name"
     userEmail = "test@gmail.com"

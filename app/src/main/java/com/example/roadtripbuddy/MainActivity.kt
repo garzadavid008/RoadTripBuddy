@@ -80,7 +80,8 @@ class MainActivity : AppCompatActivity() {
     private val locationService = LocationService(
         activity = this@MainActivity
     )
-private lateinit var fusedLocationProviderClient: FusedLocationProviderClient // is this to get the current location of the user
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient // is this to get the current location of the user
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // calling firebase/firestore
@@ -160,6 +161,7 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
         val activity = LocalContext.current as MainActivity
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
+
         val gesturesStatus by remember {
             derivedStateOf { drawerState.isOpen }
         }
@@ -250,7 +252,9 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                         onDismiss = { showBottomDrawer = false },
                         navMap = navigationMap,
                         searchManager = navigationMap.searchManager,
-                        onStartTrip = { locationService.createRouteAndStart(searchDrawerVM) },
+                        onStartTrip = {
+                            locationService.createRouteAndStart(searchDrawerVM)
+                        },
                         ifSuggestionPlace = suggestionPlace.value
                     )
                 }
@@ -270,6 +274,15 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                         Text("Start Directions")
                     }
                 }
+                AndroidView(
+                    factory = { context: android.content.Context ->
+                        FrameLayout(context).apply { id = R.id.fragment_container_view_tag }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(500.dp) // Adjust height or use dynamic visibility later
+                )
             }
         }
     }
@@ -342,7 +355,7 @@ private lateinit var fusedLocationProviderClient: FusedLocationProviderClient //
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "RoadTripBuddy is an application that helps users by providing information in regard to selected travel destinations, recommendations of places to visit from information provided, while providing in data regarding estimated travel time, fuel usage, possible locations for rest, and alternative routes should traffic be predicted to be heavy in certain time periods.",
+                        text = "Road Trip Buddy is a trip-planning and navigation app that lets users build personalized road trips using real-time location search, map interaction, and waypoint suggestions. It goes beyond basic routing by predicting future travel routes, accounting for historical traffic patterns, to generate optimized ETAs and travel paths tailored to your planned departure time.",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = Color.White
