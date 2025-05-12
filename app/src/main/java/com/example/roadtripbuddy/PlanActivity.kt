@@ -70,12 +70,14 @@ class PlanActivity : AppCompatActivity() {
 
         val placesClient: PlacesClient = Places.createClient(context)
         val placesViewModel: PlacesViewModel = viewModel(factory = PlacesViewModelFactory(placesClient))
+        val locationService = remember { LocationService(activity = this@PlanActivity) } // Added
 
         val planMap = remember {
             PlanMap(
-                context    = context,
-                activity   = this@PlanActivity,
-                mapReadyState = mapReadyState
+                context = context,
+                activity = this@PlanActivity,
+                mapReadyState = mapReadyState,
+                locationService = locationService // Added
             )
         }
 

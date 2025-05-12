@@ -247,7 +247,7 @@ open class BaseMapUtils{
             clickedMarker?.setPinIconImage(ImageFactory.fromResource(R.drawable.map_marker_full))
             placesViewModel.updateSelectedPlace(place)
         }
-            tomTomMap?.moveCamera(CameraOptions(position = GeoPoint(place.latAndLng.latitude, place.latAndLng.longitude), zoom = 15.0))
+        tomTomMap?.moveCamera(CameraOptions(position = GeoPoint(place.latAndLng.latitude, place.latAndLng.longitude), zoom = 15.0))
 
     }
 

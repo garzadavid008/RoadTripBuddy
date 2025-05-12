@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+
 @HiltViewModel
 class PlanATripViewModel @Inject constructor(
     private val repository: TripsRepository
