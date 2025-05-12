@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -79,6 +80,7 @@ fun SearchDrawer(
     var waypointPair by remember { mutableStateOf<Pair<Int,SearchResult?>?>(null) } // For the autocomplete composable page,
     var searchPage by rememberSaveable { mutableStateOf(false) }
     var emptyPage by rememberSaveable { mutableStateOf(false) }
+    var noLocationPage by rememberSaveable { mutableStateOf(false) }
     //we store an index and a waypoint from said index from the RouteEditPage in here in order to send it to the autocomplete page
 
     val focusManager =  LocalFocusManager.current
@@ -117,8 +119,17 @@ fun SearchDrawer(
 
     val sheetState = rememberBottomSheetState(
         initialDetent = peek,
-        detents = listOf(peek, half, FullyExpanded, Hidden)
+        detents = listOf(peek, half, FullyExpanded)
     )
+
+    LaunchedEffect(navMap.searchManager.startLocation) {
+        if (navMap.searchManager.startLocation == null){
+            noLocationPage = true
+        }
+        else {
+            noLocationPage = false
+        }
+    }
 
     LaunchedEffect(places) {
         Log.d("Chris", "places updated: ${places.size}")
@@ -451,7 +462,17 @@ fun SearchDrawer(
                             category = (brandName ?: poiName).toString()
                         }
                     )
-                } else {
+                } else if (noLocationPage){
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.TopCenter // this centers the child content
+                    ) {
+                        Text("Location must be on to use navigation")
+                    }
+                }
+                else {
                     searchPage = true
                     SearchDrawerAutocomplete(
                         navMap = navMap,
