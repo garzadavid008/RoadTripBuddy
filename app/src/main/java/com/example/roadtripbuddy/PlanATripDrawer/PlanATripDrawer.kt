@@ -101,7 +101,7 @@ fun PlanATripDrawer(
     val focusManager =  LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
 
-    val places by placesViewModel.restaurants.collectAsState()
+    val places by placesViewModel.places.collectAsState()
     val selectedPlace by placesViewModel.selectedPlace
     val waypoints by viewModel.planWaypoints.collectAsState()
     val initialDeparture by viewModel.initialDeparture.collectAsState()
@@ -386,7 +386,33 @@ fun PlanATripDrawer(
                         isTyping = {isFocused = true},
                         categoryReturn = {result ->
                             category = result
-                        }
+                        },
+                        onPlaceClick = { selectedPlace ->
+                            planMap.resolveAndSuggest(
+                                query = selectedPlace.name + " " + selectedPlace.address,
+                                isPoi = setOf(SearchResultType.Poi),
+                                onResult = { result ->
+                                    if (result.isNotEmpty()){
+                                        viewModel.addPlanWaypoint(result.first().second as SearchResult){
+                                            Toast.makeText(context, "Waypoint already exists", Toast.LENGTH_SHORT).show()
+                                        }
+                                        locationDetails = false
+                                        planMap.removeMarkers(viewModel = placesViewModel)
+                                        sheetState.jumpTo(half)
+                                        placesViewModel.updateSelectedPlace(null)
+                                        viewModel.updateSelectedWaypoint(null)
+                                    }else {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "Location Failure",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    }
+                                })
+
+                        },
                     )
                 } else {
                     waypointPage = true

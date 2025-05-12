@@ -1,21 +1,28 @@
 package com.example.roadtripbuddy
-
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.roadtripbuddy.data.Trip
+import com.example.roadtripbuddy.data.TripsRepository
 import com.example.roadtripbuddy.data.toDomain
 import com.tomtom.sdk.map.display.marker.Marker
 import com.tomtom.sdk.map.display.route.Route
 import com.tomtom.sdk.search.model.result.SearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
-import com.example.roadtripbuddy.PlanATripViewModel
 
-class PlanATripViewModel : ViewModel() {
+@HiltViewModel
+class PlanATripViewModel @Inject constructor(
+    private val repository: TripsRepository
+) : ViewModel() {
 
     // Holds the list of waypoints AND predicted time spent at said waypoints for Plan A Trip
     private val _planWaypoints = MutableStateFlow(mutableListOf<WaypointItem>())
@@ -44,24 +51,15 @@ class PlanATripViewModel : ViewModel() {
         _planWaypoints.value = items
     }
 
-    fun updatePlanWaypoint(
-        index: Int,
-        newSearchResult: SearchResult,
-        onDuplicate: (() -> Unit)? = null
-    ) {
-        val current = _planWaypoints.value
-
-        // Check for duplicate by ID, ignoring the current index
-        val isDuplicate = current.withIndex().any { (i, item) ->
-            i != index && item.searchResult?.searchResultId?.id == newSearchResult.searchResultId.id
+    fun loadTripById(tripId: Long) = viewModelScope.launch {
+        repository.loadTripFromFirestore(tripId)?.let { tripProto ->
+            loadTrip(tripProto)
         }
+    }
 
-        if (isDuplicate) {
-            onDuplicate?.invoke()
-            return
-        }
 
-        _planWaypoints.value = current.toMutableList().apply {
+    fun updateSearchResult(index: Int, newSearchResult: SearchResult) {
+        _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
             if (index in indices) {
                 this[index] = this[index].copy(
                     searchResult = newSearchResult
@@ -108,19 +106,9 @@ class PlanATripViewModel : ViewModel() {
         }
     }
 
-    fun addPlanWaypoint(
-        searchResult: SearchResult,
-        onDuplicate: (() -> Unit)? = null
-    ) {
-        val current = _planWaypoints.value
-        val alreadyExists = current.any { it.searchResult?.searchResultId?.id == searchResult.searchResultId.id }
-
-        if (!alreadyExists) {
-            _planWaypoints.value = current.toMutableList().apply {
-                add(WaypointItem(searchResult = searchResult, hour = 0, minute = 0))
-            }
-        } else {
-            onDuplicate?.invoke()
+    fun addPlanWaypoint(searchResult: SearchResult) {
+        _planWaypoints.value = _planWaypoints.value.toMutableList().apply {
+            add(WaypointItem(searchResult = searchResult, hour= 0, minute = 0))
         }
     }
 

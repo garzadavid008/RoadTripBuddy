@@ -20,6 +20,10 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
 
     private val repository = GooglePlacesRepository(placesClient)
 
+    private val _places = MutableStateFlow<List<SuggPlace>>(emptyList())
+    // the ui will grab this
+    val places: StateFlow<List<SuggPlace>> get() = _places
+
     private val _restaurants = MutableStateFlow<List<SuggPlace>>(emptyList())
     // the ui will grab this
     val restaurants: StateFlow<List<SuggPlace>> get() = _restaurants
@@ -69,7 +73,7 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
         viewModelScope.launch {
             val result = repository.textSearch(location,latitude, longitude)
             Log.i("Chris", "Updating StateFlow with ${result.size} places")
-            _restaurants.value = result.toList()
+            _places.value = result.toList()
         }
     }
 
@@ -78,7 +82,7 @@ class PlacesViewModel(private val placesClient: PlacesClient) : ViewModel() {
     }
 
     fun clearPlaces(){
-        _restaurants.value = emptyList()
+        _places.value = emptyList()
     }
 
 }

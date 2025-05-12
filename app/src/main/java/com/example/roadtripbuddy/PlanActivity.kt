@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roadtripbuddy.PlanATripDrawer.PlanATripDrawer
 import com.example.roadtripbuddy.TripSelect.TripSelect
@@ -57,8 +58,10 @@ class PlanActivity : AppCompatActivity() {
     @Composable
     fun PlanTripScreen(onBack: () -> Unit) {
         val context = LocalContext.current
-        val planVM: PlanATripViewModel by viewModels()
-        val tripVM: TripsViewModel by viewModels()
+//        val planVM:PlanATripViewModel by viewModels()
+//        val tripVM: TripsViewModel by viewModels()
+        val planVM: PlanATripViewModel = hiltViewModel()
+        val tripVM: TripsViewModel     = hiltViewModel()
         var showBottomDrawer by remember { mutableStateOf(false) }
         var mapFocus = rememberSaveable { mutableStateOf(false) }
         var tripSelectScreen by remember { mutableStateOf(true) }
@@ -90,7 +93,8 @@ class PlanActivity : AppCompatActivity() {
                     onBack = {onBack()},
                     // onOpenTrip returns a tripId to load it onto the PlanATripViewModel
                     onOpenTrip = { tripId ->
-                        tripVM.getTrip(tripId)?.let { planVM.loadTrip(it) }
+                       // tripVM.getTrip(tripId)?.let { planVM.loadTrip(it) }
+                        planVM.loadTripById(tripId)
                         // we then equal the tripId to the currentTripId
                         currentTripId = tripId
                         tripSelectScreen = false

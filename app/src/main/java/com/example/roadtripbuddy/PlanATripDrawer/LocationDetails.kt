@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,7 +45,11 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.roadtripbuddy.PlacesViewModel
+import com.example.roadtripbuddy.PlanATripDrawer.NearbySuggestions
 import com.example.roadtripbuddy.PlanMap
+import com.example.roadtripbuddy.SuggPlace
+import com.example.roadtripbuddy.pages.PlanATripSuggest
+import com.example.roadtripbuddy.pages.Suggestions
 import com.tomtom.sdk.location.ExperimentalPoiInPlaceApi
 import com.tomtom.sdk.routing.route.Route
 import com.tomtom.sdk.search.common.error.SearchFailure
@@ -62,7 +69,8 @@ fun LocationDetails(
     planMap: PlanMap,
     brandsAndPOIOnly: (String, SearchResult, (List<Pair<String, AutocompleteResult>>) -> Unit) -> Unit,
     isTyping: () -> Unit,
-    categoryReturn: (String) -> Unit
+    categoryReturn: (String) -> Unit,
+    onPlaceClick:(SuggPlace) -> Unit
     ) {
 
     var address by remember { mutableStateOf(location.place.address?.freeformAddress) }
@@ -100,98 +108,140 @@ fun LocationDetails(
         }
         // Location details
         Text(
-            "Search Nearby ${address}",
+            "${address}",
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(16.dp))
+        var selectedTabIndex by remember { mutableStateOf(0) }
+        val tabTitles = listOf("Nearby Suggestions", "Search Nearby")
 
-
-        var autocompleteSuggestions by remember {
-            mutableStateOf<List<Pair<String, AutocompleteResult>>>(
-                emptyList()
-            )
-        }
-        var query by remember { mutableStateOf("") }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { newQuery ->
-                    query = newQuery
-                },
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        brandsAndPOIOnly(query, location) { results ->
-                            val searchResult = results.first().second
-                            planMap.findPlaces(searchResult, placesViewModel)
-                        }
-                    }
-                ),
-                label = { Text(text = "Enter a location") },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 8.dp)
-                    .onKeyEvent { keyEvent -> // For testing basically, makes the Enter button on our keyboards commit a waypoint[index] change
-                        if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
-                            brandsAndPOIOnly(query, location) { results ->
-                                val searchResult = results.first().second
-                                planMap.findPlaces(searchResult, placesViewModel)
-                            }
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) {
-                            isTyping()
-                        }
-                    }
-            )
-        }
-
-        LaunchedEffect(query) { //Pulsing the API call for autocomplete
-            if (query.isNotEmpty()) {
-                delay(300)
-                brandsAndPOIOnly(query, location) { initSuggestions ->
-                    autocompleteSuggestions = initSuggestions.distinct()
-                }
-            } else {
-                autocompleteSuggestions = emptyList()
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabTitles.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
             }
         }
 
-        if (autocompleteSuggestions.isNotEmpty()) {
-            Log.d("Autocomplete suggestions", autocompleteSuggestions.toString())
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(items = autocompleteSuggestions) { suggestionPair ->
-                    val (suggestion, objectResult) = suggestionPair
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            if (selectedTabIndex == 0) {
+                NearbySuggestions(
+                    location = location.place.coordinate,
+                    onPlaceClick = { suggPlace ->
+                        onPlaceClick(suggPlace)
+                    }
+                )
+
+            } else {
+                var autocompleteSuggestions by remember {
+                    mutableStateOf<List<Pair<String, AutocompleteResult>>>(
+                        emptyList()
+                    )
+                }
+                var query by remember { mutableStateOf("") }
+
+                Column {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                planMap.findPlaces(objectResult, location = location.place.coordinate, placesViewModel = placesViewModel)
-                                val brandName =
-                                    objectResult.segments.filterIsInstance<AutocompleteSegmentBrand>().firstOrNull()?.brand?.name
-                                val poiName = objectResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>().firstOrNull()?.poiCategory?.name
-                                categoryReturn((brandName ?: poiName).toString())
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = suggestion, style = MaterialTheme.typography.bodyLarge)
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { newQuery ->
+                                query = newQuery
+                            },
+                            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    brandsAndPOIOnly(query, location) { results ->
+                                        val searchResult = results.first().second
+                                        planMap.findPlaces(searchResult, placesViewModel)
+                                    }
+                                }
+                            ),
+                            label = { Text(text = "Enter a location") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .onKeyEvent { keyEvent -> // For testing basically, makes the Enter button on our keyboards commit a waypoint[index] change
+                                    if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
+                                        brandsAndPOIOnly(query, location) { results ->
+                                            val searchResult = results.first().second
+                                            planMap.findPlaces(searchResult, placesViewModel)
+                                        }
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        isTyping()
+                                    }
+                                }
+                        )
+                    }
+
+                    LaunchedEffect(query) {
+                        if (query.isNotEmpty()) {
+                            delay(300)
+                            brandsAndPOIOnly(query, location) { initSuggestions ->
+                                autocompleteSuggestions = initSuggestions.distinct()
+                            }
+                        } else {
+                            autocompleteSuggestions = emptyList()
+                        }
+                    }
+                    
+                    if (autocompleteSuggestions.isNotEmpty()) {
+                        Log.d("Autocomplete suggestions", autocompleteSuggestions.toString())
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 200.dp) // <- keeps it from taking over the screen
+                                .padding(horizontal = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(items = autocompleteSuggestions) { suggestionPair ->
+                                val (suggestion, objectResult) = suggestionPair
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            planMap.findPlaces(
+                                                objectResult,
+                                                location = location.place.coordinate,
+                                                placesViewModel = placesViewModel
+                                            )
+                                            val brandName =
+                                                objectResult.segments.filterIsInstance<AutocompleteSegmentBrand>()
+                                                    .firstOrNull()?.brand?.name
+                                            val poiName =
+                                                objectResult.segments.filterIsInstance<AutocompleteSegmentPoiCategory>()
+                                                    .firstOrNull()?.poiCategory?.name
+                                            categoryReturn((brandName ?: poiName).toString())
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = suggestion, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
                     }
                 }
             }
+
         }
     }
 }
