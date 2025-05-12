@@ -1,6 +1,5 @@
 package com.example.roadtripbuddy
 
-import android.util.Log
 import com.tomtom.sdk.navigation.TomTomNavigation
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.navigation.ui.NavigationFragment as TomTomNavigationFragment
@@ -16,10 +15,10 @@ import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfigura
 import com.tomtom.sdk.navigation.online.Configuration
 import com.tomtom.sdk.location.Place
 import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
-
-// -------------------------------------------------------------------------------------------------
-// NavigationFragment - Manages Turn-by-Turn Navigation with TomTom SDK
-// -------------------------------------------------------------------------------------------------
+import com.tomtom.sdk.navigation.ProgressUpdatedListener
+import com.tomtom.sdk.navigation.ActiveRouteChangedListener
+import com.tomtom.sdk.map.display.camera.CameraOptions
+import com.tomtom.sdk.map.display.common.screen.Padding
 
 class NavigationFragment(
     private val context: android.content.Context,
@@ -29,10 +28,17 @@ class NavigationFragment(
     private val routeManager: RouteManager,
     private val apiKey: String
 ) {
-    // State
+
+    private fun Route.mapInstructions(): List<com.tomtom.sdk.map.display.route.Instruction> {
+        val routeInstructions = legs.flatMap { it.instructions }
+        return routeInstructions.map {
+            com.tomtom.sdk.map.display.route.Instruction(routeOffset = it.routeOffset)
+        }
+    }
+
+    var isClosed: Boolean = false
     private var isNavigationRunning = false
 
-    // TomTom Navigation Components
     private lateinit var tomTomNavigationFragment: TomTomNavigationFragment
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var navigationTileStore: NavigationTileStore
@@ -52,10 +58,6 @@ class NavigationFragment(
             return fragment
         }
     }
-
-    // -------------------------------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------------------------------
 
     fun createRouteAndStart(viewModel: SearchDrawerViewModel) {
         val waypoints = viewModel.waypoints.value
@@ -84,63 +86,62 @@ class NavigationFragment(
                 startNavigation(route, options)
             }
 
-            override fun onFailure(failure: RoutingFailure) {
-                Log.e("NavigationFragment", "Failed to plan route: ${failure.message}")
-            }
+            override fun onFailure(failure: RoutingFailure) {}
 
             override fun onRoutePlanned(route: Route) = Unit
         })
     }
 
     fun stopNavigation() {
-        if (!isNavigationRunning) {
-            Log.i("NavigationFragment", "Navigation already stopped, nothing to do.")
-            return
-        }
-
-        if (this::tomTomNavigation.isInitialized) {
-            try {
-                tomTomNavigation.stop()
-                tomTomNavigation.close()
-            } catch (e: IllegalStateException) {
-                Log.w("NavigationFragment", "TomTomNavigation already closed.")
-            }
-        }
-
-        if (this::navigationTileStore.isInitialized) {
-            try {
-                navigationTileStore.close()
-            } catch (e: Exception) {
-                Log.w("NavigationFragment", "Tile store already closed.")
-            }
-        }
+        if (!isNavigationRunning) return
+        isNavigationRunning = false
 
         if (this::tomTomNavigationFragment.isInitialized) {
-            try {
-                tomTomNavigationFragment.stopNavigation()
-            } catch (e: IllegalStateException) {
-                Log.w("NavigationFragment", "NavigationFragment already stopped.")
-            }
-            try {
-                val transaction = activity.supportFragmentManager.beginTransaction()
-                transaction.remove(tomTomNavigationFragment)
-                transaction.commitNowAllowingStateLoss()
-            } catch (e: Exception) {
-                Log.w("NavigationFragment", "NavigationFragment already removed.")
-            }
+            tomTomNavigationFragment.stopNavigation()
+            val transaction = activity.supportFragmentManager.beginTransaction()
+            transaction.remove(tomTomNavigationFragment)
+            transaction.commitNowAllowingStateLoss()
         }
 
         locationService.getTomTomMap()?.clear()
         locationService.resetUserLiveMarker()
-
         locationService.stopLiveTracking()
 
-        isNavigationRunning = false
+        resetMapPadding()
+
+        locationService.getTomTomMap()?.cameraTrackingMode = com.tomtom.sdk.map.display.camera.CameraTrackingMode.None
+        locationService.getTomTomMap()?.enableLocationMarker(
+            com.tomtom.sdk.map.display.location.LocationMarkerOptions(
+                com.tomtom.sdk.map.display.location.LocationMarkerOptions.Type.Pointer
+            )
+        )
+
+        locationService.getTomTomMap()?.let {
+            val lastKnown = locationService.getLocationProvider().lastKnownLocation?.position
+            if (lastKnown != null) {
+                it.moveCamera(CameraOptions(position = lastKnown, zoom = 10.0))
+            }
+        }
     }
 
-    // -------------------------------------------------------------------------------------------------
-    // Private Helpers
-    // -------------------------------------------------------------------------------------------------
+    private val progressUpdatedListener = ProgressUpdatedListener {
+        locationService.getTomTomMap()?.routes?.firstOrNull()?.progress = it.distanceAlongRoute
+
+    }
+
+    private val activeRouteChangedListener = ActiveRouteChangedListener { route ->
+        locationService.getTomTomMap()?.removeRoutes()
+        locationService.getTomTomMap()?.let { map ->
+            val routeOptions = com.tomtom.sdk.map.display.route.RouteOptions(
+                geometry = route.geometry,
+                destinationMarkerVisible = true,
+                departureMarkerVisible = true,
+                instructions = route.mapInstructions(),
+                routeOffset = route.routePoints.map { it.routeOffset }
+            )
+            map.addRoute(routeOptions)
+        }
+    }
 
     private fun startNavigation(route: Route, options: RoutePlanningOptions) {
         navigationTileStore = NavigationTileStore.create(
@@ -148,11 +149,10 @@ class NavigationFragment(
             NavigationTileStoreConfiguration(apiKey)
         )
 
-        // No simulation, using actual navigation provider
         val config = Configuration(
             context = context,
             navigationTileStore = navigationTileStore,
-            locationProvider = locationService.getLocationProvider(), // Directly using locationProvider
+            locationProvider = locationService.getLocationProvider(),
             routePlanner = routeManager.routePlanner
         )
 
@@ -168,15 +168,38 @@ class NavigationFragment(
         tomTomNavigationFragment.startNavigation(RoutePlan(route, options))
 
         tomTomNavigationFragment.addNavigationListener(object : TomTomNavigationFragment.NavigationListener {
+
+
             override fun onStarted() {
                 isNavigationRunning = true
-                Log.d("NavigationFragment", "Navigation started.")
+                locationService.getTomTomMap()?.cameraTrackingMode = com.tomtom.sdk.map.display.camera.CameraTrackingMode.FollowRouteDirection
+                locationService.getTomTomMap()?.enableLocationMarker(
+                    com.tomtom.sdk.map.display.location.LocationMarkerOptions(
+                        com.tomtom.sdk.map.display.location.LocationMarkerOptions.Type.Chevron
+                    )
+                )
+                setMapNavigationPadding()
+                tomTomNavigation.addProgressUpdatedListener(progressUpdatedListener)
+                tomTomNavigation.addActiveRouteChangedListener(activeRouteChangedListener)
             }
 
             override fun onStopped() {
                 stopNavigation()
-                Log.d("NavigationFragment", "Navigation stopped.")
             }
         })
     }
+
+    private fun setMapNavigationPadding() {
+        val paddingBottom = context.resources.getDimensionPixelOffset(R.dimen.map_padding_bottom)
+        val padding = Padding(0, 0, 0, paddingBottom)
+        locationService.getTomTomMap()?.setPadding(padding)
+    }
+
+    private fun resetMapPadding() {
+        locationService.getTomTomMap()?.setPadding(Padding(0, 0, 0, 0))
+        locationService.getTomTomMap()?.cameraTrackingMode = com.tomtom.sdk.map.display.camera.CameraTrackingMode.None
+
+    }
+
+
 }
