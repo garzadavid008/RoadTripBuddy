@@ -1,12 +1,15 @@
 package com.example.roadtripbuddy.databaseTests
 
 import com.example.roadtripbuddy.User
+import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.QuerySnapshot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FirestoreTest {
@@ -22,8 +25,12 @@ class FirestoreTest {
 
     @Test
     fun firestore_handlesOffline() = runBlocking {
-        every { mockFirestore.collection(any()) } throws RuntimeException("Offline")
-        val result = runCatching { mockFirestore.collection("users").get().await() }
+        val mockTask = mockk<Task<QuerySnapshot>>()
+        every { mockFirestore.collection("users").get() } returns mockTask
+        every { mockTask.isSuccessful } returns false
+        every { mockTask.exception } returns RuntimeException("Offline")
+
+        val result = runCatching { mockFirestore.collection("users").get().result }
         assertTrue(result.isFailure)
     }
 
@@ -44,8 +51,4 @@ class FirestoreTest {
         verify { mockFirestore.collection("users").document("123").addSnapshotListener(any()) }
     }
 }
-/*This Test(if applicable):
-* Read/Write operations
-* Handling Errors (Offline or denied access
-* Syncing and real-time updates
-* */
+

@@ -1,14 +1,19 @@
 package com.example.roadtripbuddy.permissionsTests
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import com.example.roadtripbuddy.LocationService
+import com.example.roadtripbuddy.NavigationMap
+import com.tomtom.sdk.map.display.TomTomMap
 import com.example.roadtripbuddy.TomTomMapComponent
-import com.tomtom.sdk.location.LocationProvider
+import com.example.roadtripbuddy.mocks.MockLocationService
+import com.example.roadtripbuddy.mocks.MockNavigationMap
+import com.example.roadtripbuddy.mocks.MockTomTomMap
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.mockk
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -26,22 +31,26 @@ class LocationPermissionTest {
         android.Manifest.permission.ACCESS_COARSE_LOCATION
     )
 
-    private val mockLocationService = mockk<LocationService>(relaxed = true)
-    private val mockLocationProvider = mockk<LocationProvider>(relaxed = true)
+    private lateinit var mockLocationService: LocationService
+    private lateinit var mockTomTomMap: TomTomMap
+    private lateinit var mockNavigationMap: NavigationMap
 
     @Before
     fun setup() {
-        every { mockLocationService.getLocationProvider() } returns mockLocationProvider
+        mockLocationService = MockLocationService.instance
+        mockTomTomMap = MockTomTomMap().mock
+        mockNavigationMap = mockk<NavigationMap>(relaxed = true)
     }
 
     @Test
     fun locationPermission_promptDisplayed_whenNotGranted() {
-        every { mockLocationService.areLocationPermissionsGranted() } returns false
+        every { mockLocationService.requestLocationPermissions() } returns Unit
+        every { mockLocationService.mapLocationInitializer(mockNavigationMap, mutableStateOf(false)) } returns Unit
 
         composeTestRule.setContent {
             TomTomMapComponent(
                 apiKey = "test_api_key",
-                onMapReady = { /* No-op */ },
+                onMapReady = { mockTomTomMap },
                 onMapDispose = { /* No-op */ }
             )
         }
@@ -51,13 +60,15 @@ class LocationPermissionTest {
 
     @Test
     fun handles_locationOff() {
-        every { mockLocationService.areLocationPermissionsGranted() } returns true
-        every { mockLocationProvider.isEnabled() } returns false
+        every { mockLocationService.getLocationProvider() } returns mockk {
+            every { enable() } returns Unit
+        }
+        every { mockLocationService.mapLocationInitializer(mockNavigationMap, mutableStateOf(false)) } returns Unit
 
         composeTestRule.setContent {
             TomTomMapComponent(
                 apiKey = "test_api_key",
-                onMapReady = { /* No-op */ },
+                onMapReady = { mockTomTomMap },
                 onMapDispose = { /* No-op */ }
             )
         }
@@ -67,13 +78,15 @@ class LocationPermissionTest {
 
     @Test
     fun map_renders_withPermissionGranted() {
-        every { mockLocationService.areLocationPermissionsGranted() } returns true
-        every { mockLocationProvider.isEnabled() } returns true
+        every { mockLocationService.getLocationProvider() } returns mockk {
+            every { enable() } returns Unit
+        }
+        every { mockLocationService.mapLocationInitializer(mockNavigationMap, mutableStateOf(false)) } returns Unit
 
         composeTestRule.setContent {
             TomTomMapComponent(
                 apiKey = "test_api_key",
-                onMapReady = { /* No-op */ },
+                onMapReady = { mockTomTomMap },
                 onMapDispose = { /* No-op */ }
             )
         }
@@ -81,14 +94,17 @@ class LocationPermissionTest {
         verify { mockLocationService.enableUserLocation() }
     }
 
+
+
     @Test
     fun map_showsError_withPermissionDenied() {
-        every { mockLocationService.areLocationPermissionsGranted() } returns false
+        every { mockLocationService.requestLocationPermissions() } returns Unit
+        every { mockLocationService.mapLocationInitializer(mockNavigationMap, mutableStateOf(false)) } returns Unit
 
         composeTestRule.setContent {
             TomTomMapComponent(
                 apiKey = "test_api_key",
-                onMapReady = { /* No-op */ },
+                onMapReady = { mockTomTomMap },
                 onMapDispose = { /* No-op */ }
             )
         }
@@ -96,9 +112,3 @@ class LocationPermissionTest {
         verify { mockLocationService.requestLocationPermissions() }
     }
 }
-
-/*Checklist of Tasks;
-* Prompt shows when location is not granted
-* behaviour when location is off
-* behaviour when permission is granted/denied
-* */

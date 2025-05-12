@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.tomtom.sdk.common.UniqueId
 import com.tomtom.sdk.location.poi.StandardCategoryId.Companion.Locale
@@ -25,13 +24,15 @@ import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
 import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.model.result.SearchResult
 import com.tomtom.sdk.search.online.OnlineSearch
+import com.example.roadtripbuddy.LocationService
 import java.util.Locale
 
 class PlanMap(
     private val context: Context,
     private val activity: PlanActivity,
-    private val mapReadyState: MutableState<Boolean>
-) : BaseMapUtils(){
+    private val mapReadyState: MutableState<Boolean>,
+    private val locationService: LocationService
+) : BaseMapUtils() {
 
     private lateinit var planRouteManager: PlanRouteManager
 
@@ -41,21 +42,22 @@ class PlanMap(
             modifier = Modifier.fillMaxSize(),
             apiKey = apiKey,
             onMapReady = { map ->
-                tomTomMap = map //Initializes the tomTomMap object
-                searchManager = SearchManager(context = context, apiKey = apiKey)// Initializing an instance of the searchManager class
-                planRouteManager = PlanRouteManager(context = context, apiKey = apiKey)// Initializing an instance of the routeManager class
+                tomTomMap = map
+                searchManager = SearchManager(context = context, apiKey = apiKey)
+                routeManager = RouteManager(context = context, apiKey = apiKey)
+                planRouteManager = PlanRouteManager(context = context, apiKey = apiKey)
+                locationService.enableUserLocation()
                 mapReadyState.value = true
             },
             onMapDispose = {
                 tomTomMap = null
             }
         )
-
     }
 
     fun planATripCameraInit(searchResult: SearchResult?) {
         val location = searchResult?.place?.coordinate
-        tomTomMap?.moveCamera(CameraOptions(location, zoom = 15.0))// set the camera to the users location
+        tomTomMap?.moveCamera(CameraOptions(location, zoom = 15.0))
         val markerOptions = MarkerOptions(
             coordinate = location!!,
             pinImage = ImageFactory.fromResource(R.drawable.map_marker_full)
@@ -63,15 +65,15 @@ class PlanMap(
         tomTomMap?.addMarker(markerOptions)
     }
 
-    fun planOnRouteRequest(viewModel: PlanATripViewModel){
+    fun planOnRouteRequest(viewModel: PlanATripViewModel) {
         planRouteManager.planOnRouteRequest(
             viewModel = viewModel,
             tomTomMap = tomTomMap,
             context = context
-            )
+        )
     }
 
-    fun onRouteLegClick(route: Route,viewModel: PlanATripViewModel){
+    fun onRouteLegClick(route: Route, viewModel: PlanATripViewModel) {
         planRouteManager.onRouteLegClick(
             routeClick = route,
             viewModel = viewModel,
@@ -79,8 +81,6 @@ class PlanMap(
         )
     }
 
-
-    // For Search Nearby on plan a trip
     fun brandsAndPOIOnly(
         query: String,
         location: SearchResult,
@@ -91,18 +91,17 @@ class PlanMap(
             return
         }
 
-        // build the same options you use in resolveAndSuggest
         val options = AutocompleteOptions(
             query = query,
             position = location.place.coordinate,
-            locale   = Locale("en", "US")
+            locale = Locale("en", "US")
         )
 
         val searchApi: Search = OnlineSearch.create(context, apiKey)
 
         searchApi.autocompleteSearch(options, object : AutocompleteCallback {
             override fun onSuccess(result: AutocompleteResponse) {
-                val autocompleteResult = result.results.mapNotNull { res -> // we make the results be a list of Pairs, each pair being made up of the string name, the other being the object
+                val autocompleteResult = result.results.mapNotNull { res ->
                     val display = res.segments.joinToString(" ") { segment ->
                         when (segment) {
                             is AutocompleteSegmentBrand -> segment.brand.name
@@ -111,7 +110,7 @@ class PlanMap(
                         }
                     }.trim()
                     if (display.isNotEmpty()) {
-                        Pair(display, res)  //Pairs them
+                        Pair(display, res)
                     } else {
                         null
                     }
@@ -125,5 +124,4 @@ class PlanMap(
             }
         })
     }
-
 }

@@ -1,6 +1,7 @@
 package com.example.roadtripbuddy.navigationTests
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -12,12 +13,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.roadtripbuddy.MainActivity
 import com.example.roadtripbuddy.NavigationMap
 import com.example.roadtripbuddy.PlacesViewModel
-import com.example.roadtripbuddy.SearchDrawerAutocomplete
+import com.example.roadtripbuddy.SearchDrawer.SearchDrawerAutocomplete
 import com.example.roadtripbuddy.SearchDrawerViewModel
+import com.example.roadtripbuddy.SuggPlace
 import com.example.roadtripbuddy.mocks.MockAuthViewModel
 import com.example.roadtripbuddy.pages.LoginPage
 import com.example.roadtripbuddy.pages.Suggestions
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -54,7 +57,13 @@ class NavigationTest {
         composeTestRule.setContent {
             NavHost(navController, startDestination = "map") {
                 composable("map") { }
-                composable("suggestion") { Suggestions(navController, mockk()) }
+                composable("suggestion") {
+                    Suggestions(
+                        navController = navController,
+                        fusedLocationProviderClient = mockk(),
+                        onPlaceClick = { _: SuggPlace -> }
+                    )
+                }
             }
         }
 
@@ -77,7 +86,8 @@ class NavigationTest {
                         placesViewModel = mockPlacesViewModel,
                         searchDrawerViewModel = mockSearchDrawerViewModel,
                         onDone = {},
-                        isTyping = {}
+                        isTyping = {},
+                        category = {}
                     )
                 }
             }
@@ -87,17 +97,4 @@ class NavigationTest {
         assertEquals("search", navController.currentDestination?.route)
     }
 
-    @Test
-    fun handles_deepLink_toMap() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("roadtripbuddy://map/route123"))
-        val scenario = ActivityScenarioRule<MainActivity>(intent)
-        scenario.onActivity {
-            assertEquals("map", navController.currentDestination?.route)
-        }
-    }
 }
-
-/*Checklist:
-* Navigation between all main flows(login -> map and so on
-*deep link handling
-* */

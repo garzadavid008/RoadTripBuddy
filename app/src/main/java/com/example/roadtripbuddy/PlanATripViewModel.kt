@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import com.example.roadtripbuddy.PlanATripViewModel
 
 class PlanATripViewModel : ViewModel() {
 

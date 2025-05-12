@@ -53,6 +53,8 @@ android {
             "META-INF/DEPENDENCIES",
             "META-INF/LICENSE",
             "META-INF/LICENSE.txt",
+            "META-INF/LICENSE.md",
+            "META-INF/LICENSE-notice.md",
             "META-INF/NOTICE",
             "META-INF/NOTICE.txt"
         ))
@@ -144,6 +146,7 @@ dependencies {
     implementation("com.tomtom.sdk.search:reverse-geocoder-online:1.23.2") // Online reverse geocoding
     implementation("com.tomtom.sdk.maps.visualization:navigation:$version") // Navigation visualization
     implementation("com.tomtom.sdk.navigation:ui:1.23.2") // Navigation UI
+
     // Google APIs
     implementation("com.google.android.libraries.places:places:3.5.0") // Google Places API
     implementation("com.google.android.gms:play-services-maps:19.0.0") // Google Maps
@@ -168,6 +171,12 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1") // Latest Espresso
     androidTestImplementation("androidx.navigation:navigation-testing:2.8.8") // Navigation testing
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8") // Compose UI testing
+    androidTestImplementation("io.mockk:mockk-android:1.13.14") // Added for instrumented tests
+    androidTestImplementation("androidx.test:rules:1.6.1") // For GrantPermissionRule
+    androidTestImplementation("junit:junit:4.13.2")
+    androidTestImplementation("com.google.android.gms:play-services-tasks:18.2.0")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    //androidTestImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
 
     // Debug Tools
     debugImplementation("androidx.compose.ui:ui-tooling") // Compose UI tooling
@@ -175,7 +184,7 @@ dependencies {
 
     // Unit Testing
     testImplementation(libs.junit) // JUnit for unit tests
-    testImplementation("io.mockk:mockk:1.13.13") // MockK for mocking
+    testImplementation("io.mockk:mockk:1.13.14") // MockK for mocking
     testImplementation("androidx.arch.core:core-testing:2.2.0") // Core testing utilities
 
     // Additional Integrations
@@ -183,12 +192,10 @@ dependencies {
     implementation("androidx.datastore:datastore:1.1.0")
     implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
     implementation("com.composables:core:1.20.1")
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
-    implementation("androidx.compose.material3:material3:1.3.1")
     implementation("com.tomtom.sdk.navigation:navigation:$version")
 
-
+    // Kotlinx Datetime
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1") // Added for Duration
 
 }
 
